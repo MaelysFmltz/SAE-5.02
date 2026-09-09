@@ -19,17 +19,14 @@ function peutVoirPublication(db, idPubli, idUser) {
         WHERE idPubli = ?
     `).get(idPubli);
 
-    // La publication n'existe pas
     if (!publication) {
         return false;
     }
 
-    // Publication publique
     if (publication.visibilite === 1) {
         return true;
     }
 
-    // Publication privée : seul l'auteur ou un ami peut la voir
     if (publication.idUser === idUser) {
         return true;
     }
@@ -37,15 +34,11 @@ function peutVoirPublication(db, idPubli, idUser) {
     return sontAmis(db, publication.idUser, idUser);
 }
 
-
-
 function modifierVisibilite(db, idPubli, idUser, nouvelleVisibilite) {
-    // La visibilité doit être 0 ou 1
     if (nouvelleVisibilite !== 0 && nouvelleVisibilite !== 1) {
         return false;
     }
 
-    // Vérifier que la publication appartient à l'utilisateur
     const publication = db.prepare(`
         SELECT idUser
         FROM Publication
@@ -60,7 +53,6 @@ function modifierVisibilite(db, idPubli, idUser, nouvelleVisibilite) {
         return false;
     }
 
-    // Modifier la visibilité
     db.prepare(`
         UPDATE Publication
         SET visibilite = ?
