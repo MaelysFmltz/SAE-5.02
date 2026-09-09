@@ -1,26 +1,38 @@
 {
   "name": "projet",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Cycle de vie du projet",
+  "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-  "better-sqlite3": "^13.0.3",
-  "express": "^5.2.1",
-  "express-validator": "^7.3.2",
-  "jsonwebtoken": "^9.0.3"
-},
-"devDependencies": {
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "express-validator": "^7.3.2",
+    "jsonwebtoken": "^9.0.3",
+    "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
     "jest": "^30.5.1",
     "nodemon": "^3.1.14",
     "supertest": "^7.2.2"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MaelysFmltz/SAE-5.02.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MaelysFmltz/SAE-5.02/issues"
+  },
+  "homepage": "https://github.com/MaelysFmltz/SAE-5.02#readme"
 }
