@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { sontAmis, peutVoirPublication, modifierVisibilite } from './permissions.js';
+import { sontAmis, peutVoirPublication, modifierVisibilite } from '../src/services/publicationPermissionService.js';
 
 describe('Vérification des permissions des publications', () => {
 

@@ -3,4 +3,4 @@ const VISIBILITE = {
     PUBLIC: 1
 };
 
-export default VISIBILITE;
+module.exports = VISIBILITE;

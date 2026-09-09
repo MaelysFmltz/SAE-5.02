@@ -62,4 +62,8 @@ function modifierVisibilite(db, idPubli, idUser, nouvelleVisibilite) {
     return true;
 }
 
-export { sontAmis, peutVoirPublication, modifierVisibilite };
+module.exports = {
+    sontAmis,
+    peutVoirPublication,
+    modifierVisibilite
+};

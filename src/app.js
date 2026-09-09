@@ -1,6 +1,7 @@
 const express = require('express');
 
 const authRoutes = require('./routes/authRoutes');
+const publicationRoutes = require('./routes/publicationRoutes');
 
 const app = express();
 
