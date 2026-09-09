@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS Utilisateur (
     dateInscription DATETIME DEFAULT CURRENT_TIMESTAMP,
     dateNaissance DATE,
     statut TEXT CHECK(statut IN ('actif', 'suspendu', 'supprime')) DEFAULT 'actif',
-    role TEXT CHECK(role IN ('user', 'admin')) DEFAULT 'user',
+    role TEXT CHECK(role IN ('user', 'moderator', 'admin')) DEFAULT 'user',
     dateDerniereConnexion DATETIME
 );
 
