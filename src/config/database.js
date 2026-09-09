@@ -1,36 +1,20 @@
-import Database from 'better-sqlite3';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const dbPath = path.join(
+  __dirname,
+  '../../../../../database.db'
+);
 
-// 1. Définition du chemin de stockage de la base SQLite
-const dbDirPath = process.env.DB_DIR || path.resolve(__dirname, '../../data');
-const dbFilePath = process.env.DB_PATH || path.join(dbDirPath, 'app.db');
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error(
+      'Erreur de connexion à SQLite :',
+      err.message
+    );
+  } else {
+    console.log('Connexion à SQLite réussie.');
+  }
+});
 
-// Création du dossier 'data' à la racine s'il n'existe pas encore
-if (!fs.existsSync(dbDirPath)) {
-  fs.mkdirSync(dbDirPath, { recursive: true });
-}
-
-// 2. Connexion à la base SQLite
-const db = new Database(dbFilePath);
-
-// 3. Configuration des pragmas critiques pour SQLite
-db.pragma('foreign_keys = ON');
-db.pragma('journal_mode = WAL');
-
-// 4. Initialisation du schéma si non présent
-const sqlFilePath = path.resolve(__dirname, '../../database.sql');
-
-if (fs.existsSync(sqlFilePath)) {
-  const schema = fs.readFileSync(sqlFilePath, 'utf-8');
-  db.exec(schema);
-} else {
-  // Stoppe l'application directement si le fichier SQL est introuvable
-  throw new Error(`CRITIQUE: Fichier introuvable - ${sqlFilePath}`);
-}
-
-export default db;
+module.exports = db;
