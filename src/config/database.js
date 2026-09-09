@@ -3,7 +3,7 @@ const path = require('path');
 
 const dbPath = path.join(
   __dirname,
-  '../../../../../database.db'
+  '../../database/database.db'
 );
 
 let db;
