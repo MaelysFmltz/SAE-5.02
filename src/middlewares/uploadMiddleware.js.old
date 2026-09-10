@@ -1,0 +1,128 @@
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+const TEMPORARY_DIR = path.join(
+  __dirname,
+  '../../storage/temporary'
+);
+
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
+
+const ALLOWED_EXTENSIONS = new Set([
+  '.mp4',
+  '.mov',
+  '.avi',
+  '.webm'
+]);
+
+const ALLOWED_MIME_TYPES = new Set([
+  'video/mp4',
+  'video/quicktime',
+  'video/x-msvideo',
+  'video/webm',
+  'application/octet-stream'
+]);
+
+fs.mkdirSync(TEMPORARY_DIR, {
+  recursive: true,
+  mode: 0o750
+});
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, TEMPORARY_DIR);
+  },
+
+  filename: (req, file, cb) => {
+    const randomName = crypto
+      .randomBytes(32)
+      .toString('hex');
+
+    cb(null, `${randomName}.upload`);
+  }
+});
+
+const upload = multer({
+  storage,
+
+  limits: {
+    fileSize: MAX_VIDEO_SIZE,
+    files: 1,
+    fields: 1,
+    parts: 2,
+    fieldNameSize: 100,
+    fieldSize: 1024
+  },
+
+  fileFilter: (req, file, cb) => {
+    const extension = path
+      .extname(file.originalname)
+      .toLowerCase();
+
+    if (!ALLOWED_EXTENSIONS.has(extension)) {
+      return cb(
+        new Error(
+          'Format vidéo non autorisé. Formats acceptés : MP4, MOV, AVI et WebM.'
+        )
+      );
+    }
+
+    if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
+      return cb(
+        new Error(
+          'Le type MIME de la vidéo n’est pas autorisé.'
+        )
+      );
+    }
+
+    cb(null, true);
+  }
+});
+
+module.exports = (req, res, next) => {
+  upload.single('video')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      if (req.file?.path) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (_) {
+          // Rien à faire si le fichier n'existe déjà plus.
+        }
+      }
+
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({
+          error: 'La vidéo dépasse la taille maximale autorisée de 50 Mo.'
+        });
+      }
+
+      return res.status(400).json({
+        error: 'Erreur lors de l’envoi de la vidéo.'
+      });
+    }
+
+    if (err) {
+      if (req.file?.path) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch (_) {
+          // Rien à faire si le fichier n'existe déjà plus.
+        }
+      }
+
+      return res.status(400).json({
+        error: err.message || 'Vidéo refusée.'
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        error: 'Aucune vidéo n’a été envoyée.'
+      });
+    }
+
+    next();
+  });
+};

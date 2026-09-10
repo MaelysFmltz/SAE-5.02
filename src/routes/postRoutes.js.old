@@ -1,0 +1,27 @@
+const express = require('express');
+const path = require('path');
+
+const postController = require('../controllers/postController');
+
+const router = express.Router();
+
+/*
+ * Affichage de la page de test d'upload
+ */
+router.get('/',
+  (req, res) => {
+    res.sendFile(
+      path.join(__dirname, '../../views/post.ejs')
+    );
+  }
+);
+
+/*
+ * Upload d'une vidéo
+ */
+router.post(
+  '/upload',
+  postController.uploadVideo
+);
+
+module.exports = router;
