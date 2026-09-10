@@ -1,7 +1,13 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-
 const userModel = require('../models/userModel');
+
+const {
+  hashPassword,
+  comparePassword
+} = require('../utils/passwordUtils');
+
+const {
+  createToken
+} = require('../utils/tokenUtils');
 
 async function register(
   pseudo,
@@ -15,30 +21,34 @@ async function register(
     );
   }
 
-  const userEmail = await userModel.findByEmail(email);
+  const userEmail =
+    await userModel.findByEmail(email);
 
   if (userEmail) {
-    throw new Error('Cet email est déjà utilisé');
+    throw new Error(
+      'Cet email est déjà utilisé'
+    );
   }
 
   const userPseudo =
     await userModel.findByPseudo(pseudo);
 
   if (userPseudo) {
-    throw new Error('Ce pseudo est déjà utilisé');
+    throw new Error(
+      'Ce pseudo est déjà utilisé'
+    );
   }
 
-  const hashedPassword = await bcrypt.hash(
-    motDePasse,
-    10
-  );
+  const hashedPassword =
+    await hashPassword(motDePasse);
 
-  const user = await userModel.createUser(
-    pseudo,
-    email,
-    hashedPassword,
-    dateNaissance
-  );
+  const user =
+    await userModel.createUser(
+      pseudo,
+      email,
+      hashedPassword,
+      dateNaissance
+    );
 
   return user;
 }
@@ -50,7 +60,8 @@ async function login(email, motDePasse) {
     );
   }
 
-  const user = await userModel.findByEmail(email);
+  const user =
+    await userModel.findByEmail(email);
 
   if (!user) {
     throw new Error(
@@ -64,10 +75,11 @@ async function login(email, motDePasse) {
     );
   }
 
-  const passwordIsValid = await bcrypt.compare(
-    motDePasse,
-    user.motDePasse
-  );
+  const passwordIsValid =
+    await comparePassword(
+      motDePasse,
+      user.motDePasse
+    );
 
   if (!passwordIsValid) {
     throw new Error(
@@ -75,25 +87,11 @@ async function login(email, motDePasse) {
     );
   }
 
-  await userModel.updateLastLogin(user.idUser);
-
-  if (!process.env.JWT_SECRET) {
-    throw new Error(
-      'JWT_SECRET non configuré'
-    );
-  }
-
-  const token = jwt.sign(
-    {
-      idUser: user.idUser,
-      pseudo: user.pseudo,
-      role: user.role
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: '2h'
-    }
+  await userModel.updateLastLogin(
+    user.idUser
   );
+
+  const token = createToken(user);
 
   return {
     token,

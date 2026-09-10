@@ -1,66 +1,21 @@
 const db = require('../config/database');
 
 function findByEmail(email) {
-  return new Promise((resolve, reject) => {
-    db.get(
-      'SELECT * FROM Utilisateur WHERE email = ?',
-      [email],
-      (err, user) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        resolve(user);
-      }
-    );
-  });
+  return db
+    .prepare('SELECT * FROM Utilisateur WHERE email = ?')
+    .get(email);
 }
 
 function findByPseudo(pseudo) {
-  return new Promise((resolve, reject) => {
-    db.get(
-      'SELECT * FROM Utilisateur WHERE pseudo = ?',
-      [pseudo],
-      (err, user) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        resolve(user);
-      }
-    );
-  });
+  return db
+    .prepare('SELECT * FROM Utilisateur WHERE pseudo = ?')
+    .get(pseudo);
 }
 
 function findById(idUser) {
-  return new Promise((resolve, reject) => {
-    db.get(
-      `
-      SELECT
-        idUser,
-        pseudo,
-        email,
-        dateInscription,
-        dateNaissance,
-        statut,
-        role,
-        dateDerniereConnexion
-      FROM Utilisateur
-      WHERE idUser = ?
-      `,
-      [idUser],
-      (err, user) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        resolve(user);
-      }
-    );
-  });
+  return db
+    .prepare('SELECT * FROM Utilisateur WHERE idUser = ?')
+    .get(idUser);
 }
 
 function createUser(
@@ -69,62 +24,35 @@ function createUser(
   motDePasse,
   dateNaissance
 ) {
-  return new Promise((resolve, reject) => {
-    const sql = `
-      INSERT INTO Utilisateur
-      (
-        pseudo,
-        email,
-        motDePasse,
-        dateNaissance
-      )
-      VALUES (?, ?, ?, ?)
-    `;
+  const stmt = db.prepare(`
+    INSERT INTO Utilisateur
+    (pseudo, email, motDePasse, dateNaissance)
+    VALUES (?, ?, ?, ?)
+  `);
 
-    db.run(
-      sql,
-      [
-        pseudo,
-        email,
-        motDePasse,
-        dateNaissance || null
-      ],
-      function (err) {
-        if (err) {
-          reject(err);
-          return;
-        }
+  const result = stmt.run(
+    pseudo,
+    email,
+    motDePasse,
+    dateNaissance || null
+  );
 
-        resolve({
-          idUser: this.lastID,
-          pseudo,
-          email,
-          dateNaissance
-        });
-      }
-    );
-  });
+  return {
+    idUser: result.lastInsertRowid,
+    pseudo,
+    email,
+    dateNaissance
+  };
 }
 
 function updateLastLogin(idUser) {
-  return new Promise((resolve, reject) => {
-    db.run(
-      `
+  return db
+    .prepare(`
       UPDATE Utilisateur
       SET dateDerniereConnexion = CURRENT_TIMESTAMP
       WHERE idUser = ?
-      `,
-      [idUser],
-      function (err) {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        resolve();
-      }
-    );
-  });
+    `)
+    .run(idUser);
 }
 
 module.exports = {
