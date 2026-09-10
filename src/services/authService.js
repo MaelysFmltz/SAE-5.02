@@ -9,6 +9,13 @@ const {
   createToken
 } = require('../utils/tokenUtils');
 
+const {
+  validatePseudo,
+  validateEmail,
+  validatePassword,
+  validateBirthDate
+} = require('../utils/validationUtils');
+
 async function register(
   pseudo,
   email,
@@ -21,8 +28,20 @@ async function register(
     );
   }
 
+  const validPseudo =
+    validatePseudo(pseudo);
+
+  const validEmail =
+    validateEmail(email);
+
+  const validPassword =
+    validatePassword(motDePasse);
+
+  const validBirthDate =
+    validateBirthDate(dateNaissance);
+
   const userEmail =
-    await userModel.findByEmail(email);
+    await userModel.findByEmail(validEmail);
 
   if (userEmail) {
     throw new Error(
@@ -31,7 +50,7 @@ async function register(
   }
 
   const userPseudo =
-    await userModel.findByPseudo(pseudo);
+    await userModel.findByPseudo(validPseudo);
 
   if (userPseudo) {
     throw new Error(
@@ -40,17 +59,14 @@ async function register(
   }
 
   const hashedPassword =
-    await hashPassword(motDePasse);
+    await hashPassword(validPassword);
 
-  const user =
-    await userModel.createUser(
-      pseudo,
-      email,
-      hashedPassword,
-      dateNaissance
-    );
-
-  return user;
+  return userModel.createUser(
+    validPseudo,
+    validEmail,
+    hashedPassword,
+    validBirthDate
+  );
 }
 
 async function login(email, motDePasse) {
@@ -60,8 +76,22 @@ async function login(email, motDePasse) {
     );
   }
 
+  const validEmail =
+    validateEmail(email);
+
+  // À la connexion, on ne vérifie pas les règles de création :
+  // l'ancien mot de passe doit simplement rester inchangé.
+  if (
+    typeof motDePasse !== 'string' ||
+    motDePasse.length > 128
+  ) {
+    throw new Error(
+      'Email ou mot de passe incorrect'
+    );
+  }
+
   const user =
-    await userModel.findByEmail(email);
+    await userModel.findByEmail(validEmail);
 
   if (!user) {
     throw new Error(
