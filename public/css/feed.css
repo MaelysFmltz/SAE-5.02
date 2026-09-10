@@ -1,0 +1,85 @@
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0.8rem 2rem;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.nav-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  object-fit: cover;
+}
+
+.nav-title {
+  font-weight: 800;
+  letter-spacing: 2px;
+  font-size: 1.1rem;
+  background: var(--gradient-pixora);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.user-greeting {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.user-greeting strong {
+  color: var(--text-primary);
+}
+
+.btn-logout {
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.btn-logout:hover {
+  background-color: #272738;
+  border-color: #3b3b52;
+}
+
+.feed-container {
+  max-width: 620px;
+  margin: 2.5rem auto;
+  padding: 0 1rem;
+}
+
+.card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.8rem;
+}
+
+.card h3 {
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+}
+
+.card p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
