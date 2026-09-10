@@ -18,4 +18,7 @@ app.get('/', (req, res) => {
 // Routes d'authentification
 app.use('/api/auth', authRoutes);
 
+// Routes de publications
+app.use('/api/publications', publicationRoutes);
+
 module.exports = app;

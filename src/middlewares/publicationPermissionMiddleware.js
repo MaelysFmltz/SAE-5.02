@@ -1,5 +1,5 @@
 const db = require('../config/database');
-const { peutVoirPublication } = require('../services/publicationPermissionService');
+const { peutVoirPublication } = require('../services/postService');
 
 function publicationPermissionMiddleware(req, res, next) {
     const idPubli = Number(req.params.idPubli);
