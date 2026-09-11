@@ -10,7 +10,8 @@ let db;
 
 try {
   db = new Database(dbPath);
-
+  db.pragma('foreign_keys = ON');
+  
   console.log('Connexion à SQLite réussie.');
 } catch (err) {
   console.error(

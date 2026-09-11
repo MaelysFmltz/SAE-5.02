@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Publications</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            color: #222;
+        }
+
+        header {
+            background: white;
+            padding: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        main {
+            width: min(900px, 95%);
+            margin: 30px auto;
+        }
+
+        .upload-box {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .upload-box h2 {
+            margin-top: 0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        input,
+        textarea,
+        select,
+        button {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            background: #222;
+            color: white;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #preview-container {
+            display: none;
+            margin: 20px 0;
+        }
+
+        #preview {
+            display: block;
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+        }
+
+        #message {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        .posts {
+            display: grid;
+            gap: 25px;
+        }
+
+        .post {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .post-header {
+            padding: 15px;
+        }
+
+        .post-user {
+            font-weight: bold;
+        }
+
+        .post-date {
+            color: #777;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .post img {
+            display: block;
+            width: 100%;
+            max-height: 700px;
+            object-fit: contain;
+            background: #eee;
+        }
+
+        .post-content {
+            padding: 15px;
+        }
+
+        .empty {
+            background: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<header>
+
+    <h1>Publications</h1>
+
+</header>
+
+
+<main>
+
+    <!-- FORMULAIRE D'UPLOAD -->
+
+    <section class="upload-box">
+
+        <h2>Publier une photo</h2>
+
+        <form id="upload-form">
+
+            <div class="form-group">
+
+                <label for="image">
+                    Choisir une image JPEG
+                </label>
+
+                <input
+                    type="file"
+                    id="image"
+                    name="image"
+                    accept=".jpg,.jpeg,image/jpeg"
+                    required
+                >
+
+            </div>
+
+
+            <div
+                id="preview-container"
+            >
+
+                <p>Prévisualisation :</p>
+
+                <img
+                    id="preview"
+                    alt="Prévisualisation de l'image"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="contenuPub">
+                    Description
+                </label>
+
+                <textarea
+                    id="contenuPub"
+                    name="contenuPub"
+                    placeholder="Écrivez une description..."
+                ></textarea>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="visibilite">
+                    Visibilité
+                </label>
+
+                <select
+                    id="visibilite"
+                    name="visibilite"
+                >
+
+                    <option value="1">
+                        Public
+                    </option>
+
+                    <option value="0">
+                        Privé
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <button type="submit">
+                Publier la photo
+            </button>
+
+
+            <div id="message"></div>
+
+        </form>
+
+    </section>
+
+
+    <!-- PUBLICATIONS -->
+
+    <section>
+
+        <h2>Photos publiées</h2>
+
+        <div class="posts" id="posts">
+
+            <% if (posts.length === 0) { %>
+
+                <div class="empty">
+                    Aucune photo publiée pour le moment.
+                </div>
+
+            <% } %>
+
+
+            <% posts.forEach(function(post) { %>
+
+                <article class="post">
+
+                    <div class="post-header">
+
+                        <div class="post-user">
+                            <%= post.pseudo %>
+                        </div>
+
+                        <div class="post-date">
+                            <%= post.datePubli %>
+                        </div>
+
+                    </div>
+
+
+                    <img
+                        src="/uploads/<%= post.nomMedia %>"
+                        alt="Photo publiée par <%= post.pseudo %>"
+                        loading="lazy"
+                    >
+
+
+                    <% if (post.contenuPub) { %>
+
+                        <div class="post-content">
+                            <%= post.contenuPub %>
+                        </div>
+
+                    <% } %>
+
+                </article>
+
+            <% }); %>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<script>
+
+const form =
+    document.getElementById('upload-form');
+
+const imageInput =
+    document.getElementById('image');
+
+const preview =
+    document.getElementById('preview');
+
+const previewContainer =
+    document.getElementById('preview-container');
+
+const message =
+    document.getElementById('message');
+
+const postsContainer =
+    document.getElementById('posts');
+
+
+const MAX_SIZE =
+    20 * 1024 * 1024;
+
+
+/*
+ * Prévisualisation de l'image
+ */
+imageInput.addEventListener(
+    'change',
+    function () {
+
+        const file =
+            imageInput.files[0];
+
+        if (!file) {
+            return;
+        }
+
+
+        if (file.type !== 'image/jpeg') {
+
+            imageInput.value = '';
+
+            previewContainer.style.display =
+                'none';
+
+            message.textContent =
+                'Veuillez sélectionner une image JPEG.';
+
+            return;
+        }
+
+
+        if (file.size > MAX_SIZE) {
+
+            imageInput.value = '';
+
+            previewContainer.style.display =
+                'none';
+
+            message.textContent =
+                'L’image ne doit pas dépasser 20 Mo.';
+
+            return;
+        }
+
+
+        const objectUrl =
+            URL.createObjectURL(file);
+
+        preview.src = objectUrl;
+
+        previewContainer.style.display =
+            'block';
+
+        message.textContent = '';
+    }
+);
+
+
+/*
+ * Envoi du formulaire
+ */
+form.addEventListener(
+    'submit',
+    async function (event) {
+
+        event.preventDefault();
+
+
+        const file =
+            imageInput.files[0];
+
+
+        if (!file) {
+
+            message.textContent =
+                'Veuillez sélectionner une image.';
+
+            return;
+        }
+
+
+        /*
+         * Vérifications côté navigateur.
+         */
+        if (file.type !== 'image/jpeg') {
+
+            message.textContent =
+                'Seules les images JPEG sont autorisées.';
+
+            return;
+        }
+
+
+        if (file.size > MAX_SIZE) {
+
+            message.textContent =
+                'L’image ne doit pas dépasser 20 Mo.';
+
+            return;
+        }
+
+
+        /*
+         * Récupération du JWT.
+         *
+         * Le login doit avoir enregistré
+         * le token dans localStorage.
+         */
+        const token =
+            localStorage.getItem('token');
+
+
+        if (!token) {
+
+            message.textContent =
+                'Vous devez être connecté pour publier une photo.';
+
+            return;
+        }
+
+
+        /*
+         * Création du formulaire multipart.
+         */
+        const formData =
+            new FormData();
+
+        formData.append(
+            'image',
+            file
+        );
+
+        formData.append(
+            'contenuPub',
+            document.getElementById('contenuPub').value
+        );
+
+        formData.append(
+            'visibilite',
+            document.getElementById('visibilite').value
+        );
+
+
+        message.textContent =
+            'Publication en cours...';
+
+
+        try {
+
+            const response =
+                await fetch(
+                    '/post/upload',
+                    {
+                        method: 'POST',
+
+                        headers: {
+                            Authorization:
+                                `Bearer ${token}`
+                        },
+
+                        body: formData
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.error ||
+                    'Erreur lors de la publication'
+                );
+            }
+
+
+            /*
+             * Publication réussie.
+             */
+            message.textContent =
+                data.message;
+
+
+            /*
+             * Ajout immédiat de la nouvelle
+             * publication dans la page.
+             */
+            const post =
+                data.post;
+
+
+            const article =
+                document.createElement('article');
+
+            article.className = 'post';
+
+
+            article.innerHTML = `
+
+                <div class="post-header">
+
+                    <div class="post-user">
+                        ${escapeHtml(post.pseudo)}
+                    </div>
+
+                    <div class="post-date">
+                        ${escapeHtml(post.datePubli)}
+                    </div>
+
+                </div>
+
+                <img
+                    src="/uploads/${encodeURIComponent(post.nomMedia)}"
+                    alt="Photo publiée par ${escapeHtml(post.pseudo)}"
+                    loading="lazy"
+                >
+
+                ${
+                    post.contenuPub
+                    ?
+                    `<div class="post-content">
+                        ${escapeHtml(post.contenuPub)}
+                    </div>`
+                    :
+                    ''
+                }
+
+            `;
+
+
+            /*
+             * Retirer le message "Aucune photo..."
+             * s'il existe.
+             */
+            const empty =
+                postsContainer.querySelector('.empty');
+
+            if (empty) {
+                empty.remove();
+            }
+
+
+            /*
+             * Nouvelle publication en première position.
+             */
+            postsContainer.prepend(article);
+
+
+            /*
+             * Réinitialisation du formulaire.
+             */
+            form.reset();
+
+            preview.src = '';
+
+            previewContainer.style.display =
+                'none';
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            message.textContent =
+                error.message;
+        }
+
+    }
+);
+
+
+/*
+ * Protection contre l'injection HTML
+ * lorsque l'on construit dynamiquement
+ * la nouvelle publication.
+ */
+function escapeHtml(value) {
+
+    if (value === null ||
+        value === undefined) {
+
+        return '';
+    }
+
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+</script>
+
+
+</body>
+
+</html>
