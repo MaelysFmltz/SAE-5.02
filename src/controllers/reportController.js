@@ -48,8 +48,31 @@ function obtenirSignalements(req, res) {
     return res.status(200).json(signalements);
 }
 
+function modifierStatutSignalement(req, res) {
+    const idSignalement = Number(req.params.idSignalement);
+    const { statut } = req.body;
+
+    const resultat = reportService.modifierStatutSignalement(
+        db,
+        idSignalement,
+        statut
+    );
+
+    if (!resultat.succes) {
+        return res.status(400).json({
+            erreur: resultat.erreur
+        });
+    }
+
+    return res.status(200).json({
+        message: 'Statut du signalement modifié'
+    });
+}
+
+
 module.exports = {
     creerSignalement,
     obtenirSignalement,
-    obtenirSignalements
+    obtenirSignalements,
+    modifierStatutSignalement
 };

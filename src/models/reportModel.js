@@ -49,8 +49,17 @@ function trouverSignalements(db) {
     `).all();
 }
 
+function modifierStatutSignalement(db, idSignalement, statut) {
+    return db.prepare(`
+        UPDATE Signalement
+        SET statut = ?
+        WHERE idSignalement = ?
+    `).run(statut, idSignalement);
+}
+
 module.exports = {
     creerSignalement,
     trouverSignalementParId,
-    trouverSignalements
+    trouverSignalements,
+    modifierStatutSignalement
 };

@@ -105,8 +105,53 @@ function obtenirSignalements(db) {
     return reportModel.trouverSignalements(db);
 }
 
+function modifierStatutSignalement(db, idSignalement, statut) {
+    const STATUTS_AUTORISES = [
+        'traite',
+        'rejete'
+    ];
+
+    if (!Number.isInteger(idSignalement) || idSignalement <= 0) {
+        return {
+            succes: false,
+            erreur: 'Identifiant du signalement invalide'
+        };
+    }
+
+    if (!STATUTS_AUTORISES.includes(statut)) {
+        return {
+            succes: false,
+            erreur: 'Statut invalide'
+        };
+    }
+
+    const signalement = reportModel.trouverSignalementParId(
+        db,
+        idSignalement
+    );
+
+    if (!signalement) {
+        return {
+            succes: false,
+            erreur: 'Signalement introuvable'
+        };
+    }
+
+    reportModel.modifierStatutSignalement(
+        db,
+        idSignalement,
+        statut
+    );
+
+    return {
+        succes: true
+    };
+}
+
+
 module.exports = {
     creerSignalement,
     obtenirSignalement,
-    obtenirSignalements
+    obtenirSignalements,
+    modifierStatutSignalement
 };

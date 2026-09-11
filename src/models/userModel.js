@@ -55,10 +55,36 @@ function updateLastLogin(idUser) {
     .run(idUser);
 }
 
+function modifierStatut(db, idUser, statut) {
+    return db.prepare(`
+        UPDATE Utilisateur
+        SET statut = ?
+        WHERE idUser = ?
+    `).run(statut, idUser);
+}
+
+function obtenirUtilisateurs(db) {
+    return db.prepare(`
+        SELECT
+            idUser,
+            pseudo,
+            email,
+            dateInscription,
+            dateNaissance,
+            statut,
+            role,
+            dateDerniereConnexion
+        FROM Utilisateur
+        ORDER BY idUser
+    `).all();
+}
+
 module.exports = {
   findByEmail,
   findByPseudo,
   findById,
   createUser,
-  updateLastLogin
+  updateLastLogin,
+  modifierStatut,
+  obtenirUtilisateurs
 };
