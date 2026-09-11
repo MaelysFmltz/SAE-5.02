@@ -2,26 +2,28 @@ const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
 
-// 1. Chemin vers le dossier data et le fichier app.db
-const dbDirPath = path.resolve(__dirname, '../../data');
-const dbFilePath = path.join(dbDirPath, 'app.db');
+// 1. Définition du chemin (DB_PATH prioritaire pour les tests :memory:, sinon data/app.db)
+const dbPath = process.env.DB_PATH || path.resolve(__dirname, '../../data/app.db');
 
-if (!fs.existsSync(dbDirPath)) {
-  fs.mkdirSync(dbDirPath, { recursive: true });
+// Si ce n'est pas une base en mémoire, s'assurer que le dossier parent existe
+if (dbPath !== ':memory:') {
+  const dbDir = path.dirname(dbPath);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
 }
 
 // 2. Ouverture de la base
-const db = new Database(dbFilePath);
+const db = new Database(dbPath);
 db.pragma('foreign_keys = ON');
 
-console.log('Connexion à SQLite réussie.');
+console.log(`Connexion à SQLite réussie (${dbPath === ':memory:' ? 'in-memory' : dbPath}).`);
 
-// 3. Vérification de l'existence de la table Utilisateur
+// 3. Initialisation du schéma si la base est neuve
 const tableExists = db
   .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='Utilisateur'")
   .get();
 
-// 4. Si la table n'existe pas, on applique dump.sql
 if (!tableExists) {
   const dumpPath = path.resolve(__dirname, '../../database/dump.sql');
   if (fs.existsSync(dumpPath)) {

@@ -1,5 +1,5 @@
-const PSEUDO_REGEX = /^[a-zA-ZÀ-ÿ0-9_-]{3,30}$/;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const PSEUDO_REGEX = /^[a-z0-9_-]{3,30}$/;
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 function sanitizeText(value) {
@@ -14,7 +14,8 @@ function sanitizeText(value) {
 }
 
 function validatePseudo(pseudo) {
-  const cleanPseudo = sanitizeText(pseudo);
+  // Nettoyage et conversion automatique en minuscules pour la souplesse
+  const cleanPseudo = sanitizeText(pseudo).toLowerCase();
 
   if (!PSEUDO_REGEX.test(cleanPseudo)) {
     throw new Error(
