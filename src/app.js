@@ -1,105 +1,38 @@
 const express = require('express');
 const path = require('path');
+const cookieParser = require('cookie-parser');
 
-const authRoutes =
-  require('./routes/authRoutes');
-
-const postRoutes =
-  require('./routes/postRoutes');
-
+const authRoutes = require('./routes/authRoutes');
+const authMiddleware = require('./middlewares/authMiddleware');
+const postRoutes = require('./routes/postRoutes');
 
 const app = express();
 
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, '../views'));
 
-/*
- * ============================================================
- * EJS
- * ============================================================
- */
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-app.set(
-  'view engine',
-  'ejs'
-);
+app.use(express.static(path.join(__dirname, '../public')));
 
-app.set(
-  'views',
-  path.join(
-    __dirname,
-    '../views'
-  )
-);
+// Page de connexion
+app.get('/', (req, res) => {
+    res.render('login');
+});
 
-
-/*
- * ============================================================
- * FICHIERS PUBLICS
- * ============================================================
- *
- * IMPORTANT :
- * On ne fait PAS :
- *
- * app.use('/uploads', express.static(...))
- *
- * Les vidéos ne doivent pas être directement accessibles
- * comme fichiers statiques.
- */
-
-app.use(
-  express.static(
-    path.join(
-      __dirname,
-      '../public'
-    )
-  )
-);
-
-
-/*
- * ============================================================
- * BODY JSON
- * ============================================================
- */
-
-app.use(
-  express.json({
-    limit: '100kb'
-  })
-);
-
-
-/*
- * ============================================================
- * ROUTES
- * ============================================================
- */
-
-app.use(
-  '/api/auth',
-  authRoutes
-);
-
-app.use(
-  '/post',
-  postRoutes
-);
-
-
-/*
- * ============================================================
- * ROUTE RACINE
- * ============================================================
- */
-
-app.get(
-  '/',
-  (req, res) => {
-    res.json({
-      message:
-        'API Instagram fonctionne'
+// Page accessible uniquement après authentification
+app.get('/home', authMiddleware, (req, res) => {
+    res.render('feed', {
+        user: req.user
     });
-  }
-);
+});
 
+// Authentification
+app.use('/api/auth', authRoutes);
+
+// Publication
+app.use('/post', authMiddleware, postRoutes);
 
 module.exports = app;

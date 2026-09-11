@@ -1,15 +1,6 @@
-const path = require('path');
-
 const PSEUDO_REGEX = /^[a-zA-ZÀ-ÿ0-9_-]{3,30}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
-
-/*
- * ============================================================
- * UTILISATEUR
- * ============================================================
- */
 
 function sanitizeText(value) {
   if (typeof value !== 'string') {
@@ -22,7 +13,6 @@ function sanitizeText(value) {
     .replace(/[\u0000-\u001F\u007F]/g, '');
 }
 
-
 function validatePseudo(pseudo) {
   const cleanPseudo = sanitizeText(pseudo);
 
@@ -34,7 +24,6 @@ function validatePseudo(pseudo) {
 
   return cleanPseudo;
 }
-
 
 function validateEmail(email) {
   const cleanEmail = sanitizeText(email).toLowerCase();
@@ -50,7 +39,6 @@ function validateEmail(email) {
 
   return cleanEmail;
 }
-
 
 function validatePassword(motDePasse) {
   if (typeof motDePasse !== 'string') {
@@ -92,7 +80,6 @@ function validatePassword(motDePasse) {
   // Le mot de passe ne doit pas être trim() ou modifié.
   return motDePasse;
 }
-
 
 function validateBirthDate(dateNaissance) {
   if (
@@ -141,155 +128,10 @@ function validateBirthDate(dateNaissance) {
   return dateNaissance;
 }
 
-
-/*
- * ============================================================
- * PUBLICATION
- * ============================================================
- */
-
-const MAX_PUBLICATION_LENGTH = 5000;
-
-function validatePublicationContent(contenuPub) {
-  if (
-    contenuPub === undefined ||
-    contenuPub === null ||
-    contenuPub === ''
-  ) {
-    return null;
-  }
-
-  if (typeof contenuPub !== 'string') {
-    throw new Error(
-      'Le contenu de la publication doit être une chaîne de caractères'
-    );
-  }
-
-  const cleanContent = sanitizeText(contenuPub);
-
-  if (cleanContent.length > MAX_PUBLICATION_LENGTH) {
-    throw new Error(
-      `Le contenu de la publication ne peut pas dépasser ${MAX_PUBLICATION_LENGTH} caractères`
-    );
-  }
-
-  return cleanContent;
-}
-
-
-/*
- * ============================================================
- * VIDÉOS
- * ============================================================
- */
-
-const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
-
-const ALLOWED_VIDEO_EXTENSIONS = new Set([
-  '.mp4',
-  '.mov',
-  '.avi',
-  '.webm'
-]);
-
-const ALLOWED_VIDEO_MIME_TYPES = new Set([
-  'video/mp4',
-  'video/quicktime',
-  'video/x-msvideo',
-  'video/webm'
-]);
-
-
-function validateVideoExtension(filename) {
-  if (
-    typeof filename !== 'string' ||
-    filename.length === 0
-  ) {
-    throw new Error(
-      'Nom de fichier vidéo invalide'
-    );
-  }
-
-  const extension = path.extname(filename).toLowerCase();
-
-  if (!ALLOWED_VIDEO_EXTENSIONS.has(extension)) {
-    throw new Error(
-      'Format vidéo non autorisé. Formats acceptés : MP4, MOV, AVI et WebM'
-    );
-  }
-
-  return extension;
-}
-
-
-function validateVideoMimeType(mimetype) {
-  if (
-    typeof mimetype !== 'string' ||
-    !ALLOWED_VIDEO_MIME_TYPES.has(mimetype.toLowerCase())
-  ) {
-    throw new Error(
-      'Type MIME vidéo non autorisé'
-    );
-  }
-
-  return mimetype.toLowerCase();
-}
-
-
-function validateVideoSize(size) {
-  if (
-    typeof size !== 'number' ||
-    !Number.isSafeInteger(size) ||
-    size <= 0
-  ) {
-    throw new Error(
-      'Taille de vidéo invalide'
-    );
-  }
-
-  if (size > MAX_VIDEO_SIZE) {
-    throw new Error(
-      'La vidéo ne peut pas dépasser 50 Mo'
-    );
-  }
-
-  return size;
-}
-
-
-function validateVideoFile(file) {
-  if (!file || typeof file !== 'object') {
-    throw new Error(
-      'Aucune vidéo valide n’a été fournie'
-    );
-  }
-
-  validateVideoExtension(file.originalname);
-  validateVideoMimeType(file.mimetype);
-  validateVideoSize(file.size);
-
-  return true;
-}
-
-
 module.exports = {
   sanitizeText,
-
   validatePseudo,
   validateEmail,
   validatePassword,
-  validateBirthDate,
-
-  validatePublicationContent,
-
-  validateVideoExtension,
-  validateVideoMimeType,
-  validateVideoSize,
-  validateVideoFile,
-
-  MAX_PUBLICATION_LENGTH,
-  MAX_VIDEO_SIZE,
-  ALLOWED_VIDEO_EXTENSIONS,
-  ALLOWED_VIDEO_MIME_TYPES
+  validateBirthDate
 };
-
