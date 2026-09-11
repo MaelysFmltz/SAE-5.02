@@ -119,3 +119,86 @@ describe('Vérification des permissions des publications', () => {
     });
 
 });
+
+describe('Cas limites complémentaires (amitié et visibilité)', () => {
+
+    let db;
+
+    beforeEach(() => {
+        db = new Database(':memory:');
+
+        db.exec(`
+            CREATE TABLE Utilisateur (
+                idUser INTEGER PRIMARY KEY
+            );
+
+            CREATE TABLE Publication (
+                idPubli INTEGER PRIMARY KEY,
+                idUser INTEGER NOT NULL,
+                visibilite INTEGER NOT NULL
+            );
+
+            CREATE TABLE Abonnement (
+                idUserAbonne INTEGER NOT NULL,
+                idUserSuivi INTEGER NOT NULL,
+                PRIMARY KEY (idUserAbonne, idUserSuivi)
+            );
+
+            INSERT INTO Utilisateur (idUser) VALUES (1), (2), (3);
+
+            INSERT INTO Publication (idPubli, idUser, visibilite)
+            VALUES
+                (1, 1, 0);
+
+            INSERT INTO Abonnement (idUserAbonne, idUserSuivi)
+            VALUES
+                (1, 2);
+        `);
+    });
+
+    afterEach(() => {
+        db.close();
+    });
+
+    test("Un abonnement à sens unique (1 suit 2) ne suffit pas à être amis", () => {
+        expect(sontAmis(db, 1, 2)).toBe(false);
+        expect(sontAmis(db, 2, 1)).toBe(false);
+    });
+
+    test("sontAmis est symétrique lorsque l'abonnement est réciproque", () => {
+        db.prepare(`
+            INSERT INTO Abonnement (idUserAbonne, idUserSuivi)
+            VALUES (2, 1)
+        `).run();
+
+        expect(sontAmis(db, 1, 2)).toBe(true);
+        expect(sontAmis(db, 2, 1)).toBe(true);
+    });
+
+    test("Un visiteur non authentifié peut voir une publication publique", () => {
+        db.prepare(`
+            UPDATE Publication SET visibilite = 1 WHERE idPubli = 1
+        `).run();
+
+        expect(peutVoirPublication(db, 1, undefined)).toBe(true);
+    });
+
+    test("Un visiteur non authentifié ne peut pas voir une publication privée", () => {
+        expect(peutVoirPublication(db, 1, undefined)).toBe(false);
+    });
+
+    test("modifierVisibilite sur une publication inexistante renvoie false", () => {
+        expect(modifierVisibilite(db, 999, 1, 1)).toBe(false);
+    });
+
+    test("modifierVisibilite refuse une visibilité envoyée sous forme de chaîne ('1')", () => {
+        expect(modifierVisibilite(db, 1, 1, '1')).toBe(false);
+
+        const publication = db.prepare(`
+            SELECT visibilite FROM Publication WHERE idPubli = ?
+        `).get(1);
+
+        expect(publication.visibilite).toBe(0);
+    });
+
+});
