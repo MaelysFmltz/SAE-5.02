@@ -29,5 +29,6 @@ app.get('/home', authMiddleware, (req, res) => {
 
 // 4. Routes API (Back)
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
 
 module.exports = app;

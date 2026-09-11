@@ -13,6 +13,7 @@ beforeAll(() => {
 
 afterEach(() => {
   db.exec('DELETE FROM Utilisateur');
+  db.exec('DELETE FROM Profil');
 });
 
 afterAll(() => {
@@ -22,7 +23,7 @@ afterAll(() => {
 const validUser = {
   pseudo: 'chloe_test',
   email: 'chloe@test.com',
-  motDePasse: 'motdepasse',
+  motDePasse: 'Motdepasse1!',
   dateNaissance: '2000-01-01'
 };
 
@@ -51,7 +52,7 @@ describe('POST /api/auth/register', () => {
   test('refuse un enregistrement sans email', async () => {
     const res = await request(app)
       .post('/api/auth/register')
-      .send({ pseudo: 'sansemail', motDePasse: 'motdepasse' });
+      .send({ pseudo: 'sansemail', motDePasse: 'Motdepasse1!' });
 
     expect(res.status).toBe(400);
   });
@@ -78,15 +79,30 @@ describe('POST /api/auth/register', () => {
     expect(res.body.error).toMatch(/pseudo/i);
   });
 
-  // Écart connu (voir rapport) : authService.register n'appelle pas
-  // validationUtils, donc un mot de passe faible ou un email malformé
-  // sont acceptés tels quels tant que le champ n'est pas vide.
-  test('accepte actuellement un mot de passe faible (écart de validation, voir rapport)', async () => {
+  // Régression : ce test documentait un écart (mot de passe faible accepté).
+  // authService.register() appelle désormais validationUtils.validatePassword,
+  // donc ce cas est maintenant rejeté. Voir authService.flaws.test.js pour
+  // les écarts encore ouverts (unicité du pseudo, oracle de statut, etc).
+  test('rejette maintenant un mot de passe faible', async () => {
     const res = await request(app)
       .post('/api/auth/register')
       .send({ ...validUser, pseudo: 'motdepassefaible', email: 'faible@test.com', motDePasse: '1' });
 
-    expect(res.status).toBe(201);
+    expect(res.status).toBe(400);
+  });
+
+  test('crée un profil vide en même temps que le compte', async () => {
+    await request(app).post('/api/auth/register').send(validUser);
+
+    const profil = db
+      .prepare(
+        `SELECT p.idProfil FROM Profil p
+         JOIN Utilisateur u ON u.idUser = p.idUser
+         WHERE u.email = ?`
+      )
+      .get(validUser.email);
+
+    expect(profil).toBeDefined();
   });
 });
 
@@ -94,7 +110,7 @@ describe('POST /api/auth/login', () => {
   const credentials = {
     pseudo: 'login_user',
     email: 'login@test.com',
-    motDePasse: 'motdepasse',
+    motDePasse: 'Motdepasse1!',
     dateNaissance: '1999-05-05'
   };
 
@@ -111,6 +127,15 @@ describe('POST /api/auth/login', () => {
     expect(typeof res.body.token).toBe('string');
     expect(res.body.user.email).toBe(credentials.email);
     expect(res.body.user.motDePasse).toBeUndefined();
+  });
+
+  test('pose aussi le token dans un cookie httpOnly', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: credentials.email, motDePasse: credentials.motDePasse });
+
+    const setCookie = res.headers['set-cookie'] || [];
+    expect(setCookie.some((c) => c.startsWith('token=') && /HttpOnly/i.test(c))).toBe(true);
   });
 
   test('refuse une connexion avec un mauvais mot de passe', async () => {
@@ -155,9 +180,29 @@ describe('POST /api/auth/login', () => {
 });
 
 describe('POST /api/auth/logout', () => {
-  test('répond avec succès', async () => {
-    const res = await request(app).post('/api/auth/logout');
+  // logout redirige vers '/' pour un client qui accepte le HTML (navigation
+  // classique) et ne renvoie du JSON que pour un client API explicite.
+  test('répond en JSON avec succès pour un client API', async () => {
+    const res = await request(app)
+      .post('/api/auth/logout')
+      .set('Accept', 'application/json');
 
     expect(res.status).toBe(200);
+  });
+
+  test('redirige vers / pour une requête de type navigateur', async () => {
+    const res = await request(app).post('/api/auth/logout');
+
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toBe('/');
+  });
+
+  test('efface le cookie token', async () => {
+    const res = await request(app)
+      .post('/api/auth/logout')
+      .set('Accept', 'application/json');
+
+    const setCookie = res.headers['set-cookie'] || [];
+    expect(setCookie.some((c) => c.startsWith('token=;'))).toBe(true);
   });
 });

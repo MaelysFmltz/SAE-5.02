@@ -24,8 +24,8 @@ describe('validationUtils.js - comportements à vérifier par exécution réelle
   });
 
   // Ces deux tests ne sont pas des failles : ils prouvent que la fonction,
-  // ISOLÉE, fait bien son travail. Le problème est qu'authService.js ne
-  // l'appelle jamais (voir authService.flaws.test.js).
+  // ISOLÉE, fait bien son travail (authService.js les appelle désormais
+  // correctement, voir authService.flaws.test.js).
   test('validatePassword rejette bien un mot de passe faible quand elle est appelée seule', () => {
     expect(() => validatePassword('1')).toThrow();
   });
