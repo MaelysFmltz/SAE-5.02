@@ -1,4 +1,5 @@
 const userModel = require('../models/userModel');
+const profileModel = require('../models/profileModel');
 
 const {
   hashPassword,
@@ -28,45 +29,35 @@ async function register(
     );
   }
 
-  const validPseudo =
-    validatePseudo(pseudo);
+  const validPseudo = validatePseudo(pseudo);
+  const validEmail = validateEmail(email);
+  const validPassword = validatePassword(motDePasse);
+  const validBirthDate = validateBirthDate(dateNaissance);
 
-  const validEmail =
-    validateEmail(email);
-
-  const validPassword =
-    validatePassword(motDePasse);
-
-  const validBirthDate =
-    validateBirthDate(dateNaissance);
-
-  const userEmail =
-    await userModel.findByEmail(validEmail);
-
+  const userEmail = await userModel.findByEmail(validEmail);
   if (userEmail) {
-    throw new Error(
-      'Cet email est déjà utilisé'
-    );
+    throw new Error('Cet email est déjà utilisé');
   }
 
-  const userPseudo =
-    await userModel.findByPseudo(validPseudo);
-
+  const userPseudo = await userModel.findByPseudo(validPseudo);
   if (userPseudo) {
-    throw new Error(
-      'Ce pseudo est déjà utilisé'
-    );
+    throw new Error('Ce pseudo est déjà utilisé');
   }
 
-  const hashedPassword =
-    await hashPassword(validPassword);
+  const hashedPassword = await hashPassword(validPassword);
 
-  return userModel.createUser(
+  const newUser = await userModel.createUser(
     validPseudo,
     validEmail,
     hashedPassword,
     validBirthDate
   );
+
+  // better-sqlite3 retourne l'id inséré via .lastInsertRowid sur l'objet RunResult
+  const newUserId = newUser?.lastInsertRowid || newUser?.idUser || newUser;
+  profileModel.createProfile(newUserId);
+
+  return newUser;
 }
 
 async function login(email, motDePasse) {
@@ -76,11 +67,8 @@ async function login(email, motDePasse) {
     );
   }
 
-  const validEmail =
-    validateEmail(email);
+  const validEmail = validateEmail(email);
 
-  // À la connexion, on ne vérifie pas les règles de création :
-  // l'ancien mot de passe doit simplement rester inchangé.
   if (
     typeof motDePasse !== 'string' ||
     motDePasse.length > 128
@@ -90,8 +78,7 @@ async function login(email, motDePasse) {
     );
   }
 
-  const user =
-    await userModel.findByEmail(validEmail);
+  const user = await userModel.findByEmail(validEmail);
 
   if (!user) {
     throw new Error(
@@ -105,11 +92,10 @@ async function login(email, motDePasse) {
     );
   }
 
-  const passwordIsValid =
-    await comparePassword(
-      motDePasse,
-      user.motDePasse
-    );
+  const passwordIsValid = await comparePassword(
+    motDePasse,
+    user.motDePasse
+  );
 
   if (!passwordIsValid) {
     throw new Error(
@@ -117,9 +103,7 @@ async function login(email, motDePasse) {
     );
   }
 
-  await userModel.updateLastLogin(
-    user.idUser
-  );
+  await userModel.updateLastLogin(user.idUser);
 
   const token = createToken(user);
 
