@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Pixoria - Publication</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fafafa; display: flex; justify-content: center; padding: 20px; }
+    .card { background: white; border: 1px solid #dbdbdb; border-radius: 8px; width: 480px; }
+    .header { padding: 12px; font-weight: 600; border-bottom: 1px solid #efefef; }
+    .photo { width: 100%; height: 300px; background: #eee; display: flex; align-items: center; justify-content: center; color: #8e8e8e; }
+    .comments-section { padding: 12px; }
+    .comment-list { max-height: 250px; overflow-y: auto; margin-bottom: 12px; }
+    .comment-item { font-size: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    
+    .comment-content { flex-grow: 1; word-break: break-word; overflow-wrap: anywhere; }
+    .comment-text-collapsed { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+    .comment-text-expanded { display: block; }
+    
+    .btn-toggle-expand { background: none; border: none; color: #0095f6; font-size: 12px; cursor: pointer; padding: 0 4px; vertical-align: middle; }
+    
+    .actions { display: flex; gap: 6px; white-space: nowrap; }
+    .btn-action { background: none; border: none; font-size: 12px; cursor: pointer; color: #8e8e8e; padding: 0; }
+    .btn-action:hover { color: #ed4956; }
+    
+    .edit-form { display: none; margin-top: 6px; }
+    .edit-form textarea { width: 100%; font-size: 13px; box-sizing: border-box; resize: vertical; }
+    
+    .form-comment { display: flex; flex-direction: column; border-top: 1px solid #efefef; padding-top: 10px; }
+    .input-row { display: flex; align-items: center; gap: 8px; }
+    .input-row input { flex-grow: 1; border: none; outline: none; font-size: 14px; }
+    .input-row button { background: none; border: none; color: #0095f6; font-weight: 600; cursor: pointer; }
+    .char-counter { font-size: 11px; color: #8e8e8e; text-align: right; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="header">Publication #<%= post.idPubli %></div>
+    <div class="photo">📷 Photo Pixoria</div>
+
+    <div class="comments-section">
+      <div class="comment-list">
+        <% if (typeof comments !== 'undefined' && comments.length > 0) { %>
+          <% comments.forEach(function(c) { 
+               const isLong = c.contenuCom && c.contenuCom.length > 80;
+          %>
+            <div class="comment-item">
+              <div class="comment-content">
+                <strong><%= c.pseudo %></strong>
+                
+                <span id="text-<%= c.idComm %>" class="<%= isLong ? 'comment-text-collapsed' : '' %>">
+                  <%= c.contenuCom %>
+                </span>
+
+                <% if (isLong) { %>
+                  <button type="button" class="btn-toggle-expand" id="btn-toggle-<%= c.idComm %>" onclick="toggleExpand('<%= c.idComm %>')">▼</button>
+                <% } %>
+
+                <!-- Formulaire d'édition -->
+                <form id="edit-form-<%= c.idComm %>" class="edit-form" action="/api/comments/<%= c.idComm %>/edit" method="POST">
+                  <input type="hidden" name="idPubli" value="<%= post.idPubli %>">
+                  <input type="hidden" name="idUser" value="<%= currentUserId %>">
+                  <textarea name="contenuCom" maxlength="500" rows="2" required><%= c.contenuCom %></textarea>
+                  <div style="margin-top: 4px;">
+                    <button type="submit">Valider</button>
+                    <button type="button" onclick="toggleEdit('<%= c.idComm %>')">Annuler</button>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Actions de modification/suppression réservées à l'auteur -->
+              <% if (c.idUser === currentUserId) { %>
+                <div class="actions">
+                  <button class="btn-action" title="Modifier" onclick="toggleEdit('<%= c.idComm %>')">✏️</button>
+                  <form action="/api/comments/<%= c.idComm %>/delete" method="POST" style="display:inline;">
+                    <input type="hidden" name="idPubli" value="<%= post.idPubli %>">
+                    <input type="hidden" name="idUser" value="<%= currentUserId %>">
+                    <button type="submit" class="btn-action" title="Supprimer">🗑️</button>
+                  </form>
+                </div>
+              <% } %>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <p style="color: #8e8e8e; font-size: 13px;">Aucun commentaire pour le moment.</p>
+        <% } %>
+      </div>
+
+      <!-- Formulaire d'envoi avec limite 500 caractères -->
+      <form action="/api/comments" method="POST" class="form-comment">
+        <input type="hidden" name="idPubli" value="<%= post.idPubli %>">
+        <input type="hidden" name="idUser" value="<%= currentUserId %>">
+        
+        <div class="input-row">
+          <input 
+            type="text" 
+            id="comment-input"
+            name="contenuCom" 
+            maxlength="500" 
+            placeholder="Ajouter un commentaire (500 car. max)..." 
+            required 
+            autocomplete="off"
+            oninput="updateCount(this)">
+          <button type="submit">Publier</button>
+        </div>
+        <div id="char-count" class="char-counter">0 / 500</div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Basculer l'affichage du formulaire de modification
+    function toggleEdit(idComm) {
+      const form = document.getElementById('edit-form-' + idComm);
+      const text = document.getElementById('text-' + idComm);
+      const toggleBtn = document.getElementById('btn-toggle-' + idComm);
+      const isHidden = form.style.display === 'none' || form.style.display === '';
+      
+      form.style.display = isHidden ? 'block' : 'none';
+      text.style.display = isHidden ? 'none' : '';
+      if (toggleBtn) toggleBtn.style.display = isHidden ? 'none' : 'inline';
+    }
+
+    // Dérouler / replier le texte complet avec la flèche
+    function toggleExpand(idComm) {
+      const text = document.getElementById('text-' + idComm);
+      const btn = document.getElementById('btn-toggle-' + idComm);
+      if (text.classList.contains('comment-text-collapsed')) {
+        text.classList.remove('comment-text-collapsed');
+        text.classList.add('comment-text-expanded');
+        btn.textContent = '▲';
+      } else {
+        text.classList.remove('comment-text-expanded');
+        text.classList.add('comment-text-collapsed');
+        btn.textContent = '▼';
+      }
+    }
+
+    // Mise à jour du compteur de caractères en temps réel
+    function updateCount(input) {
+      const counter = document.getElementById('char-count');
+      counter.textContent = input.value.length + ' / 500';
+    }
+  </script>
+</body>
+</html>
