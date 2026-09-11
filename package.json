@@ -1,18 +1,36 @@
 {
   "name": "projet",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Cycle de vie du projet",
+  "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^5.2.1"
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^11.8.1",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^17.4.2",
+    "ejs": "^6.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
+    "jest": "^30.5.1",
     "nodemon": "^3.1.14"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MaelysFmltz/SAE-5.02.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MaelysFmltz/SAE-5.02/issues"
+  },
+  "homepage": "https://github.com/MaelysFmltz/SAE-5.02#readme"
 }
