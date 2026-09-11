@@ -1,4 +1,5 @@
 const express = require('express');
+const reportRoutes = require('./routes/reportRoutes');
 
 const authRoutes = require('./routes/authRoutes');
 
@@ -6,6 +7,7 @@ const app = express();
 
 // Permet de recevoir du JSON
 app.use(express.json());
+app.use('/api/signalements', reportRoutes);
 
 // Route de test
 app.get('/', (req, res) => {
