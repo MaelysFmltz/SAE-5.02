@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/authRoutes');
 const authMiddleware = require('./middlewares/authMiddleware');
 const profileRoutes = require('./routes/profileRoutes');
+const postRoutes = require('./routes/postRoutes');
 
 const app = express();
 
@@ -29,5 +30,35 @@ app.get('/home', authMiddleware, (req, res) => {
 
 // 4. Routes API (Back)
 app.use('/api/auth', authRoutes);
+
+
+app.use('/auth', authRoutes);
+app.use('/post', postRoutes);
+
+// ==========================================
+// FICHIERS STATIQUES
+// ==========================================
+
+app.use(
+    '/uploads',
+    express.static(
+        path.join(__dirname, '../uploads')
+    )
+);
+
+app.set('view engine', 'ejs');
+
+app.set(
+    'views',
+    path.join(__dirname, '../views')
+);
+
+app.get('/', (req, res) => {
+    res.json({
+        message: 'API Instagram fonctionne'
+    });
+});
+
+
 
 module.exports = app;
