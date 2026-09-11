@@ -1,70 +1,159 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
-
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>Publications</title>
+    <title>Publications - Pixora</title>
 
     <style>
-
         * {
             box-sizing: border-box;
         }
 
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
-            color: #222;
+            background: #09090e;
+            color: #f4f4f7;
+            font-family: Arial, Helvetica, sans-serif;
         }
+
+        /* =========================
+           HEADER
+        ========================= */
 
         header {
-            background: white;
-            padding: 20px;
-            border-bottom: 1px solid #ddd;
+            height: 67px;
+            background: #14141c;
+            border-bottom: 1px solid #292936;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            padding: 0 32px;
         }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo img {
+            width: 38px;
+            height: 38px;
+            border-radius: 9px;
+            object-fit: cover;
+        }
+
+        .logo-text {
+            color: #d83ca9;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .bonjour {
+            color: #9b9aaa;
+        }
+
+        .bonjour strong {
+            color: #ffffff;
+        }
+
+        .logout {
+            background: #1b1b26;
+            border: 1px solid #2d2d3c;
+            color: #ffffff;
+
+            padding: 9px 16px;
+            border-radius: 7px;
+
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .logout:hover {
+            background: #252532;
+        }
+
+        /* =========================
+           PAGE
+        ========================= */
 
         main {
-            width: min(900px, 95%);
-            margin: 30px auto;
+            width: min(900px, 94%);
+            margin: 40px auto 60px;
         }
 
+        h1 {
+            font-size: 25px;
+            margin-bottom: 25px;
+        }
+
+        /* =========================
+           FORMULAIRE
+        ========================= */
+
         .upload-box {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            background: #15151d;
+            border: 1px solid #2b2b38;
+            border-radius: 12px;
+
+            padding: 28px;
+            margin-bottom: 35px;
         }
 
         .upload-box h2 {
             margin-top: 0;
+            margin-bottom: 22px;
+            font-size: 20px;
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         label {
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+
+            color: #eeeeF2;
             font-weight: bold;
         }
 
-        input,
-        textarea,
-        select,
-        button {
+        input[type="file"] {
             width: 100%;
-            padding: 10px;
-            font-size: 16px;
+            padding: 12px;
+
+            background: #101018;
+            color: #b7b6c5;
+
+            border: 1px solid #30303e;
+            border-radius: 7px;
+        }
+
+        textarea,
+        select {
+            width: 100%;
+
+            background: #101018;
+            color: #f4f4f7;
+
+            border: 1px solid #30303e;
+            border-radius: 7px;
+
+            padding: 12px;
+
+            font-family: inherit;
+            font-size: 14px;
         }
 
         textarea {
@@ -72,97 +161,189 @@
             resize: vertical;
         }
 
-        button {
+        select {
             cursor: pointer;
-            border: none;
-            border-radius: 6px;
-            background: #222;
-            color: white;
         }
 
-        button:hover {
-            opacity: 0.9;
-        }
+        /* =========================
+            IEW
+        ========================= */
 
         #preview-container {
             display: none;
-            margin: 20px 0;
+
+            margin-top: 18px;
+            padding: 15px;
+
+            background: #101018;
+            border: 1px solid #292936;
+            border-radius: 9px;
+        }
+
+        #preview-container p {
+            margin-top: 0;
+            color: #9b9aaa;
         }
 
         #preview {
             display: block;
+
             max-width: 100%;
-            max-height: 400px;
+            max-height: 450px;
+
+            margin: auto;
+
             border-radius: 8px;
+            object-fit: contain;
+        }
+
+        /* =========================
+           BOUTON
+        ========================= */
+
+        .publish-button {
+            background: #d83ca9;
+            color: white;
+
+            border: none;
+            border-radius: 7px;
+
+            padding: 11px 20px;
+
+            font-weight: bold;
+            font-size: 14px;
+
+            cursor: pointer;
+        }
+
+        .publish-button:hover {
+            background: #c82f9b;
+        }
+
+        .publish-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         #message {
             margin-top: 15px;
-            font-weight: bold;
+            color: #9b9aaa;
         }
 
+        /* =========================
+           POSTS
+        ========================= */
+
         .posts {
-            display: grid;
+            display: flex;
+            flex-direction: column;
             gap: 25px;
         }
 
         .post {
-            background: white;
-            border-radius: 10px;
+            background: #15151d;
+            border: 1px solid #2b2b38;
+            border-radius: 12px;
+
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         .post-header {
-            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            padding: 17px 20px;
         }
 
         .post-user {
             font-weight: bold;
+            color: #ffffff;
         }
 
         .post-date {
-            color: #777;
-            font-size: 14px;
-            margin-top: 5px;
+            color: #898899;
+            font-size: 13px;
         }
 
-        .post img {
+        .post-image {
             display: block;
+
             width: 100%;
-            max-height: 700px;
+            max-height: 600px;
+
             object-fit: contain;
-            background: #eee;
+
+            background: #08080d;
         }
 
         .post-content {
-            padding: 15px;
+            padding: 18px 20px;
+
+            color: #d2d1da;
+            line-height: 1.5;
         }
 
         .empty {
-            background: white;
+            background: #15151d;
+            border: 1px solid #2b2b38;
+            border-radius: 12px;
+
             padding: 30px;
+
+            color: #9695a8;
             text-align: center;
-            border-radius: 10px;
         }
 
+        @media (max-width: 600px) {
+            header {
+                padding: 0 15px;
+            }
+
+            .bonjour {
+                display: none;
+            }
+
+            main {
+                width: 94%;
+                margin-top: 25px;
+            }
+
+            .upload-box {
+                padding: 20px;
+            }
+        }
     </style>
-
 </head>
-
 
 <body>
 
 <header>
 
-    <h1>Publications</h1>
+    <div class="logo">
+        <!-- Si tu as un logo Pixora, mets son chemin ici -->
+        <div class="logo-text">PIXORA</div>
+    </div>
+
+    <div class="header-right">
+        <div class="bonjour">
+            Bonjour, <strong id="username">Nat</strong>
+        </div>
+
+        <button class="logout" id="logout">
+            Déconnexion
+        </button>
+    </div>
 
 </header>
 
-
 <main>
 
-    <!-- FORMULAIRE D'UPLOAD -->
+    <h1>Publications</h1>
+
+    <!-- =========================
+         FORMULAIRE
+    ========================== -->
 
     <section class="upload-box">
 
@@ -173,7 +354,7 @@
             <div class="form-group">
 
                 <label for="image">
-                    Choisir une image JPEG
+                    Photo
                 </label>
 
                 <input
@@ -184,22 +365,19 @@
                     required
                 >
 
-            </div>
+                <!-- PREVIEW -->
+                <div id="preview-container" style="display:none;">
 
+                    <p>Prévisualisation :</p>
 
-            <div
-                id="preview-container"
-            >
+                    <img
+                        id="preview"
+                        alt="Prévisualisation de l'image"
+                    >
 
-                <p>Prévisualisation :</p>
-
-                <img
-                    id="preview"
-                    alt="Prévisualisation de l'image"
-                >
+                </div>
 
             </div>
-
 
             <div class="form-group">
 
@@ -210,11 +388,10 @@
                 <textarea
                     id="contenuPub"
                     name="contenuPub"
-                    placeholder="Écrivez une description..."
+                    placeholder="Écrivez quelque chose..."
                 ></textarea>
 
             </div>
-
 
             <div class="form-group">
 
@@ -222,10 +399,7 @@
                     Visibilité
                 </label>
 
-                <select
-                    id="visibilite"
-                    name="visibilite"
-                >
+                <select id="visibilite" name="visibilite">
 
                     <option value="1">
                         Public
@@ -239,11 +413,12 @@
 
             </div>
 
-
-            <button type="submit">
-                Publier la photo
+            <button
+                type="submit"
+                class="publish-button"
+            >
+                Publier
             </button>
-
 
             <div id="message"></div>
 
@@ -252,7 +427,9 @@
     </section>
 
 
-    <!-- PUBLICATIONS -->
+    <!-- =========================
+         PUBLICATIONS
+    ========================== -->
 
     <section>
 
@@ -287,9 +464,9 @@
 
 
                     <img
+                        class="post-image"
                         src="/uploads/<%= post.nomMedia %>"
                         alt="Photo publiée par <%= post.pseudo %>"
-                        loading="lazy"
                     >
 
 
@@ -311,327 +488,8 @@
 
 </main>
 
-
-<script>
-
-const form =
-    document.getElementById('upload-form');
-
-const imageInput =
-    document.getElementById('image');
-
-const preview =
-    document.getElementById('preview');
-
-const previewContainer =
-    document.getElementById('preview-container');
-
-const message =
-    document.getElementById('message');
-
-const postsContainer =
-    document.getElementById('posts');
-
-
-const MAX_SIZE =
-    20 * 1024 * 1024;
-
-
-/*
- * Prévisualisation de l'image
- */
-imageInput.addEventListener(
-    'change',
-    function () {
-
-        const file =
-            imageInput.files[0];
-
-        if (!file) {
-            return;
-        }
-
-
-        if (file.type !== 'image/jpeg') {
-
-            imageInput.value = '';
-
-            previewContainer.style.display =
-                'none';
-
-            message.textContent =
-                'Veuillez sélectionner une image JPEG.';
-
-            return;
-        }
-
-
-        if (file.size > MAX_SIZE) {
-
-            imageInput.value = '';
-
-            previewContainer.style.display =
-                'none';
-
-            message.textContent =
-                'L’image ne doit pas dépasser 20 Mo.';
-
-            return;
-        }
-
-
-        const objectUrl =
-            URL.createObjectURL(file);
-
-        preview.src = objectUrl;
-
-        previewContainer.style.display =
-            'block';
-
-        message.textContent = '';
-    }
-);
-
-
-/*
- * Envoi du formulaire
- */
-form.addEventListener(
-    'submit',
-    async function (event) {
-
-        event.preventDefault();
-
-
-        const file =
-            imageInput.files[0];
-
-
-        if (!file) {
-
-            message.textContent =
-                'Veuillez sélectionner une image.';
-
-            return;
-        }
-
-
-        /*
-         * Vérifications côté navigateur.
-         */
-        if (file.type !== 'image/jpeg') {
-
-            message.textContent =
-                'Seules les images JPEG sont autorisées.';
-
-            return;
-        }
-
-
-        if (file.size > MAX_SIZE) {
-
-            message.textContent =
-                'L’image ne doit pas dépasser 20 Mo.';
-
-            return;
-        }
-
-
-        /*
-         * Récupération du JWT.
-         *
-         * Le login doit avoir enregistré
-         * le token dans localStorage.
-         */
-        const token =
-            localStorage.getItem('token');
-
-
-        if (!token) {
-
-            message.textContent =
-                'Vous devez être connecté pour publier une photo.';
-
-            return;
-        }
-
-
-        /*
-         * Création du formulaire multipart.
-         */
-        const formData =
-            new FormData();
-
-        formData.append(
-            'image',
-            file
-        );
-
-        formData.append(
-            'contenuPub',
-            document.getElementById('contenuPub').value
-        );
-
-        formData.append(
-            'visibilite',
-            document.getElementById('visibilite').value
-        );
-
-
-        message.textContent =
-            'Publication en cours...';
-
-
-        try {
-
-            const response =
-                await fetch(
-                    '/post/upload',
-                    {
-                        method: 'POST',
-
-                        headers: {
-                            Authorization:
-                                `Bearer ${token}`
-                        },
-
-                        body: formData
-                    }
-                );
-
-
-            const data =
-                await response.json();
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    data.error ||
-                    'Erreur lors de la publication'
-                );
-            }
-
-
-            /*
-             * Publication réussie.
-             */
-            message.textContent =
-                data.message;
-
-
-            /*
-             * Ajout immédiat de la nouvelle
-             * publication dans la page.
-             */
-            const post =
-                data.post;
-
-
-            const article =
-                document.createElement('article');
-
-            article.className = 'post';
-
-
-            article.innerHTML = `
-
-                <div class="post-header">
-
-                    <div class="post-user">
-                        ${escapeHtml(post.pseudo)}
-                    </div>
-
-                    <div class="post-date">
-                        ${escapeHtml(post.datePubli)}
-                    </div>
-
-                </div>
-
-                <img
-                    src="/uploads/${encodeURIComponent(post.nomMedia)}"
-                    alt="Photo publiée par ${escapeHtml(post.pseudo)}"
-                    loading="lazy"
-                >
-
-                ${
-                    post.contenuPub
-                    ?
-                    `<div class="post-content">
-                        ${escapeHtml(post.contenuPub)}
-                    </div>`
-                    :
-                    ''
-                }
-
-            `;
-
-
-            /*
-             * Retirer le message "Aucune photo..."
-             * s'il existe.
-             */
-            const empty =
-                postsContainer.querySelector('.empty');
-
-            if (empty) {
-                empty.remove();
-            }
-
-
-            /*
-             * Nouvelle publication en première position.
-             */
-            postsContainer.prepend(article);
-
-
-            /*
-             * Réinitialisation du formulaire.
-             */
-            form.reset();
-
-            preview.src = '';
-
-            previewContainer.style.display =
-                'none';
-
-
-        } catch (error) {
-
-            console.error(error);
-
-            message.textContent =
-                error.message;
-        }
-
-    }
-);
-
-
-/*
- * Protection contre l'injection HTML
- * lorsque l'on construit dynamiquement
- * la nouvelle publication.
- */
-function escapeHtml(value) {
-
-    if (value === null ||
-        value === undefined) {
-
-        return '';
-    }
-
-    return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
-</script>
-
+<!-- IMPORTANT : avec express.static('/public'), l'URL est /js/post.js -->
+<script src="/js/post.js"></script>
 
 </body>
-
 </html>

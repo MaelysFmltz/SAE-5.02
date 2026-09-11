@@ -1,362 +1,401 @@
-const form =
-  document.getElementById('postForm');
+const form = document.getElementById('upload-form');
+const imageInput = document.getElementById('image');
+const preview = document.getElementById('preview');
+const previewContainer = document.getElementById('preview-container');
+const message = document.getElementById('message');
+const postsContainer = document.getElementById('posts');
 
-const submitButton =
-  document.getElementById('submitButton');
+const MAX_SIZE = 20 * 1024 * 1024;
 
-const message =
-  document.getElementById('message');
-
-const progressContainer =
-  document.getElementById('progressContainer');
-
-const progressBar =
-  document.getElementById('progressBar');
-
-const progressText =
-  document.getElementById('progressText');
+let previewUrl = null;
 
 
-function showMessage(
-  text,
-  type
-) {
-  message.textContent = text;
+/*
+ * ============================================================
+ * PRÉVISUALISATION DE L'IMAGE
+ * ============================================================
+ */
 
-  message.className = type;
+imageInput.addEventListener('change', function () {
 
-  message.style.display = 'block';
-}
+    const file = imageInput.files[0];
+
+    message.textContent = '';
+
+    if (!file) {
+        hidePreview();
+        return;
+    }
+
+    /*
+     * Vérification JPEG
+     */
+    if (file.type !== 'image/jpeg') {
+
+        imageInput.value = '';
+
+        hidePreview();
+
+        message.textContent =
+            'Veuillez sélectionner une image JPEG.';
+
+        return;
+    }
+
+    /*
+     * Vérification taille
+     */
+    if (file.size > MAX_SIZE) {
+
+        imageInput.value = '';
+
+        hidePreview();
+
+        message.textContent =
+            'L’image ne doit pas dépasser 20 Mo.';
+
+        return;
+    }
+
+    /*
+     * Suppression de l'ancienne URL
+     */
+    if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+    }
+
+    /*
+     * Création de l'URL temporaire
+     */
+    previewUrl = URL.createObjectURL(file);
+
+    /*
+     * Affichage immédiat
+     */
+    preview.src = previewUrl;
+
+    previewContainer.style.display = 'block';
+
+});
 
 
-function hideMessage() {
-  message.textContent = '';
+/*
+ * ============================================================
+ * ENVOI DU FORMULAIRE
+ * ============================================================
+ */
 
-  message.className = '';
+form.addEventListener('submit', async function (event) {
 
-  message.style.display = 'none';
-}
-
-
-form.addEventListener(
-  'submit',
-  async (event) => {
     event.preventDefault();
 
-    hideMessage();
+    const file = imageInput.files[0];
 
-    /*
-     * Le token est celui obtenu lors de la connexion.
-     */
-    const token =
-      localStorage.getItem('token');
+    if (!file) {
 
-    if (!token) {
-      showMessage(
-        'Vous devez être connecté pour publier.',
-        'error'
-      );
-
-      return;
-    }
-
-
-    const videoInput =
-      document.getElementById('video');
-
-    const contenuInput =
-      document.getElementById('contenuPub');
-
-
-    /*
-     * Vérification frontend complémentaire.
-     *
-     * La validation serveur reste obligatoire.
-     */
-
-    if (
-      videoInput.files.length > 0
-    ) {
-      const video =
-        videoInput.files[0];
-
-      const maxSize =
-        50 * 1024 * 1024;
-
-      if (video.size > maxSize) {
-        showMessage(
-          'La vidéo ne peut pas dépasser 50 Mo.',
-          'error'
-        );
+        message.textContent =
+            'Veuillez sélectionner une image.';
 
         return;
-      }
+    }
 
-      const allowedExtensions = [
-        '.mp4',
-        '.mov',
-        '.avi',
-        '.webm'
-      ];
+    /*
+     * Vérification JPEG
+     */
+    if (file.type !== 'image/jpeg') {
 
-      const filename =
-        video.name.toLowerCase();
-
-      const validExtension =
-        allowedExtensions.some(
-          (extension) =>
-            filename.endsWith(extension)
-        );
-
-      if (!validExtension) {
-        showMessage(
-          'Format vidéo non autorisé. Utilisez MP4, MOV, AVI ou WebM.',
-          'error'
-        );
+        message.textContent =
+            'Seules les images JPEG sont autorisées.';
 
         return;
-      }
     }
 
-
     /*
-     * Une publication doit avoir au minimum du texte
-     * ou une vidéo.
+     * Vérification taille
      */
+    if (file.size > MAX_SIZE) {
 
-    const hasText =
-      contenuInput.value.trim().length > 0;
+        message.textContent =
+            'L’image ne doit pas dépasser 20 Mo.';
 
-    const hasVideo =
-      videoInput.files.length > 0;
-
-    if (!hasText && !hasVideo) {
-      showMessage(
-        'Ajoutez du texte ou une vidéo.',
-        'error'
-      );
-
-      return;
+        return;
     }
 
-
     /*
-     * FormData :
-     *
-     * contenuPub
-     * video
-     *
-     * Aucun idPubli.
-     * Aucun idUser.
+     * FormData
      */
+    const formData = new FormData();
 
-    const formData =
-      new FormData();
+    formData.append('image', file);
 
     formData.append(
-      'contenuPub',
-      contenuInput.value
+        'contenuPub',
+        document.getElementById('contenuPub').value
     );
 
-    if (hasVideo) {
-      formData.append(
-        'video',
-        videoInput.files[0]
-      );
-    }
+    formData.append(
+        'visibilite',
+        document.getElementById('visibilite').value
+    );
 
-
-    submitButton.disabled = true;
-
-    progressContainer.style.display =
-      'block';
-
-    progressBar.value = 0;
-
-    progressText.textContent =
-      'Envoi : 0 %';
-
+    message.textContent = 'Publication en cours...';
 
     try {
-      /*
-       * XMLHttpRequest permet d'afficher
-       * la progression de l'upload.
-       */
-      const result =
-        await uploadPublication(
-          formData,
-          token
-        );
 
+        const response = await fetch('/post/upload', {
 
-      /*
-       * Succès.
-       */
+            method: 'POST',
 
-      showMessage(
-        result.message ||
-          'Publication créée avec succès.',
-        'success'
-      );
+            credentials: 'same-origin',
 
-      form.reset();
+            body: formData
 
-      progressBar.value = 100;
+        });
 
-      progressText.textContent =
-        'Envoi : 100 %';
+        const data = await response.json();
+
+        /*
+         * Token invalide
+         */
+        if (response.status === 401) {
+
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+
+            message.textContent =
+                data.error ||
+                'Votre session a expiré. Reconnectez-vous.';
+
+            return;
+        }
+
+        /*
+         * Erreur serveur
+         */
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                'Erreur lors de la publication.'
+            );
+
+        }
+
+        console.log('Publication reçue :', data);
+        console.log('URL de l’image :', data.post?.url);
+        console.log('Nom du fichier :', data.post?.nomMedia);
+
+        /*
+         * Publication réussie
+         */
+        message.textContent =
+            data.message ||
+            'Image publiée avec succès.';
+
+        /*
+         * Ajout immédiat du post
+         */
+        if (data.post) {
+
+            addPostToPage(data.post);
+
+        }
+
+        /*
+         * Réinitialisation
+         */
+        form.reset();
+
+        hidePreview();
 
     } catch (error) {
 
-      showMessage(
-        error.message ||
-          'Une erreur est survenue.',
-        'error'
-      );
+        console.error('Erreur publication :', error);
 
-    } finally {
+        message.textContent =
+            error.message ||
+            'Erreur réseau lors de la publication.';
 
-      submitButton.disabled = false;
-
-      setTimeout(() => {
-        progressContainer.style.display =
-          'none';
-      }, 1500);
     }
-  }
-);
+
+});
 
 
-function uploadPublication(
-  formData,
-  token
-) {
-  return new Promise(
-    (resolve, reject) => {
+/*
+ * ============================================================
+ * AJOUTER UNE PUBLICATION À LA PAGE
+ * ============================================================
+ */
 
-      const xhr =
-        new XMLHttpRequest();
+function addPostToPage(post) {
 
+    /*
+     * Supprimer "Aucune photo publiée"
+     */
+    const emptyMessage =
+        postsContainer.querySelector('.empty');
 
-      xhr.open(
-        'POST',
-        '/post',
-        true
-      );
-
-
-      /*
-       * JWT.
-       */
-      xhr.setRequestHeader(
-        'Authorization',
-        `Bearer ${token}`
-      );
-
-
-      /*
-       * Progression de l'envoi.
-       */
-      xhr.upload.addEventListener(
-        'progress',
-        (event) => {
-
-          if (!event.lengthComputable) {
-            return;
-          }
-
-          const percentage =
-            Math.round(
-              (event.loaded /
-                event.total) *
-                100
-            );
-
-          progressBar.value =
-            percentage;
-
-          progressText.textContent =
-            `Envoi : ${percentage} %`;
-        }
-      );
-
-
-      /*
-       * Réponse HTTP.
-       */
-      xhr.addEventListener(
-        'load',
-        () => {
-
-          let data;
-
-          try {
-            data =
-              JSON.parse(
-                xhr.responseText
-              );
-          } catch (error) {
-            reject(
-              new Error(
-                'Réponse invalide du serveur.'
-              )
-            );
-
-            return;
-          }
-
-
-          if (
-            xhr.status >= 200 &&
-            xhr.status < 300
-          ) {
-            resolve(data);
-
-            return;
-          }
-
-
-          reject(
-            new Error(
-              data.error ||
-                'La publication n’a pas pu être créée.'
-            )
-          );
-        }
-      );
-
-
-      /*
-       * Erreur réseau.
-       */
-      xhr.addEventListener(
-        'error',
-        () => {
-          reject(
-            new Error(
-              'Impossible de contacter le serveur.'
-            )
-          );
-        }
-      );
-
-
-      /*
-       * Annulation.
-       */
-      xhr.addEventListener(
-        'abort',
-        () => {
-          reject(
-            new Error(
-              'L’envoi a été annulé.'
-            )
-          );
-        }
-      );
-
-
-      xhr.send(formData);
+    if (emptyMessage) {
+        emptyMessage.remove();
     }
-  );
+
+
+    /*
+     * ARTICLE
+     */
+    const article =
+        document.createElement('article');
+
+    article.className = 'post';
+
+
+    /*
+     * HEADER
+     */
+    const header =
+        document.createElement('div');
+
+    header.className = 'post-header';
+
+
+    /*
+     * UTILISATEUR
+     */
+    const user =
+        document.createElement('div');
+
+    user.className = 'post-user';
+
+    user.textContent =
+        post.pseudo || 'Utilisateur';
+
+
+    /*
+     * DATE
+     */
+    const date =
+        document.createElement('div');
+
+    date.className = 'post-date';
+
+    date.textContent =
+        post.datePubli || '';
+
+
+    header.appendChild(user);
+    header.appendChild(date);
+
+
+    /*
+     * IMAGE
+     */
+    const image =
+        document.createElement('img');
+
+    image.className = 'post-image';
+
+    /*
+     * On utilise directement l'URL
+     * renvoyée par le serveur.
+     */
+    let imageUrl = post.url;
+
+    /*
+     * Sécurité au cas où post.url
+     * n'existerait pas.
+     */
+    if (!imageUrl && post.nomMedia) {
+
+        imageUrl =
+            `/uploads/${encodeURIComponent(post.nomMedia)}`;
+
+    }
+
+    console.log('Chargement image :', imageUrl);
+
+    image.src = imageUrl;
+
+    image.alt =
+        `Photo publiée par ${post.pseudo || 'Utilisateur'}`;
+
+    /*
+     * Vérification chargement
+     */
+    image.onload = function () {
+
+        console.log(
+            'Image chargée correctement :',
+            image.src
+        );
+
+    };
+
+    /*
+     * Vérification erreur
+     */
+    image.onerror = function () {
+
+        console.error(
+            'Impossible de charger l’image :',
+            image.src
+        );
+
+        message.textContent =
+            'La publication a été enregistrée, mais l’image ne peut pas être affichée.';
+
+    };
+
+
+    /*
+     * DESCRIPTION
+     */
+    article.appendChild(header);
+
+    article.appendChild(image);
+
+    if (post.contenuPub) {
+
+        const content =
+            document.createElement('div');
+
+        content.className =
+            'post-content';
+
+        content.textContent =
+            post.contenuPub;
+
+        article.appendChild(content);
+
+    }
+
+
+    /*
+     * Ajouter en haut de la liste
+     */
+    postsContainer.prepend(article);
+
+}
+
+
+/*
+ * ============================================================
+ * MASQUER LA PRÉVISUALISATION
+ * ============================================================
+ */
+
+function hidePreview() {
+
+    if (previewUrl) {
+
+        URL.revokeObjectURL(previewUrl);
+
+        previewUrl = null;
+
+    }
+
+    preview.src = '';
+
+    previewContainer.style.display =
+        'none';
+
 }

@@ -4,61 +4,50 @@ const cookieParser = require('cookie-parser');
 
 const authRoutes = require('./routes/authRoutes');
 const authMiddleware = require('./middlewares/authMiddleware');
-const profileRoutes = require('./routes/profileRoutes');
 const postRoutes = require('./routes/postRoutes');
 
 const app = express();
 
-// 1. Moteur de templates EJS
+// ===============================
+// EJS
+// ===============================
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../views'));
 
-// 2. Middlewares globaux
+// ===============================
+// Middlewares
+// ===============================
 app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // Pour décoder les formulaires HTML
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, '../public'))); // Fichiers CSS / JS
 
-// 3. Routes d'affichage des pages (Front)
+// Fichiers CSS / JS dans /public
+app.use(express.static(path.join(__dirname, '../public')));
+
+// ===============================
+// Pages
+// ===============================
 app.get('/', (req, res) => {
-  res.render('login');
+    res.render('login');
 });
 
 app.get('/home', authMiddleware, (req, res) => {
-  res.render('feed', { user: req.user });
+    res.render('feed', { user: req.user });
 });
 
-// 4. Routes API (Back)
+// ===============================
+// API / Routes
+// ===============================
 app.use('/api/auth', authRoutes);
-
-
 app.use('/auth', authRoutes);
 app.use('/post', postRoutes);
 
-// ==========================================
-// FICHIERS STATIQUES
-// ==========================================
-
+// ===============================
+// Images uploadées
+// ===============================
 app.use(
     '/uploads',
-    express.static(
-        path.join(__dirname, '../uploads')
-    )
+    express.static(path.join(__dirname, '../uploads'))
 );
-
-app.set('view engine', 'ejs');
-
-app.set(
-    'views',
-    path.join(__dirname, '../views')
-);
-
-app.get('/', (req, res) => {
-    res.json({
-        message: 'API Instagram fonctionne'
-    });
-});
-
-
 
 module.exports = app;

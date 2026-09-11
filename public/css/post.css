@@ -1,0 +1,233 @@
+.post-page {
+    width: 90%;
+    max-width: 1100px;
+    margin: 40px auto;
+}
+
+
+/* ============================= */
+/* POSTER                        */
+/* ============================= */
+
+.poster-section {
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 30px;
+}
+
+
+.poster-title {
+    text-align: center;
+    font-size: 32px;
+    margin-bottom: 30px;
+}
+
+
+.plus {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+
+    width: 35px;
+    height: 35px;
+
+    border: 2px solid #333;
+    border-radius: 50%;
+
+    margin-left: 10px;
+}
+
+
+/* ============================= */
+/* UPLOAD + PREVIEW              */
+/* ============================= */
+
+.upload-zone {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+}
+
+
+.upload-button-zone {
+    width: 220px;
+    display: flex;
+    justify-content: center;
+}
+
+
+.upload-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    width: 180px;
+    height: 80px;
+
+    border: 2px solid #333;
+
+    cursor: pointer;
+
+    font-size: 20px;
+}
+
+
+.upload-button:hover {
+    background: #eee;
+}
+
+
+.preview-container {
+    flex: 1;
+
+    min-height: 300px;
+
+    border: 2px solid #333;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.preview-image {
+    max-width: 100%;
+    max-height: 400px;
+
+    object-fit: contain;
+}
+
+
+/* ============================= */
+/* BIO DU POST                   */
+/* ============================= */
+
+.post-information {
+    margin-top: 30px;
+}
+
+
+.post-information h2 {
+    font-size: 22px;
+}
+
+
+.post-options {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+}
+
+
+#contenuPub {
+    flex: 1;
+
+    min-height: 100px;
+
+    padding: 12px;
+
+    resize: vertical;
+}
+
+
+.visibility {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+
+#visibilite {
+    padding: 10px;
+}
+
+
+.publish-button {
+    margin-top: 20px;
+
+    padding: 12px 30px;
+
+    border: 1px solid #333;
+
+    cursor: pointer;
+}
+
+
+/* ============================= */
+/* MESSAGE                       */
+/* ============================= */
+
+#message {
+    margin-top: 15px;
+}
+
+
+/* ============================= */
+/* PUBLICATIONS                  */
+/* ============================= */
+
+.posts-section {
+    margin-top: 40px;
+}
+
+
+.posts-section > h2 {
+    margin-bottom: 25px;
+}
+
+
+#posts {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+
+.post {
+    border: 1px solid #ccc;
+    padding: 20px;
+}
+
+
+.post-header {
+    display: flex;
+    justify-content: space-between;
+
+    margin-bottom: 15px;
+}
+
+
+.post-user {
+    font-weight: bold;
+}
+
+
+.post-date {
+    color: #777;
+}
+
+
+.post-image {
+    display: block;
+
+    width: 100%;
+    max-height: 600px;
+
+    object-fit: contain;
+
+    margin: 0 auto;
+}
+
+
+.post-content {
+    margin-top: 15px;
+
+    padding-top: 15px;
+
+    border-top: 1px solid #ddd;
+}
+
+
+.empty {
+    text-align: center;
+    color: #777;
+}
