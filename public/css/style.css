@@ -1,0 +1,59 @@
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-surface: #14141d;
+  --bg-input: #1e1e2c;
+  --border-color: #272738;
+  --border-focus: #c24095;
+  --text-primary: #ffffff;
+  --text-secondary: #9090a8;
+  --gradient-pixora: linear-gradient(135deg, #f35b6b 0%, #d83d97 50%, #7d33d9 100%);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* Bouton principal avec le dégradé du logo */
+.btn-primary {
+  width: 100%;
+  padding: 0.85rem;
+  background: var(--gradient-pixora);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.btn-primary:hover {
+  opacity: 0.92;
+}
+
+.btn-primary:active {
+  transform: scale(0.99);
+}
+
+.alert {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 1.2rem;
+}
+
+.alert-error {
+  background-color: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
