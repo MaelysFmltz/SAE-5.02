@@ -24,28 +24,6 @@ app.get('/', (req, res) => {
   });
 });
 
-// Route d'insertion des données de test (Utilisateur 1 et Publication 1)
-app.get('/check-schema', (req, res) => {
-  const db = require('./config/database');
-  try {
-    // 1. Insertion de l'utilisateur de test (idUser = 1)
-    db.prepare(`
-      INSERT OR IGNORE INTO Utilisateur (idUser, pseudo, email, motDePasse)
-      VALUES (1, 'demo_user', 'demo@pixora.fr', 'secret123')
-    `).run();
-
-    // 2. Insertion de la publication de test (idPubli = 1)
-    db.prepare(`
-      INSERT OR IGNORE INTO Publication (idPubli, idUser, contenuPub, visibilite)
-      VALUES (1, 1, 'Publication de test pour les commentaires', 1)
-    `).run();
-
-    res.send('Données de test insérées avec succès ! Vous pouvez tester les commentaires.');
-  } catch (err) {
-    res.status(500).send('Erreur insertion : ' + err.message);
-  }
-});
-
 // Déclaration des routes
 app.use('/api/auth', authRoutes);
 app.use('/api/comments', commentRoutes);
