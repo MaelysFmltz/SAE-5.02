@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS Publication (
     contenuPub TEXT,
     visibilite INTEGER NOT NULL DEFAULT 1,
     idPubliPartagee INTEGER,
+    typePublication TEXT NOT NULL DEFAULT 'original'
+        CHECK(typePublication IN ('original', 'repost', 'duo', 'collage')),
     datePubli DATETIME DEFAULT CURRENT_TIMESTAMP,
     dateModif DATETIME,
     FOREIGN KEY (idUser) REFERENCES Utilisateur(idUser) ON DELETE CASCADE,
