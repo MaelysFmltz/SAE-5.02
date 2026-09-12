@@ -2,7 +2,7 @@ const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
 
-// 1. Définition du chemin (DB_PATH prioritaire pour les tests :memory:, sinon data/app.db)
+// 1. Chemin prioritaire pour les tests (:memory:), sinon data/app.db
 const dbPath = process.env.DB_PATH || path.resolve(__dirname, '../../data/app.db');
 
 // Si ce n'est pas une base en mémoire, s'assurer que le dossier parent existe
