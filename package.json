@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --runInBand"
   },
   "keywords": [],
   "author": "",
@@ -15,14 +15,20 @@
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^11.8.1",
     "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "ejs": "^6.0.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "jsonwebtoken": "^9.0.3"
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.3.0",
+    "socket.io": "^4.8.3",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "jest": "^30.5.1",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2"
   },
   "repository": {
     "type": "git",
@@ -31,5 +37,8 @@
   "bugs": {
     "url": "https://github.com/MaelysFmltz/SAE-5.02/issues"
   },
-  "homepage": "https://github.com/MaelysFmltz/SAE-5.02#readme"
+  "homepage": "https://github.com/MaelysFmltz/SAE-5.02#readme",
+  "jest": {
+    "testEnvironment": "node"
+  }
 }

@@ -1,0 +1,275 @@
+/* Variables thématiques */
+:root {
+  --profile-card-bg: #14161f;
+  --profile-box-bg: #1b1e2a;
+  --profile-border: #282c3c;
+  --profile-border-subtle: #373c50;
+  --profile-accent: #9046eb;
+  --profile-text-bright: #ffffff;
+  --profile-text-muted: #8b92a5;
+  --profile-text-dimmed: #686e82;
+}
+
+/* Centrage global sur 430px */
+.profile-header,
+.profile-container {
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* En-tête */
+.profile-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--profile-border);
+}
+
+.header-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--profile-text-bright);
+}
+
+.icon-btn {
+  color: var(--profile-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--profile-card-bg);
+  border: 1px solid var(--profile-border);
+  text-decoration: none;
+  z-index: 2;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+}
+
+.icon-btn:hover {
+  color: var(--profile-text-bright);
+  border-color: var(--profile-border-subtle);
+  background: var(--profile-box-bg);
+}
+
+.header-spacer {
+  width: 36px;
+}
+
+/* Conteneur principal */
+.profile-container {
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Ligne identité : Avatar à gauche + Titre/Nom à droite */
+.profile-identity-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+
+/* Avatar circulaire */
+.avatar-circle {
+  width: 90px;
+  height: 90px;
+  min-width: 90px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #1b1e2a 0%, #11131a 100%);
+  border: 2px solid var(--profile-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--profile-text-dimmed);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.avatar-circle svg {
+  width: 48px;
+  height: 48px;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Bloc pseudo + nom aligné à côté de la photo */
+.identity-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.pseudo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.profile-pseudo {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--profile-text-bright);
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+/* Badges */
+.badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+.badge-admin {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.badge-modo {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+/* Prénom et Nom : même ligne ou sous le pseudo, en grisé */
+.real-name {
+  font-size: 0.95rem;
+  color: var(--profile-text-dimmed);
+  margin: 0;
+}
+
+/* 2. Biographie en pleine largeur sous la photo */
+.bio-fullwidth {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.bio-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--profile-accent);
+}
+
+.bio-frame {
+  background-color: var(--profile-box-bg);
+  border: 1px solid var(--profile-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  width: 100%;
+  box-sizing: border-box;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.bio-frame p {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #e2e4ec;
+  margin: 0;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+/* 3. Bouton Modifier le profil */
+.btn-edit {
+  display: block;
+  width: 100%;
+  text-align: center;
+  text-decoration: none;
+  background-color: var(--profile-card-bg);
+  color: var(--profile-text-bright);
+  border: 1px solid var(--profile-border);
+  padding: 11px 0;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.btn-edit:hover {
+  background-color: var(--profile-box-bg);
+  border-color: var(--profile-accent);
+}
+
+/* 4. Section publications */
+.posts-section {
+  border-top: 1px solid var(--profile-border);
+  padding-top: 28px;
+}
+
+.empty-posts {
+  text-align: center;
+  color: var(--profile-text-dimmed);
+  font-size: 0.9rem;
+  margin: 10px 0;
+}
+
+/* Formulaire d'édition (editProfile.ejs) */
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--profile-text-muted);
+}
+
+.form-group input,
+.form-group textarea {
+  background-color: var(--profile-box-bg);
+  border: 1px solid var(--profile-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--profile-text-bright);
+  font-size: 0.95rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: var(--profile-accent);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 90px;
+}
