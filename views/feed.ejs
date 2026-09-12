@@ -1,32 +1,322 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Pixora — Accueil</title>
+
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/feed.css">
 </head>
+
 <body>
+
   <header class="navbar">
+
     <div class="nav-brand">
       <img src="/images/logo.jpg" alt="Pixora Logo" class="nav-logo">
       <span class="nav-title">PIXORA</span>
     </div>
 
     <div class="nav-user">
-      <span class="user-greeting">Bonjour, <strong><%= user.pseudo %></strong></span>
+      <span class="user-greeting">
+        Bonjour, <strong><%= user.pseudo %></strong>
+      </span>
+
       <form action="/api/auth/logout" method="POST">
-        <button type="submit" class="btn-logout">Déconnexion</button>
+        <button type="submit" class="btn-logout">
+          Déconnexion
+        </button>
       </form>
     </div>
+
   </header>
 
   <main class="feed-container">
+
     <div class="card">
-      <h3>Bienvenue sur Pixora</h3>
-      <p>Votre fil d'actualité est prêt. Partagez vos premières photos !</p>
+      <h2>Fil d'actualité</h2>
+      <p>Découvre les dernières publications de Pixora.</p>
     </div>
+
+    <% if (publications && publications.length > 0) { %>
+
+      <% publications.forEach(publication => { %>
+
+        <article class="publication-card">
+
+          <!-- En-tête de la publication -->
+          <div class="publication-header">
+
+            <strong>
+              @<%= publication.auteurPseudo %>
+            </strong>
+
+            <span class="publication-type">
+
+              <% if (publication.typePublication === 'original') { %>
+                Publication
+
+              <% } else if (publication.typePublication === 'repost') { %>
+                🔁 Repost
+
+              <% } else if (publication.typePublication === 'duo') { %>
+                🎭 Duo
+
+              <% } else if (publication.typePublication === 'collage') { %>
+                🧩 Collage
+
+              <% } %>
+
+            </span>
+
+          </div>
+
+          <!-- Contenu -->
+          <% if (publication.contenuPub) { %>
+
+            <p class="publication-content">
+              <%= publication.contenuPub %>
+            </p>
+
+          <% } %>
+
+          <!-- Publication d'origine -->
+          <% if (publication.idPubliPartagee) { %>
+
+            <div class="shared-publication">
+
+              Cette publication est basée sur
+              <strong>
+                #<%= publication.idPubliPartagee %>
+              </strong>
+
+            </div>
+
+          <% } %>
+
+          <!-- Actions de partage -->
+          <div class="publication-actions">
+
+            <button
+              type="button"
+              class="share-btn repost-btn"
+              onclick="repartager(<%= publication.idPubli %>)">
+              🔁 Reposter
+            </button>
+
+            <button
+              type="button"
+              class="share-btn duo-btn"
+              onclick="creerDuo(<%= publication.idPubli %>)">
+              🎭 Créer un Duo
+            </button>
+
+            <button
+              type="button"
+              class="share-btn collage-btn"
+              onclick="creerCollage(<%= publication.idPubli %>)">
+              🧩 Créer un collage
+            </button>
+
+            <button
+              type="button"
+              class="share-btn link-btn"
+              onclick="copierLien(<%= publication.idPubli %>)">
+              🔗 Copier le lien
+            </button>
+
+          </div>
+
+        </article>
+
+      <% }); %>
+
+    <% } else { %>
+
+      <div class="card">
+        <p>Aucune publication pour le moment.</p>
+      </div>
+
+    <% } %>
+
   </main>
+
+
+  <script>
+
+    // ==========================================
+    // REPOST
+    // ==========================================
+
+    async function repartager(idPubli) {
+
+      const response = await fetch(
+        `/api/publications/${idPubli}/repartage`,
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type': 'application/json'
+          },
+
+          body: JSON.stringify({
+            visibilite: 1
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+
+        alert('Publication repartagée !');
+
+        location.reload();
+
+      } else {
+
+        alert(
+          data.error ||
+          'Erreur lors du repartage'
+        );
+
+      }
+    }
+
+
+    // ==========================================
+    // DUO
+    // ==========================================
+
+    async function creerDuo(idPubli) {
+
+      const contenuPub = prompt(
+        'Ajoute une description pour ton Duo :'
+      );
+
+      if (contenuPub === null) {
+        return;
+      }
+
+      const response = await fetch(
+        `/api/publications/${idPubli}/duo`,
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type': 'application/json'
+          },
+
+          body: JSON.stringify({
+            contenuPub,
+            visibilite: 1
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+
+        alert('Duo créé !');
+
+        location.reload();
+
+      } else {
+
+        alert(
+          data.error ||
+          'Erreur lors de la création du Duo'
+        );
+
+      }
+    }
+
+
+    // ==========================================
+    // COLLAGE
+    // ==========================================
+
+    async function creerCollage(idPubli) {
+
+      const contenuPub = prompt(
+        'Ajoute une description pour ton collage :'
+      );
+
+      if (contenuPub === null) {
+        return;
+      }
+
+      const response = await fetch(
+        `/api/publications/${idPubli}/collage`,
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type': 'application/json'
+          },
+
+          body: JSON.stringify({
+            contenuPub,
+            visibilite: 1
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+
+        alert('Collage créé !');
+
+        location.reload();
+
+      } else {
+
+        alert(
+          data.error ||
+          'Erreur lors de la création du collage'
+        );
+
+      }
+    }
+
+
+    // ==========================================
+    // COPIER LE LIEN
+    // ==========================================
+
+    async function copierLien(idPubli) {
+
+      const response = await fetch(
+        `/api/publications/${idPubli}/partager`
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+
+        await navigator.clipboard.writeText(
+          data.url
+        );
+
+        alert('Lien copié !');
+
+      } else {
+
+        alert(
+          data.error ||
+          'Impossible de récupérer le lien'
+        );
+
+      }
+    }
+
+  </script>
+
 </body>
+
 </html>
