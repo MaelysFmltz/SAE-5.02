@@ -19,11 +19,19 @@
     "ejs": "^6.0.1",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
+    "file-type": "^22.0.2",
     "jsonwebtoken": "^9.0.3",
+<<<<<<< HEAD
     "multer": "^2.3.0"
+=======
+    "multer": "^2.3.0",
+    "sqlite3": "^6.0.1"
+>>>>>>> 92f32e9caa5500daf985d4142e6f01097f5e1ffd
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "jest": "^30.5.1",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2"
   },
   "repository": {
     "type": "git",
