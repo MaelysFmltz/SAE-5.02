@@ -29,7 +29,7 @@
         <!-- Pseudo -->
         <div class="form-group">
           <label for="pseudo">Pseudo</label>
-          <input type="text" id="pseudo" name="pseudo" value="<%= profile.pseudo %>" required maxlength="30">
+          <input type="text" id="pseudo" name="pseudo" value="<%= profile.pseudo %>" disabled>
         </div>
 
         <!-- Prénom -->
@@ -47,7 +47,7 @@
         <!-- Biographie -->
         <div class="form-group">
           <label for="bio">Biographie</label>
-          <textarea id="bio" name="bio" rows="4" maxlength="255" placeholder="Parle un peu de toi..."><%= profile.bio || '' %></textarea>
+          <textarea id="bio" name="bio" rows="4" maxlength="300" placeholder="Parle un peu de toi..."><%= profile.bio || '' %></textarea>
         </div>
 
         <button type="submit" class="btn-primary">Enregistrer les modifications</button>

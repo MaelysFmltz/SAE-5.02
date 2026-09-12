@@ -1,6 +1,8 @@
 const PSEUDO_REGEX = /^[a-z0-9_-]{3,30}$/;
-const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+// Regex stricte : lettres/chiffres de début et fin sur chaque sous-domaine, interdisant les tirets isolés
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
 
 function sanitizeText(value) {
   if (typeof value !== 'string') {
@@ -29,8 +31,10 @@ function validatePseudo(pseudo) {
 function validateEmail(email) {
   const cleanEmail = sanitizeText(email).toLowerCase();
 
+  // Rejet des longueurs anormales, des points consécutifs et vérification du pattern strict
   if (
     cleanEmail.length > 254 ||
+    cleanEmail.includes('..') ||
     !EMAIL_REGEX.test(cleanEmail)
   ) {
     throw new Error(

@@ -2,6 +2,17 @@ const profileModel = require('../models/profileModel');
 const { validatePseudo, sanitizeText } = require('../utils/validationUtils');
 
 /**
+ * Formate un objet profil pour y adjoindre l'URL d'avatar
+ */
+function formatProfileData(profile) {
+  if (!profile) return null;
+  return {
+    ...profile,
+    avatarUrl: profile.idMedia ? `/media/${profile.idMedia}` : null
+  };
+}
+
+/**
  * Récupère le profil personnel complet de l'utilisateur connecté
  */
 async function getMyProfile(idUser) {
@@ -14,7 +25,7 @@ async function getMyProfile(idUser) {
     throw new Error('Profil introuvable');
   }
 
-  return profile;
+  return formatProfileData(profile);
 }
 
 /**
@@ -35,7 +46,8 @@ async function getPublicProfile(pseudo) {
     nom: profile.nom,
     prenom: profile.prenom,
     bio: profile.bio,
-    idMedia: profile.idMedia
+    idMedia: profile.idMedia,
+    avatarUrl: profile.idMedia ? `/media/${profile.idMedia}` : null
   };
 }
 
@@ -70,7 +82,8 @@ async function updateMyProfile(idUser, data) {
 
   profileModel.updateProfile(idUser, { nom, prenom, bio });
 
-  return profileModel.getProfileByUserId(idUser);
+  const updatedProfile = profileModel.getProfileByUserId(idUser);
+  return formatProfileData(updatedProfile);
 }
 
 module.exports = {
