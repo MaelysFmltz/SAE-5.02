@@ -1,4 +1,5 @@
 const db = require('../config/database');
+const { modifierVisibilite: modifierVisibiliteService } = require('../services/postService');
 
 function obtenirPublication(req, res) {
     const idPubli = Number(req.params.idPubli);
@@ -29,6 +30,18 @@ function modifierVisibilite(req, res) {
     const idUser = req.user.idUser;
     const visibilite = Number(req.body.visibilite);
 
+    if (!Number.isInteger(idPubli)) {
+        return res.status(400).json({
+            error: 'Identifiant de publication invalide'
+        });
+    }
+
+    if (visibilite !== 0 && visibilite !== 1) {
+        return res.status(400).json({
+            error: 'Visibilité invalide'
+        });
+    }
+
     const publication = db.prepare(`
         SELECT idUser
         FROM Publication
@@ -47,17 +60,7 @@ function modifierVisibilite(req, res) {
         });
     }
 
-    if (visibilite !== 0 && visibilite !== 1) {
-        return res.status(400).json({
-            error: 'Visibilité invalide'
-        });
-    }
-
-    db.prepare(`
-        UPDATE Publication
-        SET visibilite = ?
-        WHERE idPubli = ?
-    `).run(visibilite, idPubli);
+    modifierVisibiliteService(db, idPubli, idUser, visibilite);
 
     return res.status(200).json({
         message: 'Visibilité modifiée'
