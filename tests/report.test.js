@@ -29,6 +29,15 @@ describe('Système de signalement', () => {
                 contenuCom TEXT NOT NULL
             );
 
+            CREATE TABLE Media (
+                idMedia INTEGER PRIMARY KEY,
+                idPubli INTEGER,
+                nomMedia TEXT NOT NULL,
+                typeMedia TEXT NOT NULL,
+                duree INTEGER,
+                dateUpload DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
             CREATE TABLE Signalement (
                 idSignalement INTEGER PRIMARY KEY AUTOINCREMENT,
                 idUserAuteur INTEGER NOT NULL,
@@ -61,6 +70,16 @@ describe('Système de signalement', () => {
             INSERT INTO Publication (idPubli, idUser)
             VALUES (10, 1);
         `);
+
+        db.prepare(`
+            INSERT INTO Media (
+                idMedia,
+                idPubli,
+                nomMedia,
+                typeMedia
+            )
+            VALUES (?, ?, ?, ?)
+        `).run(1, 10, 'photo-test.jpg', 'image');
 
         db.prepare(`
             INSERT INTO Commentaire (
@@ -224,4 +243,49 @@ describe('Système de signalement', () => {
         expect(resultat.succes).toBe(false);
         expect(resultat.erreur).toBe('Commentaire introuvable');
     });
+
+        test('Un utilisateur inexistant ne peut pas être signalé', () => {
+        const resultat = creerSignalement(
+            db,
+            1,
+            'utilisateur',
+            999,
+            'Utilisateur problématique'
+        );
+
+        expect(resultat.succes).toBe(false);
+        expect(resultat.erreur).toBe('Utilisateur introuvable');
+    });
+
+    test('Un média inexistant ne peut pas être signalé', () => {
+        const resultat = creerSignalement(
+            db,
+            1,
+            'media',
+            999,
+            'Média problématique'
+        );
+
+        expect(resultat.succes).toBe(false);
+        expect(resultat.erreur).toBe('Media introuvable');
+    });
+
+    test('Un motif de plus de 500 caractères est refusé', () => {
+        const motifTropLong = 'a'.repeat(501);
+
+        const resultat = creerSignalement(
+            db,
+            1,
+            'publication',
+            10,
+            motifTropLong
+        );
+
+        expect(resultat.succes).toBe(false);
+        expect(resultat.erreur).toBe(
+            'Le motif ne doit pas dépasser 500 caractères'
+        );
+    });
+
+
 });

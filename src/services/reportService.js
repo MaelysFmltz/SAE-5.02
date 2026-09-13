@@ -36,6 +36,15 @@ function creerSignalement(db, idUserAuteur, typeContenu, idContenu, motif) {
         };
     }
 
+    const motifNettoye = motif.trim();
+
+    if (motifNettoye.length > 500) {
+        return {
+            succes: false,
+            erreur: 'Le motif ne doit pas dépasser 500 caractères'
+        };
+    }
+
     const utilisateur = db.prepare(`
         SELECT idUser
         FROM Utilisateur
@@ -79,12 +88,43 @@ function creerSignalement(db, idUserAuteur, typeContenu, idContenu, motif) {
         }
     }
 
+    if (typeContenu === 'utilisateur') {
+        const utilisateurSignale = db.prepare(`
+            SELECT idUser
+            FROM Utilisateur
+            WHERE idUser = ?
+        `).get(idContenu);
+
+        if (!utilisateurSignale) {
+            return {
+                succes: false,
+                erreur: 'Utilisateur introuvable'
+            };
+        }
+    }
+
+    if (typeContenu === 'media') {
+        const media = db.prepare(`
+            SELECT idMedia
+            FROM Media
+            WHERE idMedia = ?
+        `).get(idContenu);
+
+        if (!media) {
+            return {
+                succes: false,
+                erreur: 'Media introuvable'
+            };
+        }
+    }
+
+
     const idSignalement = reportModel.creerSignalement(
         db,
         idUserAuteur,
         typeContenu,
         idContenu,
-        motif.trim()
+        motifNettoye
     );
 
     return {

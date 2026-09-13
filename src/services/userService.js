@@ -25,7 +25,7 @@ function modifierStatut(db, idUser, statut) {
         };
     }
 
-    const utilisateur = userModel.findById(idUser);
+    const utilisateur = userModel.findById(db, idUser);
 
     if (!utilisateur) {
         return {

@@ -12,7 +12,7 @@ function findByPseudo(pseudo) {
     .get(pseudo);
 }
 
-function findById(idUser) {
+function findById(db, idUser) {
   return db
     .prepare('SELECT * FROM Utilisateur WHERE idUser = ?')
     .get(idUser);

@@ -121,30 +121,61 @@
         const signalements = await response.json();
         const container = document.getElementById('signalements');
 
-        container.innerHTML = '';
+        container.textContent = '';
 
         signalements.forEach(signalement => {
             const element = document.createElement('div');
 
             element.className = 'item';
 
-            element.innerHTML = `
-                <p><strong>ID :</strong> ${signalement.idSignalement}</p>
-                <p><strong>Type :</strong> ${signalement.typeContenu}</p>
-                <p><strong>Contenu :</strong> ${signalement.idContenu}</p>
-                <p><strong>Motif :</strong> ${signalement.motif}</p>
-                <p><strong>Statut :</strong> ${signalement.statut}</p>
+            const informations = [
+                ['ID :', signalement.idSignalement],
+                ['Type :', signalement.typeContenu],
+                ['Contenu :', signalement.idContenu],
+                ['Motif :', signalement.motif],
+                ['Statut :', signalement.statut]
+            ];
 
-                <button class="traiter"
-                    onclick="modifierSignalement(${signalement.idSignalement}, 'traite')">
-                    Traiter
-                </button>
+            informations.forEach(([label, valeur]) => {
+                const paragraphe = document.createElement('p');
 
-                <button class="rejeter"
-                    onclick="modifierSignalement(${signalement.idSignalement}, 'rejete')">
-                    Rejeter
-                </button>
-            `;
+                const strong = document.createElement('strong');
+                strong.textContent = label + ' ';
+
+                paragraphe.appendChild(strong);
+                paragraphe.appendChild(
+                    document.createTextNode(valeur ?? '')
+                );
+
+                element.appendChild(paragraphe);
+            });
+
+            const boutonTraiter = document.createElement('button');
+
+            boutonTraiter.className = 'traiter';
+            boutonTraiter.textContent = 'Traiter';
+
+            boutonTraiter.addEventListener('click', () => {
+                modifierSignalement(
+                    signalement.idSignalement,
+                    'traite'
+                );
+            });
+
+            const boutonRejeter = document.createElement('button');
+
+            boutonRejeter.className = 'rejeter';
+            boutonRejeter.textContent = 'Rejeter';
+
+            boutonRejeter.addEventListener('click', () => {
+                modifierSignalement(
+                    signalement.idSignalement,
+                    'rejete'
+                );
+            });
+
+            element.appendChild(boutonTraiter);
+            element.appendChild(boutonRejeter);
 
             container.appendChild(element);
         });
@@ -176,29 +207,60 @@
         const utilisateurs = await response.json();
         const container = document.getElementById('utilisateurs');
 
-        container.innerHTML = '';
+        container.textContent = '';
 
         utilisateurs.forEach(utilisateur => {
             const element = document.createElement('div');
 
             element.className = 'item';
 
-            element.innerHTML = `
-                <p><strong>Pseudo :</strong> ${utilisateur.pseudo}</p>
-                <p><strong>Email :</strong> ${utilisateur.email}</p>
-                <p><strong>Statut :</strong> ${utilisateur.statut}</p>
-                <p><strong>Rôle :</strong> ${utilisateur.role}</p>
+            const informations = [
+                ['Pseudo :', utilisateur.pseudo],
+                ['Email :', utilisateur.email],
+                ['Statut :', utilisateur.statut],
+                ['Rôle :', utilisateur.role]
+            ];
 
-                <button class="suspendre"
-                    onclick="modifierUtilisateur(${utilisateur.idUser}, 'suspendu')">
-                    Suspendre
-                </button>
+            informations.forEach(([label, valeur]) => {
+                const paragraphe = document.createElement('p');
 
-                <button class="activer"
-                    onclick="modifierUtilisateur(${utilisateur.idUser}, 'actif')">
-                    Réactiver
-                </button>
-            `;
+                const strong = document.createElement('strong');
+                strong.textContent = label + ' ';
+
+                paragraphe.appendChild(strong);
+                paragraphe.appendChild(
+                    document.createTextNode(valeur ?? '')
+                );
+
+                element.appendChild(paragraphe);
+            });
+
+            const boutonSuspendre = document.createElement('button');
+
+            boutonSuspendre.className = 'suspendre';
+            boutonSuspendre.textContent = 'Suspendre';
+
+            boutonSuspendre.addEventListener('click', () => {
+                modifierUtilisateur(
+                    utilisateur.idUser,
+                    'suspendu'
+                );
+            });
+
+            const boutonActiver = document.createElement('button');
+
+            boutonActiver.className = 'activer';
+            boutonActiver.textContent = 'Réactiver';
+
+            boutonActiver.addEventListener('click', () => {
+                modifierUtilisateur(
+                    utilisateur.idUser,
+                    'actif'
+                );
+            });
+
+            element.appendChild(boutonSuspendre);
+            element.appendChild(boutonActiver);
 
             container.appendChild(element);
         });
