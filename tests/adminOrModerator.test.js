@@ -1,6 +1,8 @@
-const adminMiddleware = require('../src/middlewares/adminMiddleware');
+const adminOrModeratorMiddleware = require(
+    '../src/middlewares/adminOrModeratorMiddleware'
+);
 
-describe('Droits administrateur', () => {
+describe('Droits administrateur et modérateur', () => {
     test('autoriser un administrateur', () => {
         const req = {
             user: {
@@ -16,7 +18,28 @@ describe('Droits administrateur', () => {
 
         const next = jest.fn();
 
-        adminMiddleware(req, res, next);
+        adminOrModeratorMiddleware(req, res, next);
+
+        expect(next).toHaveBeenCalled();
+        expect(res.status).not.toHaveBeenCalled();
+    });
+
+    test('autoriser un modérateur', () => {
+        const req = {
+            user: {
+                idUser: 3,
+                role: 'moderator'
+            }
+        };
+
+        const res = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn()
+        };
+
+        const next = jest.fn();
+
+        adminOrModeratorMiddleware(req, res, next);
 
         expect(next).toHaveBeenCalled();
         expect(res.status).not.toHaveBeenCalled();
@@ -37,11 +60,11 @@ describe('Droits administrateur', () => {
 
         const next = jest.fn();
 
-        adminMiddleware(req, res, next);
+        adminOrModeratorMiddleware(req, res, next);
 
         expect(res.status).toHaveBeenCalledWith(403);
         expect(res.json).toHaveBeenCalledWith({
-            error: 'Accès réservé aux administrateurs'
+            error: 'Accès réservé aux administrateurs et modérateurs'
         });
         expect(next).not.toHaveBeenCalled();
     });
@@ -56,34 +79,9 @@ describe('Droits administrateur', () => {
 
         const next = jest.fn();
 
-        adminMiddleware(req, res, next);
+        adminOrModeratorMiddleware(req, res, next);
 
         expect(res.status).toHaveBeenCalledWith(403);
         expect(next).not.toHaveBeenCalled();
     });
-
-    test('refuser un modérateur', () => {
-        const req = {
-            user: {
-                idUser: 3,
-                role: 'moderator'
-            }
-        };
-
-        const res = {
-            status: jest.fn().mockReturnThis(),
-            json: jest.fn()
-        };
-
-        const next = jest.fn();
-
-        adminMiddleware(req, res, next);
-
-        expect(res.status).toHaveBeenCalledWith(403);
-        expect(res.json).toHaveBeenCalledWith({
-            error: 'Accès réservé aux administrateurs'
-        });
-        expect(next).not.toHaveBeenCalled();
-    });
-
 });

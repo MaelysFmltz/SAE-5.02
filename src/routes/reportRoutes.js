@@ -1,7 +1,7 @@
 const express = require('express');
 const reportController = require('../controllers/reportController');
 const authMiddleware = require('../middlewares/authMiddleware');
-const adminMiddleware = require('../middlewares/adminMiddleware');
+const adminOrModeratorMiddleware = require('../middlewares/adminOrModeratorMiddleware');
 
 const router = express.Router();
 
@@ -14,21 +14,21 @@ router.post(
 router.get(
     '/',
     authMiddleware,
-    adminMiddleware,
+    adminOrModeratorMiddleware,
     reportController.obtenirSignalements
 );
 
 router.patch(
     '/:idSignalement/statut',
     authMiddleware,
-    adminMiddleware,
+    adminOrModeratorMiddleware,
     reportController.modifierStatutSignalement
 );
 
 router.get(
     '/:idSignalement',
     authMiddleware,
-    adminMiddleware,
+    adminOrModeratorMiddleware,
     reportController.obtenirSignalement
 );
 

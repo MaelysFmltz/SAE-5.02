@@ -10,7 +10,7 @@ function obtenirUtilisateurs(db) {
     return userModel.obtenirUtilisateurs(db);
 }
 
-function modifierStatut(db, idUser, statut) {
+function modifierStatut(db, idUser, statut, idUserModificateur) {
     if (!Number.isInteger(idUser) || idUser <= 0) {
         return {
             succes: false,
@@ -22,6 +22,16 @@ function modifierStatut(db, idUser, statut) {
         return {
             succes: false,
             erreur: 'Statut utilisateur invalide'
+        };
+    }
+
+    if (
+        statut === 'suspendu' &&
+        idUser === idUserModificateur
+    ) {
+        return {
+            succes: false,
+            erreur: 'Un administrateur ne peut pas suspendre son propre compte'
         };
     }
 

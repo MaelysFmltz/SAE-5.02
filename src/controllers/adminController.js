@@ -14,7 +14,8 @@ function modifierStatutUtilisateur(req, res) {
     const resultat = userService.modifierStatut(
         db,
         idUser,
-        statut
+        statut,
+        req.user.idUser
     );
 
     if (!resultat.succes) {

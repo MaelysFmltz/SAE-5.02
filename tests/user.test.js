@@ -106,4 +106,27 @@ describe('Gestion des utilisateurs', () => {
             'Utilisateur introuvable'
         );
     });
+
+    test('un administrateur ne peut pas suspendre son propre compte', () => {
+        const resultat = userService.modifierStatut(
+            db,
+            2,
+            'suspendu',
+            2
+        );
+
+        expect(resultat.succes).toBe(false);
+        expect(resultat.erreur).toBe(
+            'Un administrateur ne peut pas suspendre son propre compte'
+        );
+
+        const utilisateur = db.prepare(`
+            SELECT statut
+            FROM Utilisateur
+            WHERE idUser = 2
+        `).get();
+
+        expect(utilisateur.statut).toBe('actif');
+    });
+
 });
