@@ -22,7 +22,9 @@
     "sqlite3": "^6.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "jest": "^30.5.1",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2"
   },
   "repository": {
     "type": "git",

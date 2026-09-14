@@ -1,17 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const commentController = require('../controllers/commentController');
+const authMiddleware = require('../middlewares/authMiddleware');
 
-// Interface graphique EJS
+// 1. Consultation Web (EJS)
 router.get('/view/:idPubli', commentController.renderPostPage);
 
-// Actions formulaires
-router.post('/', commentController.addComment);
-router.post('/:idComm/edit', commentController.editComment);
-router.post('/:idComm/delete', commentController.removeComment);
-
-// API REST
+// 2. Consultation API (JSON)
 router.get('/:idPubli', commentController.getComments);
-router.delete('/:idComm', commentController.removeComment);
+
+// 3. Actions sur les publications (routes fixes d'abord)
+router.post('/', authMiddleware, commentController.addComment);
+router.post('/react', authMiddleware, commentController.handleReaction);
+
+// 4. Actions ciblées sur un commentaire spécifique (routes dynamiques avec :idComm)
+router.post('/:idComm/react', authMiddleware, commentController.handleCommentReaction);
+router.put('/:idComm', authMiddleware, commentController.editComment);
+router.delete('/:idComm', authMiddleware, commentController.removeCommentApi);
 
 module.exports = router;

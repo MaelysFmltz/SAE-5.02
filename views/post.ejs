@@ -4,26 +4,30 @@
   <meta charset="UTF-8">
   <title>Pixoria - Publication</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fafafa; display: flex; justify-content: center; padding: 20px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fafafa; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+    .auth-banner { background: #fff; border: 1px solid #dbdbdb; border-radius: 8px; padding: 10px 16px; margin-bottom: 15px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
     .card { background: white; border: 1px solid #dbdbdb; border-radius: 8px; width: 480px; }
     .header { padding: 12px; font-weight: 600; border-bottom: 1px solid #efefef; }
-    .photo { width: 100%; height: 300px; background: #eee; display: flex; align-items: center; justify-content: center; color: #8e8e8e; }
+    .photo { width: 100%; height: 240px; background: #eee; display: flex; align-items: center; justify-content: center; color: #8e8e8e; }
+    
+    .interaction-bar { display: flex; align-items: center; gap: 15px; padding: 10px 14px 4px 14px; }
+    .btn-react { background: none; border: none; font-size: 18px; cursor: pointer; display: flex; align-items: center; gap: 5px; color: #262626; }
+    .btn-react:hover { transform: scale(1.15); }
+    
     .comments-section { padding: 12px; }
     .comment-list { max-height: 250px; overflow-y: auto; margin-bottom: 12px; }
-    .comment-item { font-size: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .comment-item { font-size: 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; border-bottom: 1px solid #f9f9f9; padding-bottom: 8px; }
+    .comment-content { flex-grow: 1; word-break: break-word; }
     
-    .comment-content { flex-grow: 1; word-break: break-word; overflow-wrap: anywhere; }
-    .comment-text-collapsed { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-    .comment-text-expanded { display: block; }
+    /* Boutons Like / Dislike sous chaque commentaire */
+    .comment-meta { display: flex; align-items: center; gap: 12px; margin-top: 5px; }
+    .btn-comment-react { background: none; border: none; font-size: 13px; cursor: pointer; color: #737373; display: inline-flex; align-items: center; gap: 4px; padding: 0; }
+    .btn-comment-react:hover { color: #000; transform: scale(1.05); }
     
-    .btn-toggle-expand { background: none; border: none; color: #0095f6; font-size: 12px; cursor: pointer; padding: 0 4px; vertical-align: middle; }
-    
-    .actions { display: flex; gap: 6px; white-space: nowrap; }
-    .btn-action { background: none; border: none; font-size: 12px; cursor: pointer; color: #8e8e8e; padding: 0; }
+    .actions { display: flex; gap: 6px; }
+    .btn-action { background: none; border: none; font-size: 12px; cursor: pointer; color: #8e8e8e; display: none; }
     .btn-action:hover { color: #ed4956; }
-    
     .edit-form { display: none; margin-top: 6px; }
-    .edit-form textarea { width: 100%; font-size: 13px; box-sizing: border-box; resize: vertical; }
     
     .form-comment { display: flex; flex-direction: column; border-top: 1px solid #efefef; padding-top: 10px; }
     .input-row { display: flex; align-items: center; gap: 8px; }
@@ -34,113 +38,266 @@
 </head>
 <body>
 
-  <div class="card">
-    <div class="header">Publication #<%= post.idPubli %></div>
+  <!-- Barre d'état de connexion -->
+  <div class="auth-banner" id="auth-banner">
+    <span id="auth-status">Non connecté</span>
+    <input type="email" id="login-email" placeholder="email" style="width: 130px;">
+    <input type="password" id="login-pwd" placeholder="mot de passe" style="width: 100px;">
+    <button type="button" onclick="loginUser()">Se connecter</button>
+    <button type="button" onclick="logoutUser()" style="display:none;" id="btn-logout">Déconnexion</button>
+  </div>
+
+  <div class="card" data-post-id="<%= post.idPubli %>">
+    <div class="header">
+      Publication #<%= post.idPubli %> — <%= post.auteurPseudo || 'Utilisateur #' + post.idUser %>
+    </div>
     <div class="photo">📷 Photo Pixoria</div>
 
+    <!-- Réactions sur la Publication -->
+    <div class="interaction-bar">
+      <button type="button" class="btn-react" onclick="sendReaction('LIKE')" title="J'aime">
+        👍 <span id="like-count"><%= (reactions && reactions.likes) ? reactions.likes : 0 %></span>
+      </button>
+      <button type="button" class="btn-react" onclick="sendReaction('DISLIKE')" title="Je n'aime pas">
+        👎 <span id="dislike-count"><%= (reactions && reactions.dislikes) ? reactions.dislikes : 0 %></span>
+      </button>
+    </div>
+
+    <!-- Section Commentaires -->
     <div class="comments-section">
       <div class="comment-list">
         <% if (typeof comments !== 'undefined' && comments.length > 0) { %>
-          <% comments.forEach(function(c) { 
-               const isLong = c.contenuCom && c.contenuCom.length > 80;
-          %>
-            <div class="comment-item">
+          <% comments.forEach(function(c) { %>
+            <div class="comment-item" id="comm-<%= c.idComm %>">
               <div class="comment-content">
-                <strong><%= c.pseudo %></strong>
-                
-                <span id="text-<%= c.idComm %>" class="<%= isLong ? 'comment-text-collapsed' : '' %>">
-                  <%= c.contenuCom %>
-                </span>
+                <strong><%= c.pseudo %></strong> :
+                <span id="text-<%= c.idComm %>"><%= c.contenuCom %></span>
 
-                <% if (isLong) { %>
-                  <button type="button" class="btn-toggle-expand" id="btn-toggle-<%= c.idComm %>" onclick="toggleExpand('<%= c.idComm %>')">▼</button>
-                <% } %>
+                <!-- Réactions sur le Commentaire -->
+                <div class="comment-meta">
+                  <button type="button" class="btn-comment-react" onclick="sendCommentReaction('<%= c.idComm %>', 'LIKE')" title="J'aime">
+                    👍 <span id="comm-like-<%= c.idComm %>"><%= (c.reactions && c.reactions.likes) ? c.reactions.likes : 0 %></span>
+                  </button>
+                  <button type="button" class="btn-comment-react" onclick="sendCommentReaction('<%= c.idComm %>', 'DISLIKE')" title="Je n'aime pas">
+                    👎 <span id="comm-dislike-<%= c.idComm %>"><%= (c.reactions && c.reactions.dislikes) ? c.reactions.dislikes : 0 %></span>
+                  </button>
+                </div>
 
-                <!-- Formulaire d'édition -->
-                <form id="edit-form-<%= c.idComm %>" class="edit-form" action="/api/comments/<%= c.idComm %>/edit" method="POST">
-                  <input type="hidden" name="idPubli" value="<%= post.idPubli %>">
-                  <input type="hidden" name="idUser" value="<%= currentUserId %>">
-                  <textarea name="contenuCom" maxlength="500" rows="2" required><%= c.contenuCom %></textarea>
-                  <div style="margin-top: 4px;">
-                    <button type="submit">Valider</button>
-                    <button type="button" onclick="toggleEdit('<%= c.idComm %>')">Annuler</button>
-                  </div>
-                </form>
+                <div id="edit-box-<%= c.idComm %>" class="edit-form">
+                  <textarea id="input-edit-<%= c.idComm %>" maxlength="500" rows="2" style="width:100%;"><%= c.contenuCom %></textarea>
+                  <button type="button" onclick="submitEdit('<%= c.idComm %>')">Enregistrer</button>
+                  <button type="button" onclick="toggleEdit('<%= c.idComm %>')">Annuler</button>
+                </div>
               </div>
 
-              <!-- Actions de modification/suppression réservées à l'auteur -->
-              <% if (c.idUser === currentUserId) { %>
-                <div class="actions">
-                  <button class="btn-action" title="Modifier" onclick="toggleEdit('<%= c.idComm %>')">✏️</button>
-                  <form action="/api/comments/<%= c.idComm %>/delete" method="POST" style="display:inline;">
-                    <input type="hidden" name="idPubli" value="<%= post.idPubli %>">
-                    <input type="hidden" name="idUser" value="<%= currentUserId %>">
-                    <button type="submit" class="btn-action" title="Supprimer">🗑️</button>
-                  </form>
-                </div>
-              <% } %>
+              <!-- Actions Auteur / Propriétaire du Post -->
+              <div class="actions" data-author="<%= c.idUser %>" data-post-owner="<%= post.idUser %>">
+                <button type="button" class="btn-action" onclick="toggleEdit('<%= c.idComm %>')" title="Modifier">✏️</button>
+                <button type="button" class="btn-action" onclick="deleteComment('<%= c.idComm %>')" title="Supprimer">🗑️</button>
+              </div>
             </div>
           <% }); %>
         <% } else { %>
-          <p style="color: #8e8e8e; font-size: 13px;">Aucun commentaire pour le moment.</p>
+          <p id="no-comments" style="color: #8e8e8e; font-size: 13px;">Aucun commentaire.</p>
         <% } %>
       </div>
 
-      <!-- Formulaire d'envoi avec limite 500 caractères -->
-      <form action="/api/comments" method="POST" class="form-comment">
-        <input type="hidden" name="idPubli" value="<%= post.idPubli %>">
-        <input type="hidden" name="idUser" value="<%= currentUserId %>">
-        
+      <!-- Formulaire d'ajout de commentaire -->
+      <div class="form-comment">
         <div class="input-row">
-          <input 
-            type="text" 
-            id="comment-input"
-            name="contenuCom" 
-            maxlength="500" 
-            placeholder="Ajouter un commentaire (500 car. max)..." 
-            required 
-            autocomplete="off"
-            oninput="updateCount(this)">
-          <button type="submit">Publier</button>
+          <input type="text" id="new-comment" maxlength="500" placeholder="Ajouter un commentaire..." oninput="updateCount(this)">
+          <button type="button" onclick="submitComment()">Publier</button>
         </div>
         <div id="char-count" class="char-counter">0 / 500</div>
-      </form>
+      </div>
     </div>
   </div>
 
   <script>
-    // Basculer l'affichage du formulaire de modification
-    function toggleEdit(idComm) {
-      const form = document.getElementById('edit-form-' + idComm);
-      const text = document.getElementById('text-' + idComm);
-      const toggleBtn = document.getElementById('btn-toggle-' + idComm);
-      const isHidden = form.style.display === 'none' || form.style.display === '';
-      
-      form.style.display = isHidden ? 'block' : 'none';
-      text.style.display = isHidden ? 'none' : '';
-      if (toggleBtn) toggleBtn.style.display = isHidden ? 'none' : 'inline';
+    function getPostId() {
+      const card = document.querySelector('.card');
+      return card ? parseInt(card.dataset.postId, 10) : null;
     }
 
-    // Dérouler / replier le texte complet avec la flèche
-    function toggleExpand(idComm) {
-      const text = document.getElementById('text-' + idComm);
-      const btn = document.getElementById('btn-toggle-' + idComm);
-      if (text.classList.contains('comment-text-collapsed')) {
-        text.classList.remove('comment-text-collapsed');
-        text.classList.add('comment-text-expanded');
-        btn.textContent = '▲';
+    function getAuthHeaders() {
+      const token = localStorage.getItem('jwt_token');
+      return {
+        'Content-Type': 'application/json',
+        'Authorization': token ? 'Bearer ' + token : ''
+      };
+    }
+
+    async function loginUser() {
+      const email = document.getElementById('login-email').value;
+      const motDePasse = document.getElementById('login-pwd').value;
+
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, motDePasse })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('jwt_token', data.token);
+        localStorage.setItem('user_pseudo', data.user.pseudo);
+        localStorage.setItem('user_id', data.user.idUser);
+        updateAuthUI();
       } else {
-        text.classList.remove('comment-text-expanded');
-        text.classList.add('comment-text-collapsed');
-        btn.textContent = '▼';
+        alert('Erreur connexion : ' + data.error);
       }
     }
 
-    // Mise à jour du compteur de caractères en temps réel
-    function updateCount(input) {
-      const counter = document.getElementById('char-count');
-      counter.textContent = input.value.length + ' / 500';
+    function logoutUser() {
+      localStorage.removeItem('jwt_token');
+      localStorage.removeItem('user_pseudo');
+      localStorage.removeItem('user_id');
+      updateAuthUI();
     }
+
+    function updateActionButtons() {
+      const rawUserId = localStorage.getItem('user_id');
+      const currentUserId = rawUserId ? parseInt(rawUserId, 10) : null;
+
+      document.querySelectorAll('.comment-item').forEach(item => {
+        const actionsDiv = item.querySelector('.actions');
+        if (!actionsDiv) return;
+
+        const authorId = parseInt(actionsDiv.dataset.author, 10);
+        const postOwnerId = parseInt(actionsDiv.dataset.postOwner, 10);
+
+        const btnEdit = actionsDiv.querySelector('button[title="Modifier"]');
+        const btnDelete = actionsDiv.querySelector('button[title="Supprimer"]');
+
+        if (btnEdit) {
+          btnEdit.style.display = (currentUserId && currentUserId === authorId) ? 'inline' : 'none';
+        }
+
+        if (btnDelete) {
+          const canDelete = currentUserId && (currentUserId === authorId || currentUserId === postOwnerId);
+          btnDelete.style.display = canDelete ? 'inline' : 'none';
+        }
+      });
+    }
+
+    function updateAuthUI() {
+      const pseudo = localStorage.getItem('user_pseudo');
+      const banner = document.getElementById('auth-status');
+      const logoutBtn = document.getElementById('btn-logout');
+
+      if (pseudo) {
+        banner.textContent = 'Connecté : ' + pseudo;
+        logoutBtn.style.display = 'inline';
+      } else {
+        banner.textContent = 'Non connecté';
+        logoutBtn.style.display = 'none';
+      }
+
+      updateActionButtons();
+    }
+
+    async function submitComment() {
+      const input = document.getElementById('new-comment');
+      const contenuCom = input.value.trim();
+      const idPubli = getPostId();
+
+      if (!contenuCom || !idPubli) return;
+
+      const res = await fetch('/api/comments', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ idPubli, contenuCom })
+      });
+
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert('Erreur : ' + (err.error || 'Action refusée'));
+      }
+    }
+
+    async function submitEdit(idComm) {
+      const text = document.getElementById('input-edit-' + idComm).value.trim();
+      if (!text) return;
+
+      const res = await fetch('/api/comments/' + idComm, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ contenuCom: text })
+      });
+
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert('Erreur : ' + (err.error || 'Interdit'));
+      }
+    }
+
+    async function deleteComment(idComm) {
+      if (!confirm('Supprimer ce commentaire ?')) return;
+
+      const res = await fetch('/api/comments/' + idComm, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (res.ok) {
+        document.getElementById('comm-' + idComm).remove();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert('Erreur : ' + (err.error || 'Interdit'));
+      }
+    }
+
+    // Réaction sur la Publication
+    async function sendReaction(type) {
+      const idPubli = getPostId();
+      if (!idPubli) return;
+
+      const res = await fetch('/api/comments/react', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ idPubli, type })
+      });
+
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert('Erreur : ' + (err.error || 'Connectez-vous d’abord'));
+      }
+    }
+
+    // Réaction sur un Commentaire
+    async function sendCommentReaction(idComm, type) {
+      const res = await fetch('/api/comments/' + idComm + '/react', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ type })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById('comm-like-' + idComm).textContent = data.likes;
+        document.getElementById('comm-dislike-' + idComm).textContent = data.dislikes;
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert('Erreur : ' + (err.error || 'Connectez-vous d’abord'));
+      }
+    }
+
+    function toggleEdit(idComm) {
+      const box = document.getElementById('edit-box-' + idComm);
+      box.style.display = (box.style.display === 'none' || box.style.display === '') ? 'block' : 'none';
+    }
+
+    function updateCount(input) {
+      document.getElementById('char-count').textContent = input.value.length + ' / 500';
+    }
+
+    window.onload = updateAuthUI;
   </script>
 </body>
 </html>

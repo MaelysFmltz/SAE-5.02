@@ -1,26 +1,14 @@
 const db = require('../config/database');
 
-/**
- * Insère un nouveau commentaire en base de données.
- */
 function createComment(idUser, idPubli, contenuCom) {
   const query = `
     INSERT INTO Commentaire (idUser, idPubli, contenuCom, dateCommentaire)
     VALUES (?, ?, ?, datetime('now'))
   `;
   const info = db.prepare(query).run(idUser, idPubli, contenuCom);
-
-  return {
-    idComm: info.lastInsertRowid,
-    idUser,
-    idPubli,
-    contenuCom
-  };
+  return { idComm: info.lastInsertRowid, idUser, idPubli, contenuCom };
 }
 
-/**
- * Récupère tous les commentaires d'une publication avec le pseudo de l'auteur.
- */
 function getCommentsByPostId(idPubli) {
   const query = `
     SELECT 
@@ -38,9 +26,7 @@ function getCommentsByPostId(idPubli) {
   return db.prepare(query).all(idPubli);
 }
 
-/**
- * Modifie un commentaire si l'utilisateur en est l'auteur.
- */
+// Seul l'auteur peut modifier son propre texte
 function updateComment(idComm, idUser, contenuCom) {
   const query = `
     UPDATE Commentaire
@@ -51,15 +37,17 @@ function updateComment(idComm, idUser, contenuCom) {
   return info.changes > 0;
 }
 
-/**
- * Supprime un commentaire si l'utilisateur en est l'auteur.
- */
+// L'auteur du commentaire OU l'auteur du post peut supprimer
 function deleteComment(idComm, idUser) {
   const query = `
     DELETE FROM Commentaire
-    WHERE idComm = ? AND idUser = ?
+    WHERE idComm = ?
+      AND (
+        idUser = ? 
+        OR idPubli IN (SELECT idPubli FROM Publication WHERE idUser = ?)
+      )
   `;
-  const info = db.prepare(query).run(idComm, idUser);
+  const info = db.prepare(query).run(idComm, idUser, idUser);
   return info.changes > 0;
 }
 
