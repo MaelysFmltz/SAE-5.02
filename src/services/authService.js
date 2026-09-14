@@ -99,12 +99,8 @@ async function login(email, motDePasse) {
     );
   }
 
-  if (user.statut !== 'actif') {
-    throw new Error(
-      'Ce compte n’est pas actif'
-    );
-  }
-
+  // Vérification du mot de passe en premier
+  // pour éviter un oracle de statut.
   const passwordIsValid =
     await comparePassword(
       motDePasse,
@@ -114,6 +110,13 @@ async function login(email, motDePasse) {
   if (!passwordIsValid) {
     throw new Error(
       'Email ou mot de passe incorrect'
+    );
+  }
+
+  // Le statut est vérifié seulement après le mot de passe.
+  if (user.statut !== 'actif') {
+    throw new Error(
+      'Ce compte n’est pas actif'
     );
   }
 
