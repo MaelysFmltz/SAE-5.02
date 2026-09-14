@@ -2,7 +2,8 @@ const postService = require('../services/postService');
 
 function createPublication(req, res) {
     try {
-        const { contenuPub, visibilite, idPubliPartagee } = req.body;
+        const { contenuPub, idPubliPartagee } = req.body;
+        const visibilite = Number(req.body.visibilite);
 
         const publication = postService.createPublication(
             req.user.idUser,
@@ -24,7 +25,7 @@ function createPublication(req, res) {
 
 function createRepost(req, res) {
     try {
-        const { visibilite } = req.body;
+        const visibilite = Number(req.body.visibilite);
 
         const publication = postService.createRepost(
             req.user.idUser,
