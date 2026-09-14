@@ -273,3 +273,72 @@
   resize: vertical;
   min-height: 90px;
 }
+
+
+/* Statistiques d'abonnements */
+.profile-stats {
+  display: flex;
+  justify-content: space-around;
+  background-color: var(--profile-box-bg);
+  border: 1px solid var(--profile-border);
+  border-radius: 12px;
+  padding: 12px 0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.stat-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--profile-text-bright);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--profile-text-dimmed);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Pastille Amis */
+.badge-friend {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+/* Bouton Suivre / Ne plus suivre */
+.btn-follow {
+  display: block;
+  width: 100%;
+  border: none;
+  background-color: var(--profile-accent);
+  color: var(--profile-text-bright);
+  padding: 12px 0;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.btn-follow:hover {
+  background-color: var(--profile-accent-hover);
+}
+
+.btn-follow.following {
+  background-color: var(--profile-card-bg);
+  border: 1px solid var(--profile-border-subtle);
+  color: var(--profile-text-muted);
+}
+
+.btn-follow.following:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.1);
+}
