@@ -1,363 +1,422 @@
 const form =
-  document.getElementById('postForm');
+    document.getElementById('postForm');
 
 const submitButton =
-  document.getElementById('submitButton');
+    document.getElementById('submitButton');
 
 const message =
-  document.getElementById('message');
+    document.getElementById('message');
 
 const progressContainer =
-  document.getElementById('progressContainer');
+    document.getElementById('progressContainer');
 
 const progressBar =
-  document.getElementById('progressBar');
+    document.getElementById('progressBar');
 
 const progressText =
-  document.getElementById('progressText');
+    document.getElementById('progressText');
 
 
 function showMessage(
-  text,
-  type
+    text,
+    type
 ) {
-  message.textContent = text;
+    message.textContent = text;
 
-  message.className = type;
+    message.className = type;
 
-  message.style.display = 'block';
+    message.style.display = 'block';
 }
 
 
 function hideMessage() {
-  message.textContent = '';
+    message.textContent = '';
 
-  message.className = '';
+    message.className = '';
 
-  message.style.display = 'none';
+    message.style.display = 'none';
 }
 
 
+/*
+ * ============================================================
+ * ENVOI DU FORMULAIRE
+ * ============================================================
+ */
+
 form.addEventListener(
-  'submit',
-  async (event) => {
-    event.preventDefault();
+    'submit',
+    async (event) => {
+        event.preventDefault();
 
-    hideMessage();
+        hideMessage();
 
-    /*
-     * Le token est celui obtenu lors de la connexion.
-     */
-    const token =
-      localStorage.getItem('token');
+        const videoInput =
+            document.getElementById('video');
 
-    if (!token) {
-      showMessage(
-        'Vous devez être connecté pour publier.',
-        'error'
-      );
-
-      return;
-    }
+        const contenuInput =
+            document.getElementById('contenuPub');
 
 
-    const videoInput =
-      document.getElementById('video');
+        /*
+         * ========================================================
+         * VERIFICATION DE LA VIDEO
+         * ========================================================
+         */
 
-    const contenuInput =
-      document.getElementById('contenuPub');
+        if (
+            videoInput.files.length > 0
+        ) {
+            const video =
+                videoInput.files[0];
+
+            const maxSize =
+                50 * 1024 * 1024;
+
+            if (
+                video.size > maxSize
+            ) {
+                showMessage(
+                    'La vidéo ne peut pas dépasser 50 Mo.',
+                    'error'
+                );
+
+                return;
+            }
+
+            const allowedExtensions = [
+                '.mp4',
+                '.mov',
+                '.avi',
+                '.webm'
+            ];
+
+            const filename =
+                video.name.toLowerCase();
+
+            const validExtension =
+                allowedExtensions.some(
+                    (extension) =>
+                        filename.endsWith(
+                            extension
+                        )
+                );
+
+            if (!validExtension) {
+                showMessage(
+                    'Format vidéo non autorisé. Utilisez MP4, MOV, AVI ou WebM.',
+                    'error'
+                );
+
+                return;
+            }
+        }
 
 
-    /*
-     * Vérification frontend complémentaire.
-     *
-     * La validation serveur reste obligatoire.
-     */
+        /*
+         * ========================================================
+         * VERIFICATION DU CONTENU
+         * ========================================================
+         *
+         * Une publication doit contenir au minimum :
+         *
+         * - du texte
+         * OU
+         * - une vidéo
+         */
 
-    if (
-      videoInput.files.length > 0
-    ) {
-      const video =
-        videoInput.files[0];
+        const hasText =
+            contenuInput.value.trim().length > 0;
 
-      const maxSize =
-        50 * 1024 * 1024;
+        const hasVideo =
+            videoInput.files.length > 0;
 
-      if (video.size > maxSize) {
-        showMessage(
-          'La vidéo ne peut pas dépasser 50 Mo.',
-          'error'
+        if (
+            !hasText &&
+            !hasVideo
+        ) {
+            showMessage(
+                'Ajoutez du texte ou une vidéo.',
+                'error'
+            );
+
+            return;
+        }
+
+
+        /*
+         * ========================================================
+         * CREATION DU FORMDATA
+         * ========================================================
+         *
+         * L'idUser n'est volontairement PAS envoyé.
+         *
+         * Le serveur récupère l'utilisateur depuis le JWT
+         * contenu dans le cookie HTTP-only.
+         */
+
+        const formData =
+            new FormData();
+
+        formData.append(
+            'contenuPub',
+            contenuInput.value
         );
 
-        return;
-      }
-
-      const allowedExtensions = [
-        '.mp4',
-        '.mov',
-        '.avi',
-        '.webm'
-      ];
-
-      const filename =
-        video.name.toLowerCase();
-
-      const validExtension =
-        allowedExtensions.some(
-          (extension) =>
-            filename.endsWith(extension)
-        );
-
-      if (!validExtension) {
-        showMessage(
-          'Format vidéo non autorisé. Utilisez MP4, MOV, AVI ou WebM.',
-          'error'
-        );
-
-        return;
-      }
-    }
+        if (hasVideo) {
+            formData.append(
+                'video',
+                videoInput.files[0]
+            );
+        }
 
 
-    /*
-     * Une publication doit avoir au minimum du texte
-     * ou une vidéo.
-     */
+        /*
+         * ========================================================
+         * PREPARATION DE L'ENVOI
+         * ========================================================
+         */
 
-    const hasText =
-      contenuInput.value.trim().length > 0;
+        submitButton.disabled = true;
 
-    const hasVideo =
-      videoInput.files.length > 0;
-
-    if (!hasText && !hasVideo) {
-      showMessage(
-        'Ajoutez du texte ou une vidéo.',
-        'error'
-      );
-
-      return;
-    }
-
-
-    /*
-     * FormData :
-     *
-     * contenuPub
-     * video
-     *
-     * Aucun idPubli.
-     * Aucun idUser.
-     */
-
-    const formData =
-      new FormData();
-
-    formData.append(
-      'contenuPub',
-      contenuInput.value
-    );
-
-    if (hasVideo) {
-      formData.append(
-        'video',
-        videoInput.files[0]
-      );
-    }
-
-
-    submitButton.disabled = true;
-
-    progressContainer.style.display =
-      'block';
-
-    progressBar.value = 0;
-
-    progressText.textContent =
-      'Envoi : 0 %';
-
-
-    try {
-      /*
-       * XMLHttpRequest permet d'afficher
-       * la progression de l'upload.
-       */
-      const result =
-        await uploadPublication(
-          formData,
-          token
-        );
-
-
-      /*
-       * Succès.
-       */
-
-      showMessage(
-        result.message ||
-          'Publication créée avec succès.',
-        'success'
-      );
-
-      form.reset();
-
-      progressBar.value = 100;
-
-      progressText.textContent =
-        'Envoi : 100 %';
-
-    } catch (error) {
-
-      showMessage(
-        error.message ||
-          'Une erreur est survenue.',
-        'error'
-      );
-
-    } finally {
-
-      submitButton.disabled = false;
-
-      setTimeout(() => {
         progressContainer.style.display =
-          'none';
-      }, 1500);
+            'block';
+
+        progressBar.value = 0;
+
+        progressText.textContent =
+            'Envoi : 0 %';
+
+
+        try {
+            const result =
+                await uploadPublication(
+                    formData
+                );
+
+
+            /*
+             * ====================================================
+             * SUCCES
+             * ====================================================
+             */
+
+            showMessage(
+                result.message ||
+                    'Publication créée avec succès.',
+                'success'
+            );
+
+            form.reset();
+
+            progressBar.value = 100;
+
+            progressText.textContent =
+                'Envoi : 100 %';
+
+        } catch (error) {
+
+            showMessage(
+                error.message ||
+                    'Une erreur est survenue.',
+                'error'
+            );
+
+        } finally {
+
+            submitButton.disabled = false;
+
+            setTimeout(
+                () => {
+                    progressContainer.style.display =
+                        'none';
+                },
+                1500
+            );
+        }
     }
-  }
 );
 
 
+/*
+ * ============================================================
+ * ENVOI DE LA PUBLICATION
+ * ============================================================
+ */
+
 function uploadPublication(
-  formData,
-  token
+    formData
 ) {
-  return new Promise(
-    (resolve, reject) => {
+    return new Promise(
+        (resolve, reject) => {
 
-      const xhr =
-        new XMLHttpRequest();
-
-
-      xhr.open(
-        'POST',
-        '/post',
-        true
-      );
+            const xhr =
+                new XMLHttpRequest();
 
 
-      /*
-       * JWT.
-       */
-      xhr.setRequestHeader(
-        'Authorization',
-        `Bearer ${token}`
-      );
+            /*
+             * POST /post
+             */
 
-
-      /*
-       * Progression de l'envoi.
-       */
-      xhr.upload.addEventListener(
-        'progress',
-        (event) => {
-
-          if (!event.lengthComputable) {
-            return;
-          }
-
-          const percentage =
-            Math.round(
-              (event.loaded /
-                event.total) *
-                100
+            xhr.open(
+                'POST',
+                '/post',
+                true
             );
 
-          progressBar.value =
-            percentage;
 
-          progressText.textContent =
-            `Envoi : ${percentage} %`;
-        }
-      );
+            /*
+             * ====================================================
+             * COOKIE D'AUTHENTIFICATION
+             * ====================================================
+             *
+             * IMPORTANT :
+             *
+             * Nous ne récupérons PAS le JWT en JavaScript.
+             *
+             * Le cookie HTTP-only "token" est automatiquement
+             * envoyé par le navigateur avec cette requête.
+             *
+             * Aucun Authorization: Bearer n'est nécessaire.
+             */
+
+            xhr.withCredentials = true;
 
 
-      /*
-       * Réponse HTTP.
-       */
-      xhr.addEventListener(
-        'load',
-        () => {
+            /*
+             * ====================================================
+             * PROGRESSION DE L'UPLOAD
+             * ====================================================
+             */
 
-          let data;
+            xhr.upload.addEventListener(
+                'progress',
+                (event) => {
 
-          try {
-            data =
-              JSON.parse(
-                xhr.responseText
-              );
-          } catch (error) {
-            reject(
-              new Error(
-                'Réponse invalide du serveur.'
-              )
+                    if (
+                        !event.lengthComputable
+                    ) {
+                        return;
+                    }
+
+                    const percentage =
+                        Math.round(
+                            (
+                                event.loaded /
+                                event.total
+                            ) * 100
+                        );
+
+                    progressBar.value =
+                        percentage;
+
+                    progressText.textContent =
+                        `Envoi : ${percentage} %`;
+                }
             );
 
-            return;
-          }
+
+            /*
+             * ====================================================
+             * REPONSE HTTP
+             * ====================================================
+             */
+
+            xhr.addEventListener(
+                'load',
+                () => {
+
+                    let data;
+
+                    try {
+                        data =
+                            JSON.parse(
+                                xhr.responseText
+                            );
+
+                    } catch (error) {
+
+                        reject(
+                            new Error(
+                                'Réponse invalide du serveur.'
+                            )
+                        );
+
+                        return;
+                    }
 
 
-          if (
-            xhr.status >= 200 &&
-            xhr.status < 300
-          ) {
-            resolve(data);
+                    /*
+                     * Requête réussie.
+                     */
 
-            return;
-          }
+                    if (
+                        xhr.status >= 200 &&
+                        xhr.status < 300
+                    ) {
+                        resolve(data);
+
+                        return;
+                    }
 
 
-          reject(
-            new Error(
-              data.error ||
-                'La publication n’a pas pu être créée.'
-            )
-          );
+                    /*
+                     * Erreur retournée par le serveur.
+                     */
+
+                    reject(
+                        new Error(
+                            data.error ||
+                                'La publication n’a pas pu être créée.'
+                        )
+                    );
+                }
+            );
+
+
+            /*
+             * ====================================================
+             * ERREUR RESEAU
+             * ====================================================
+             */
+
+            xhr.addEventListener(
+                'error',
+                () => {
+                    reject(
+                        new Error(
+                            'Impossible de contacter le serveur.'
+                        )
+                    );
+                }
+            );
+
+
+            /*
+             * ====================================================
+             * ANNULATION
+             * ====================================================
+             */
+
+            xhr.addEventListener(
+                'abort',
+                () => {
+                    reject(
+                        new Error(
+                            'L’envoi a été annulé.'
+                        )
+                    );
+                }
+            );
+
+
+            /*
+             * Envoi de la requête.
+             */
+
+            xhr.send(
+                formData
+            );
         }
-      );
-
-
-      /*
-       * Erreur réseau.
-       */
-      xhr.addEventListener(
-        'error',
-        () => {
-          reject(
-            new Error(
-              'Impossible de contacter le serveur.'
-            )
-          );
-        }
-      );
-
-
-      /*
-       * Annulation.
-       */
-      xhr.addEventListener(
-        'abort',
-        () => {
-          reject(
-            new Error(
-              'L’envoi a été annulé.'
-            )
-          );
-        }
-      );
-
-
-      xhr.send(formData);
-    }
-  );
+    );
 }
-
