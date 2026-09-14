@@ -244,7 +244,7 @@ describe('Système de signalement', () => {
         expect(resultat.erreur).toBe('Commentaire introuvable');
     });
 
-        test('Un utilisateur inexistant ne peut pas être signalé', () => {
+    test('Un utilisateur inexistant ne peut pas être signalé', () => {
         const resultat = creerSignalement(
             db,
             1,
@@ -287,5 +287,49 @@ describe('Système de signalement', () => {
         );
     });
 
+    test('Un utilisateur ne peut pas signaler deux fois le même contenu', () => {
+        const premierSignalement = creerSignalement(
+            db,
+            1,
+            'publication',
+            10,
+            'Premier signalement'
+        );
 
+        expect(premierSignalement.succes).toBe(true);
+
+        const deuxiemeSignalement = creerSignalement(
+            db,
+            1,
+            'publication',
+            10,
+            'Deuxième signalement'
+        );
+
+        expect(deuxiemeSignalement.succes).toBe(false);
+        expect(deuxiemeSignalement.erreur).toBe(
+            'Ce contenu a déjà été signalé par cet utilisateur'
+        );
+    });
+
+    test('Deux utilisateurs différents peuvent signaler le même contenu', () => {
+        const premierSignalement = creerSignalement(
+            db,
+            1,
+            'publication',
+            10,
+            'Premier signalement'
+        );
+
+        const deuxiemeSignalement = creerSignalement(
+            db,
+            2,
+            'publication',
+            10,
+            'Deuxième signalement'
+        );
+
+        expect(premierSignalement.succes).toBe(true);
+        expect(deuxiemeSignalement.succes).toBe(true);
+    });
 });

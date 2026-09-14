@@ -58,6 +58,25 @@ function creerSignalement(db, idUserAuteur, typeContenu, idContenu, motif) {
         };
     }
 
+    const signalementExistant = db.prepare(`
+        SELECT idSignalement
+        FROM Signalement
+        WHERE idUserAuteur = ?
+        AND typeContenu = ?
+        AND idContenu = ?
+    `).get(
+        idUserAuteur,
+        typeContenu,
+        idContenu
+    );
+
+    if (signalementExistant) {
+        return {
+            succes: false,
+            erreur: 'Ce contenu a déjà été signalé par cet utilisateur'
+        };
+    }
+
     if (typeContenu === 'publication') {
         const publication = db.prepare(`
             SELECT idPubli
