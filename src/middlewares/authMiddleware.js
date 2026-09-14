@@ -1,4 +1,6 @@
 const jwt = require('jsonwebtoken');
+const db = require('../config/database');
+const userModel = require('../models/userModel');
 
 function authMiddleware(req, res, next) {
   const authorization =
@@ -29,7 +31,34 @@ function authMiddleware(req, res, next) {
       process.env.JWT_SECRET
     );
 
-    req.user = decoded;
+    // Vérifier l'utilisateur dans la base à chaque requête
+    // pour prendre en compte une suspension ou une
+    // modification de rôle après la création du JWT.
+    const user = userModel.findById(
+      db,
+      decoded.idUser
+    );
+
+    if (!user) {
+      return res.status(401).json({
+        error: 'Utilisateur introuvable'
+      });
+    }
+
+    if (user.statut !== 'actif') {
+      return res.status(403).json({
+        error: 'Ce compte n’est pas actif'
+      });
+    }
+
+    // Utiliser les informations actuelles de la BDD
+    // plutôt que le rôle potentiellement ancien du JWT.
+    req.user = {
+      ...decoded,
+      pseudo: user.pseudo,
+      role: user.role,
+      statut: user.statut
+    };
 
     next();
   } catch (err) {
