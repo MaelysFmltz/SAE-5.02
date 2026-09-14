@@ -14,22 +14,17 @@ const router = express.Router();
 
 
 /*
- * POST /post/upload
- *
- * Authentification obligatoire.
+ * Toutes les routes de publication
+ * nécessitent une authentification.
  */
-router.post(
-    '/upload',
-    authMiddleware,
-    upload.single('image'),
-    postController.uploadImage
-);
+router.use(authMiddleware);
 
 
 /*
  * GET /post
  *
- * Affiche la page EJS.
+ * Affiche UNIQUEMENT le formulaire
+ * de création d'une publication.
  */
 router.get(
     '/',
@@ -38,13 +33,36 @@ router.get(
 
 
 /*
+ * POST /post/upload
+ *
+ * Crée la publication.
+ */
+router.post(
+    '/upload',
+    upload.single('image'),
+    postController.uploadImage
+);
+
+
+/*
  * GET /post/api
  *
- * Retourne les publications en JSON.
+ * Toutes les publications.
  */
 router.get(
     '/api',
     postController.getImagesApi
+);
+
+
+/*
+ * GET /post/api/user/:idUser
+ *
+ * Publications d'un utilisateur.
+ */
+router.get(
+    '/api/user/:idUser',
+    postController.getUserImagesApi
 );
 
 

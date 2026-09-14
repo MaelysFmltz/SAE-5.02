@@ -1,13 +1,43 @@
 const fs = require('fs/promises');
 
-const postService = require('../services/postService');
-const { isRealJPEG } = require('../utils/imageUtils');
+const postService =
+    require('../services/postService');
+
+const { isRealJPEG } =
+    require('../utils/imageUtils');
+
+
+/**
+ * Affiche la page permettant de créer une publication.
+ *
+ * IMPORTANT :
+ * Cette page ne doit PAS afficher les publications.
+ * Les publications sont affichées dans le Feed et le Profile.
+ */
+async function getImages(req, res) {
+
+    try {
+
+        return res.render(
+            'posts',
+            {
+                user: req.user
+            }
+        );
+
+    } catch (err) {
+
+        console.error(err);
+
+        return res.status(500).send(
+            'Erreur lors du chargement de la page de publication'
+        );
+    }
+}
 
 
 /**
  * Upload d'une image.
- *
- * Route protégée par authMiddleware.
  */
 async function uploadImage(req, res) {
 
@@ -15,12 +45,6 @@ async function uploadImage(req, res) {
 
     try {
 
-        /*
-         * Vérification de l'utilisateur connecté.
-         *
-         * authMiddleware a normalement déjà vérifié
-         * le JWT et créé req.user.
-         */
         if (!req.user || !req.user.idUser) {
 
             return res.status(401).json({
@@ -29,9 +53,6 @@ async function uploadImage(req, res) {
         }
 
 
-        /*
-         * Vérification du fichier.
-         */
         if (!req.file) {
 
             return res.status(400).json({
@@ -44,9 +65,7 @@ async function uploadImage(req, res) {
 
 
         /*
-         * Vérification réelle du fichier.
-         *
-         * Le MIME envoyé par le navigateur ne suffit pas.
+         * Vérification réelle du JPEG.
          */
         const validJPEG =
             await isRealJPEG(req.file.path);
@@ -56,45 +75,39 @@ async function uploadImage(req, res) {
             await fs.unlink(req.file.path);
 
             return res.status(400).json({
-                error: 'Le fichier envoyé n’est pas un véritable JPEG'
+                error:
+                    'Le fichier envoyé n’est pas un véritable JPEG'
             });
         }
 
 
-        /*
-         * Récupération des informations du formulaire.
-         */
         const {
             contenuPub,
             visibilite
         } = req.body;
 
 
-        /*
-         * Valeur par défaut :
-         * publication visible.
-         */
         const visibility =
             visibilite === undefined
                 ? 1
                 : Number(visibilite);
 
 
-        /*
-         * Vérification de la visibilité.
-         */
         if (![0, 1].includes(visibility)) {
 
             await fs.unlink(req.file.path);
 
             return res.status(400).json({
-                error: 'Valeur de visibilité invalide'
+                error:
+                    'Valeur de visibilité invalide'
             });
         }
 
 
         /*
-         * Création Publication + Media.
+         * IMPORTANT :
+         * idUser vient de l'utilisateur authentifié,
+         * et non du formulaire.
          */
         const post =
             postService.createImagePost(
@@ -105,27 +118,31 @@ async function uploadImage(req, res) {
             );
 
 
-        /*
-         * Réponse envoyée au navigateur.
-         *
-         * L'image est accessible via :
-         * /uploads/nomDuFichier.jpg
-         */
         return res.status(201).json({
 
-            message: 'Image publiée avec succès',
+            message:
+                'Image publiée avec succès',
 
             post: {
+
                 idPubli: post.idPubli,
+
                 idUser: post.idUser,
+
                 pseudo: post.pseudo,
+
                 contenuPub: post.contenuPub,
+
                 visibilite: post.visibilite,
+
                 datePubli: post.datePubli,
+
                 nomMedia: post.nomMedia,
+
                 typeMedia: post.typeMedia,
 
-                url: `/uploads/${post.nomMedia}`
+                url:
+                    `/uploads/${post.nomMedia}`
             }
         });
 
@@ -135,57 +152,33 @@ async function uploadImage(req, res) {
 
 
         /*
-         * Si la création en base échoue après l'upload,
-         * on supprime le fichier pour éviter un fichier
-         * orphelin dans /uploads.
+         * Suppression du fichier si la BDD
+         * n'a pas pu enregistrer la publication.
          */
         if (uploadedFilePath) {
 
             try {
-                await fs.unlink(uploadedFilePath);
+
+                await fs.unlink(
+                    uploadedFilePath
+                );
+
             } catch (deleteError) {
-                // Le fichier peut déjà avoir été supprimé.
+                // Rien à faire si le fichier n'existe plus.
             }
         }
 
 
         return res.status(500).json({
-            error: 'Erreur lors de la publication de l’image'
+            error:
+                'Erreur lors de la publication de l’image'
         });
     }
 }
 
 
 /**
- * Affichage de la page des publications.
- */
-async function getImages(req, res) {
-
-    try {
-
-        const posts =
-            postService.getAllImagePosts();
-
-        return res.render(
-            'posts',
-            {
-                posts
-            }
-        );
-
-    } catch (err) {
-
-        console.error(err);
-
-        return res.status(500).send(
-            'Erreur lors du chargement des publications'
-        );
-    }
-}
-
-
-/**
- * API permettant de récupérer les publications.
+ * API : toutes les publications.
  */
 async function getImagesApi(req, res) {
 
@@ -199,17 +192,25 @@ async function getImagesApi(req, res) {
             posts.map(post => ({
 
                 idPubli: post.idPubli,
+
                 idUser: post.idUser,
+
                 pseudo: post.pseudo,
+
                 contenuPub: post.contenuPub,
+
                 visibilite: post.visibilite,
+
                 datePubli: post.datePubli,
 
                 idMedia: post.idMedia,
+
                 nomMedia: post.nomMedia,
+
                 typeMedia: post.typeMedia,
 
-                url: `/uploads/${post.nomMedia}`
+                url:
+                    `/uploads/${post.nomMedia}`
             }));
 
 
@@ -222,14 +223,71 @@ async function getImagesApi(req, res) {
         console.error(err);
 
         return res.status(500).json({
-            error: 'Erreur lors du chargement des publications'
+            error:
+                'Erreur lors du chargement des publications'
+        });
+    }
+}
+
+
+/**
+ * API : publications d'un utilisateur.
+ */
+async function getUserImagesApi(req, res) {
+
+    try {
+
+        const posts =
+            postService.getUserImagePosts(
+                req.params.idUser
+            );
+
+
+        const formattedPosts =
+            posts.map(post => ({
+
+                idPubli: post.idPubli,
+
+                idUser: post.idUser,
+
+                pseudo: post.pseudo,
+
+                contenuPub: post.contenuPub,
+
+                visibilite: post.visibilite,
+
+                datePubli: post.datePubli,
+
+                idMedia: post.idMedia,
+
+                nomMedia: post.nomMedia,
+
+                typeMedia: post.typeMedia,
+
+                url:
+                    `/uploads/${post.nomMedia}`
+            }));
+
+
+        return res.status(200).json(
+            formattedPosts
+        );
+
+    } catch (err) {
+
+        console.error(err);
+
+        return res.status(500).json({
+            error:
+                'Erreur lors du chargement des publications'
         });
     }
 }
 
 
 module.exports = {
-    uploadImage,
     getImages,
-    getImagesApi
+    uploadImage,
+    getImagesApi,
+    getUserImagesApi
 };

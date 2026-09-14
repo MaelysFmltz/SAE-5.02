@@ -20,14 +20,34 @@ function createImagePost(
 
 
 /**
- * Récupère toutes les publications avec images.
+ * Récupère toutes les publications.
+ *
+ * Utilisé pour le Feed.
  */
 function getAllImagePosts() {
     return postModel.findAllPostsWithImages();
 }
 
 
+/**
+ * Récupère les publications d'un utilisateur.
+ *
+ * Utilisé pour son profil.
+ */
+function getUserImagePosts(idUser) {
+
+    if (!idUser) {
+        throw new Error(
+            'Identifiant utilisateur manquant'
+        );
+    }
+
+    return postModel.findPostsByUserId(idUser);
+}
+
+
 module.exports = {
     createImagePost,
-    getAllImagePosts
+    getAllImagePosts,
+    getUserImagePosts
 };

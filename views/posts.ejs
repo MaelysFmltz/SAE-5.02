@@ -1,495 +1,226 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Publications - Pixora</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+    <title>
+        Nouvelle publication - Pixora
+    </title>
 
-        body {
-            margin: 0;
-            background: #09090e;
-            color: #f4f4f7;
-            font-family: Arial, Helvetica, sans-serif;
-        }
+    <link
+        rel="stylesheet"
+        href="/css/style.css"
+    >
 
-        /* =========================
-           HEADER
-        ========================= */
+    <link
+        rel="stylesheet"
+        href="/css/post.css"
+    >
 
-        header {
-            height: 67px;
-            background: #14141c;
-            border-bottom: 1px solid #292936;
-
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-
-            padding: 0 32px;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .logo img {
-            width: 38px;
-            height: 38px;
-            border-radius: 9px;
-            object-fit: cover;
-        }
-
-        .logo-text {
-            color: #d83ca9;
-            font-size: 18px;
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .bonjour {
-            color: #9b9aaa;
-        }
-
-        .bonjour strong {
-            color: #ffffff;
-        }
-
-        .logout {
-            background: #1b1b26;
-            border: 1px solid #2d2d3c;
-            color: #ffffff;
-
-            padding: 9px 16px;
-            border-radius: 7px;
-
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .logout:hover {
-            background: #252532;
-        }
-
-        /* =========================
-           PAGE
-        ========================= */
-
-        main {
-            width: min(900px, 94%);
-            margin: 40px auto 60px;
-        }
-
-        h1 {
-            font-size: 25px;
-            margin-bottom: 25px;
-        }
-
-        /* =========================
-           FORMULAIRE
-        ========================= */
-
-        .upload-box {
-            background: #15151d;
-            border: 1px solid #2b2b38;
-            border-radius: 12px;
-
-            padding: 28px;
-            margin-bottom: 35px;
-        }
-
-        .upload-box h2 {
-            margin-top: 0;
-            margin-bottom: 22px;
-            font-size: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-
-            color: #eeeeF2;
-            font-weight: bold;
-        }
-
-        input[type="file"] {
-            width: 100%;
-            padding: 12px;
-
-            background: #101018;
-            color: #b7b6c5;
-
-            border: 1px solid #30303e;
-            border-radius: 7px;
-        }
-
-        textarea,
-        select {
-            width: 100%;
-
-            background: #101018;
-            color: #f4f4f7;
-
-            border: 1px solid #30303e;
-            border-radius: 7px;
-
-            padding: 12px;
-
-            font-family: inherit;
-            font-size: 14px;
-        }
-
-        textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-
-        select {
-            cursor: pointer;
-        }
-
-        /* =========================
-            IEW
-        ========================= */
-
-        #preview-container {
-            display: none;
-
-            margin-top: 18px;
-            padding: 15px;
-
-            background: #101018;
-            border: 1px solid #292936;
-            border-radius: 9px;
-        }
-
-        #preview-container p {
-            margin-top: 0;
-            color: #9b9aaa;
-        }
-
-        #preview {
-            display: block;
-
-            max-width: 100%;
-            max-height: 450px;
-
-            margin: auto;
-
-            border-radius: 8px;
-            object-fit: contain;
-        }
-
-        /* =========================
-           BOUTON
-        ========================= */
-
-        .publish-button {
-            background: #d83ca9;
-            color: white;
-
-            border: none;
-            border-radius: 7px;
-
-            padding: 11px 20px;
-
-            font-weight: bold;
-            font-size: 14px;
-
-            cursor: pointer;
-        }
-
-        .publish-button:hover {
-            background: #c82f9b;
-        }
-
-        .publish-button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        #message {
-            margin-top: 15px;
-            color: #9b9aaa;
-        }
-
-        /* =========================
-           POSTS
-        ========================= */
-
-        .posts {
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-        }
-
-        .post {
-            background: #15151d;
-            border: 1px solid #2b2b38;
-            border-radius: 12px;
-
-            overflow: hidden;
-        }
-
-        .post-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-
-            padding: 17px 20px;
-        }
-
-        .post-user {
-            font-weight: bold;
-            color: #ffffff;
-        }
-
-        .post-date {
-            color: #898899;
-            font-size: 13px;
-        }
-
-        .post-image {
-            display: block;
-
-            width: 100%;
-            max-height: 600px;
-
-            object-fit: contain;
-
-            background: #08080d;
-        }
-
-        .post-content {
-            padding: 18px 20px;
-
-            color: #d2d1da;
-            line-height: 1.5;
-        }
-
-        .empty {
-            background: #15151d;
-            border: 1px solid #2b2b38;
-            border-radius: 12px;
-
-            padding: 30px;
-
-            color: #9695a8;
-            text-align: center;
-        }
-
-        @media (max-width: 600px) {
-            header {
-                padding: 0 15px;
-            }
-
-            .bonjour {
-                display: none;
-            }
-
-            main {
-                width: 94%;
-                margin-top: 25px;
-            }
-
-            .upload-box {
-                padding: 20px;
-            }
-        }
-    </style>
 </head>
+
 
 <body>
 
-<header>
+<div class="app-container">
 
-    <div class="logo">
-        <!-- Si tu as un logo Pixora, mets son chemin ici -->
-        <div class="logo-text">PIXORA</div>
-    </div>
 
-    <div class="header-right">
-        <div class="bonjour">
-            Bonjour, <strong id="username">Nat</strong>
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
+
+    <header class="post-page-header">
+
+        <div class="post-page-logo">
+
+            <img
+                src="/images/logo.jpg"
+                alt="Pixora"
+            >
+
+            <span>
+                PIXORA
+            </span>
+
         </div>
 
-        <button class="logout" id="logout">
-            Déconnexion
-        </button>
-    </div>
 
-</header>
+        <div class="post-page-user">
 
-<main>
+            Bonjour,
+            <strong>
+                <%= user.pseudo %>
+            </strong>
 
-    <h1>Publications</h1>
 
-    <!-- =========================
-         FORMULAIRE
-    ========================== -->
+            <form
+                action="/api/auth/logout"
+                method="POST"
+            >
 
-    <section class="upload-box">
-
-        <h2>Publier une photo</h2>
-
-        <form id="upload-form">
-
-            <div class="form-group">
-
-                <label for="image">
-                    Photo
-                </label>
-
-                <input
-                    type="file"
-                    id="image"
-                    name="image"
-                    accept=".jpg,.jpeg,image/jpeg"
-                    required
+                <button
+                    type="submit"
+                    class="logout"
                 >
+                    Déconnexion
+                </button>
 
-                <!-- PREVIEW -->
-                <div id="preview-container" style="display:none;">
+            </form>
 
-                    <p>Prévisualisation :</p>
+        </div>
 
-                    <img
-                        id="preview"
-                        alt="Prévisualisation de l'image"
+    </header>
+
+
+    <!-- =====================================================
+         FORMULAIRE DE PUBLICATION
+    ====================================================== -->
+
+    <main class="post-page-main">
+
+
+        <h1>
+            Nouvelle publication
+        </h1>
+
+
+        <section class="upload-box">
+
+            <h2>
+                Publier une photo
+            </h2>
+
+
+            <form
+                id="upload-form"
+            >
+
+
+                <!-- IMAGE -->
+
+                <div class="form-group">
+
+                    <label for="image">
+                        Photo
+                    </label>
+
+
+                    <input
+                        type="file"
+                        id="image"
+                        name="image"
+                        accept=".jpg,.jpeg,image/jpeg"
+                        required
                     >
 
-                </div>
 
-            </div>
+                    <!-- PREVISUALISATION -->
 
-            <div class="form-group">
+                    <div
+                        id="preview-container"
+                        style="display:none;"
+                    >
 
-                <label for="contenuPub">
-                    Description
-                </label>
-
-                <textarea
-                    id="contenuPub"
-                    name="contenuPub"
-                    placeholder="Écrivez quelque chose..."
-                ></textarea>
-
-            </div>
-
-            <div class="form-group">
-
-                <label for="visibilite">
-                    Visibilité
-                </label>
-
-                <select id="visibilite" name="visibilite">
-
-                    <option value="1">
-                        Public
-                    </option>
-
-                    <option value="0">
-                        Privé
-                    </option>
-
-                </select>
-
-            </div>
-
-            <button
-                type="submit"
-                class="publish-button"
-            >
-                Publier
-            </button>
-
-            <div id="message"></div>
-
-        </form>
-
-    </section>
+                        <p>
+                            Prévisualisation :
+                        </p>
 
 
-    <!-- =========================
-         PUBLICATIONS
-    ========================== -->
-
-    <section>
-
-        <h2>Photos publiées</h2>
-
-        <div class="posts" id="posts">
-
-            <% if (posts.length === 0) { %>
-
-                <div class="empty">
-                    Aucune photo publiée pour le moment.
-                </div>
-
-            <% } %>
-
-
-            <% posts.forEach(function(post) { %>
-
-                <article class="post">
-
-                    <div class="post-header">
-
-                        <div class="post-user">
-                            <%= post.pseudo %>
-                        </div>
-
-                        <div class="post-date">
-                            <%= post.datePubli %>
-                        </div>
+                        <img
+                            id="preview"
+                            alt="Prévisualisation de l'image"
+                        >
 
                     </div>
 
+                </div>
 
-                    <img
-                        class="post-image"
-                        src="/uploads/<%= post.nomMedia %>"
-                        alt="Photo publiée par <%= post.pseudo %>"
+
+                <!-- DESCRIPTION -->
+
+                <div class="form-group">
+
+                    <label for="contenuPub">
+                        Description
+                    </label>
+
+
+                    <textarea
+                        id="contenuPub"
+                        name="contenuPub"
+                        placeholder="Écrivez quelque chose..."
+                    ></textarea>
+
+                </div>
+
+
+                <!-- VISIBILITÉ -->
+
+                <div class="form-group">
+
+                    <label for="visibilite">
+                        Visibilité
+                    </label>
+
+
+                    <select
+                        id="visibilite"
+                        name="visibilite"
                     >
 
+                        <option value="1">
+                            Public
+                        </option>
 
-                    <% if (post.contenuPub) { %>
+                        <option value="0">
+                            Privé
+                        </option>
 
-                        <div class="post-content">
-                            <%= post.contenuPub %>
-                        </div>
+                    </select>
 
-                    <% } %>
+                </div>
 
-                </article>
 
-            <% }); %>
+                <!-- BOUTON -->
 
-        </div>
+                <button
+                    type="submit"
+                    class="publish-button"
+                >
+                    Publier
+                </button>
 
-    </section>
 
-</main>
+                <div id="message"></div>
 
-<!-- IMPORTANT : avec express.static('/public'), l'URL est /js/post.js -->
+
+            </form>
+
+        </section>
+
+
+    </main>
+
+
+    <!-- =====================================================
+         NAVIGATION BASSE
+    ====================================================== -->
+
+    <%- include('navbar') %>
+
+
+</div>
+
+
 <script src="/js/post.js"></script>
 
 </body>
+
 </html>

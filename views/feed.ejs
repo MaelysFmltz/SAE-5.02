@@ -1,36 +1,196 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pixora — Accueil</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/feed.css">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    Pixora — Accueil
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="/css/style.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="/css/feed.css"
+  >
+
 </head>
+
+
 <body>
-  <div class="app-container">
-    <header class="navbar">
-      <div class="nav-brand">
-        <img src="/images/logo.jpg" alt="Pixora Logo" class="nav-logo">
-        <span class="nav-title">PIXORA</span>
+
+<div class="app-container">
+
+
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
+
+  <header class="navbar">
+
+    <div class="nav-brand">
+
+      <img
+        src="/images/logo.jpg"
+        alt="Pixora Logo"
+        class="nav-logo"
+      >
+
+      <span class="nav-title">
+        PIXORA
+      </span>
+
+    </div>
+
+
+    <div class="nav-user">
+
+      <span class="user-greeting">
+
+        Bonjour,
+        <strong>
+          <%= user.pseudo %>
+        </strong>
+
+      </span>
+
+
+      <form
+        action="/api/auth/logout"
+        method="POST"
+      >
+
+        <button
+          type="submit"
+          class="btn-logout"
+        >
+          Déconnexion
+        </button>
+
+      </form>
+
+    </div>
+
+  </header>
+
+
+  <!-- =====================================================
+       FEED
+  ====================================================== -->
+
+  <main class="feed-container">
+
+
+    <div class="feed-title">
+
+      <h1>
+        Fil d'actualité
+      </h1>
+
+    </div>
+
+
+    <% if (!posts || posts.length === 0) { %>
+
+      <div class="card empty-feed">
+
+        <h3>
+          Aucun post pour le moment
+        </h3>
+
+        <p>
+          Soyez le premier à partager une photo !
+        </p>
+
       </div>
 
-      <div class="nav-user">
-        <span class="user-greeting">Bonjour, <strong><%= user.pseudo %></strong></span>
-        <form action="/api/auth/logout" method="POST">
-          <button type="submit" class="btn-logout">Déconnexion</button>
-        </form>
-      </div>
-    </header>
+    <% } else { %>
 
-    <main class="feed-container">
-      <div class="card">
-        <h3>Bienvenue sur Pixora</h3>
-        <p>Votre fil d'actualité est prêt. Partagez vos premières photos !</p>
-      </div>
-    </main>
 
-    <%- include('navbar') %>
-  </div>
+      <div class="feed-posts">
+
+
+        <% posts.forEach(function(post) { %>
+
+          <article class="feed-post">
+
+
+            <!-- AUTEUR + DATE -->
+
+            <div class="feed-post-header">
+
+
+              <a
+                href="/profile/<%= encodeURIComponent(post.pseudo) %>"
+                class="post-author"
+              >
+                @<%= post.pseudo %>
+              </a>
+
+
+              <span class="post-date">
+                <%= post.datePubli %>
+              </span>
+
+
+            </div>
+
+
+            <!-- IMAGE -->
+
+            <img
+              src="/uploads/<%= post.nomMedia %>"
+              alt="Photo publiée par <%= post.pseudo %>"
+              class="feed-post-image"
+            >
+
+
+            <!-- DESCRIPTION -->
+
+            <% if (post.contenuPub) { %>
+
+              <div class="feed-post-content">
+
+                <%= post.contenuPub %>
+
+              </div>
+
+            <% } %>
+
+
+          </article>
+
+        <% }); %>
+
+
+      </div>
+
+
+    <% } %>
+
+
+  </main>
+
+
+  <!-- =====================================================
+       NAVIGATION
+  ====================================================== -->
+
+  <%- include('navbar') %>
+
+
+</div>
+
 </body>
+
 </html>

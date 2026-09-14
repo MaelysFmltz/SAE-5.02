@@ -1,233 +1,314 @@
-.post-page {
-    width: 90%;
-    max-width: 1100px;
-    margin: 40px auto;
-}
+/* ============================================================
+   PAGE POST
+============================================================ */
 
+.post-page-header {
+    height: 67px;
 
-/* ============================= */
-/* POSTER                        */
-/* ============================= */
+    background: #14141c;
 
-.poster-section {
-    border-bottom: 1px solid #ccc;
-    padding-bottom: 30px;
-}
+    border-bottom: 1px solid #292936;
 
+    display: flex;
 
-.poster-title {
-    text-align: center;
-    font-size: 32px;
-    margin-bottom: 30px;
-}
-
-
-.plus {
-    display: inline-flex;
-    justify-content: center;
     align-items: center;
 
-    width: 35px;
-    height: 35px;
+    justify-content: space-between;
 
-    border: 2px solid #333;
-    border-radius: 50%;
-
-    margin-left: 10px;
+    padding: 0 32px;
 }
 
 
-/* ============================= */
-/* UPLOAD + PREVIEW              */
-/* ============================= */
-
-.upload-zone {
+.post-page-logo {
     display: flex;
-    gap: 30px;
-    align-items: center;
-}
 
-
-.upload-button-zone {
-    width: 220px;
-    display: flex;
-    justify-content: center;
-}
-
-
-.upload-button {
-    display: flex;
-    justify-content: center;
     align-items: center;
 
-    width: 180px;
-    height: 80px;
+    gap: 12px;
+}
 
-    border: 2px solid #333;
+
+.post-page-logo img {
+    width: 38px;
+    height: 38px;
+
+    border-radius: 9px;
+
+    object-fit: cover;
+}
+
+
+.post-page-logo span {
+    color: #d83ca9;
+
+    font-size: 18px;
+
+    font-weight: bold;
+
+    letter-spacing: 1px;
+}
+
+
+.post-page-user {
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+
+    color: #9b9aaa;
+}
+
+
+.post-page-user strong {
+    color: #ffffff;
+}
+
+
+.logout {
+    background: #1b1b26;
+
+    border: 1px solid #2d2d3c;
+
+    color: #ffffff;
+
+    padding: 9px 16px;
+
+    border-radius: 7px;
+
+    font-weight: bold;
 
     cursor: pointer;
+}
+
+
+.logout:hover {
+    background: #252532;
+}
+
+
+/* ============================================================
+   PAGE
+============================================================ */
+
+.post-page-main {
+    width: min(900px, 94%);
+
+    margin: 40px auto 100px;
+}
+
+
+.post-page-main h1 {
+    font-size: 25px;
+
+    margin-bottom: 25px;
+}
+
+
+/* ============================================================
+   FORMULAIRE
+============================================================ */
+
+.upload-box {
+    background: #15151d;
+
+    border: 1px solid #2b2b38;
+
+    border-radius: 12px;
+
+    padding: 28px;
+}
+
+
+.upload-box h2 {
+    margin-top: 0;
+
+    margin-bottom: 22px;
 
     font-size: 20px;
 }
 
 
-.upload-button:hover {
-    background: #eee;
+.form-group {
+    margin-bottom: 20px;
 }
 
 
-.preview-container {
-    flex: 1;
+.form-group label {
+    display: block;
 
-    min-height: 300px;
+    margin-bottom: 8px;
 
-    border: 2px solid #333;
+    color: #eeeeF2;
 
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    font-weight: bold;
 }
 
 
-.preview-image {
-    max-width: 100%;
-    max-height: 400px;
-
-    object-fit: contain;
-}
-
-
-/* ============================= */
-/* BIO DU POST                   */
-/* ============================= */
-
-.post-information {
-    margin-top: 30px;
-}
-
-
-.post-information h2 {
-    font-size: 22px;
-}
-
-
-.post-options {
-    display: flex;
-    gap: 30px;
-    align-items: flex-start;
-}
-
-
-#contenuPub {
-    flex: 1;
-
-    min-height: 100px;
+input[type="file"] {
+    width: 100%;
 
     padding: 12px;
+
+    background: #101018;
+
+    color: #b7b6c5;
+
+    border: 1px solid #30303e;
+
+    border-radius: 7px;
+}
+
+
+textarea,
+select {
+    width: 100%;
+
+    background: #101018;
+
+    color: #f4f4f7;
+
+    border: 1px solid #30303e;
+
+    border-radius: 7px;
+
+    padding: 12px;
+
+    font-family: inherit;
+
+    font-size: 14px;
+}
+
+
+textarea {
+    min-height: 100px;
 
     resize: vertical;
 }
 
 
-.visibility {
-    display: flex;
-    gap: 10px;
-    align-items: center;
+select {
+    cursor: pointer;
 }
 
 
-#visibilite {
-    padding: 10px;
+/* ============================================================
+   PRÉVISUALISATION
+============================================================ */
+
+#preview-container {
+    margin-top: 18px;
+
+    padding: 15px;
+
+    background: #101018;
+
+    border: 1px solid #292936;
+
+    border-radius: 9px;
 }
 
+
+#preview-container p {
+    margin-top: 0;
+
+    color: #9b9aaa;
+}
+
+
+#preview {
+    display: block;
+
+    max-width: 100%;
+
+    max-height: 450px;
+
+    margin: auto;
+
+    border-radius: 8px;
+
+    object-fit: contain;
+}
+
+
+/* ============================================================
+   BOUTON
+============================================================ */
 
 .publish-button {
-    margin-top: 20px;
+    background: #d83ca9;
 
-    padding: 12px 30px;
+    color: white;
 
-    border: 1px solid #333;
+    border: none;
+
+    border-radius: 7px;
+
+    padding: 11px 20px;
+
+    font-weight: bold;
+
+    font-size: 14px;
 
     cursor: pointer;
 }
 
 
-/* ============================= */
-/* MESSAGE                       */
-/* ============================= */
+.publish-button:hover {
+    background: #c82f9b;
+}
+
+
+.publish-button:disabled {
+    opacity: 0.6;
+
+    cursor: not-allowed;
+}
+
 
 #message {
     margin-top: 15px;
+
+    color: #9b9aaa;
 }
 
 
-/* ============================= */
-/* PUBLICATIONS                  */
-/* ============================= */
+/* ============================================================
+   MOBILE
+============================================================ */
 
-.posts-section {
-    margin-top: 40px;
-}
+@media (max-width: 600px) {
 
-
-.posts-section > h2 {
-    margin-bottom: 25px;
-}
+    .post-page-header {
+        padding: 0 15px;
+    }
 
 
-#posts {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-}
+    .post-page-user {
+        gap: 8px;
+    }
 
 
-.post {
-    border: 1px solid #ccc;
-    padding: 20px;
-}
+    .post-page-user > strong,
+    .post-page-user {
+        font-size: 13px;
+    }
 
 
-.post-header {
-    display: flex;
-    justify-content: space-between;
-
-    margin-bottom: 15px;
-}
+    .logout {
+        padding: 7px 10px;
+    }
 
 
-.post-user {
-    font-weight: bold;
-}
+    .post-page-main {
+        width: 94%;
+
+        margin-top: 25px;
+    }
 
 
-.post-date {
-    color: #777;
-}
+    .upload-box {
+        padding: 20px;
+    }
 
-
-.post-image {
-    display: block;
-
-    width: 100%;
-    max-height: 600px;
-
-    object-fit: contain;
-
-    margin: 0 auto;
-}
-
-
-.post-content {
-    margin-top: 15px;
-
-    padding-top: 15px;
-
-    border-top: 1px solid #ddd;
-}
-
-
-.empty {
-    text-align: center;
-    color: #777;
 }
