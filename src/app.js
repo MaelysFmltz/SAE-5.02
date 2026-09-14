@@ -82,12 +82,12 @@ app.get('/', (req, res) => {
 app.get(
     '/home',
     authMiddleware,
-    (req, res) => {
+    async (req, res) => {
 
         try {
 
-            const posts =
-                postService.getAllImagePosts();
+            const posts = 
+                 postService.getAllPosts();
 
 
             return res.render(
@@ -126,12 +126,10 @@ app.get(
                     req.user.idUser
                 );
 
-
             const posts =
-                postService.getUserImagePosts(
+                postService.getUserPosts(
                     req.user.idUser
                 );
-
 
             return res.render(
                 'profile',
@@ -144,10 +142,15 @@ app.get(
 
         } catch (err) {
 
-            console.error(err);
+            console.error(
+                'Erreur chargement profil :',
+                err
+            );
 
-            return res.redirect('/home');
-
+            return res
+                .status(302)
+                .set('Location', '/home')
+                .end();
         }
     }
 );
@@ -169,17 +172,14 @@ app.get(
                     req.params.pseudo
                 );
 
-
             const posts =
-                postService.getUserImagePosts(
+                postService.getUserPosts(
                     profile.idUser
                 );
-
 
             const isOwner =
                 Number(profile.idUser) ===
                 Number(req.user.idUser);
-
 
             return res.render(
                 'profile',
@@ -192,11 +192,15 @@ app.get(
 
         } catch (err) {
 
-            console.error(err);
-
-            return res.status(404).send(
-                'Utilisateur introuvable'
+            console.error(
+                'Erreur chargement profil utilisateur :',
+                err
             );
+
+            return res
+                .status(302)
+                .set('Location', '/home')
+                .end();
         }
     }
 );

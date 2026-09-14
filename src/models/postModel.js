@@ -2,13 +2,18 @@ const db = require('../config/database');
 
 
 /**
- * Crée une publication avec son média image.
+ * Crée une publication avec un média.
+ *
+ * typeMedia :
+ * - image
+ * - video
  */
-function createImagePost(
+function createMediaPost(
     idUser,
     contenuPub,
     visibilite,
-    nomMedia
+    nomMedia,
+    typeMedia
 ) {
     const transaction = db.transaction(() => {
 
@@ -25,7 +30,9 @@ function createImagePost(
             visibilite
         );
 
-        const idPubli = publicationResult.lastInsertRowid;
+        const idPubli =
+            publicationResult.lastInsertRowid;
+
 
         db.prepare(`
             INSERT INTO Media (
@@ -37,11 +44,13 @@ function createImagePost(
         `).run(
             idPubli,
             nomMedia,
-            'image'
+            typeMedia
         );
+
 
         return idPubli;
     });
+
 
     const idPubli = transaction();
 
@@ -50,11 +59,9 @@ function createImagePost(
 
 
 /**
- * Récupère toutes les publications contenant une image.
- *
- * Utilisé par le Feed.
+ * Toutes les publications.
  */
-function findAllPostsWithImages() {
+function findAllPostsWithMedia() {
 
     return db.prepare(`
         SELECT
@@ -80,17 +87,13 @@ function findAllPostsWithImages() {
         INNER JOIN Utilisateur u
             ON u.idUser = p.idUser
 
-        WHERE m.typeMedia = 'image'
-
         ORDER BY p.datePubli DESC
     `).all();
 }
 
 
 /**
- * Récupère uniquement les publications d'un utilisateur.
- *
- * Utilisé sur son profil.
+ * Publications d'un utilisateur.
  */
 function findPostsByUserId(idUser) {
 
@@ -119,7 +122,6 @@ function findPostsByUserId(idUser) {
             ON u.idUser = p.idUser
 
         WHERE p.idUser = ?
-          AND m.typeMedia = 'image'
 
         ORDER BY p.datePubli DESC
     `).all(idUser);
@@ -127,7 +129,7 @@ function findPostsByUserId(idUser) {
 
 
 /**
- * Récupère une publication par son identifiant.
+ * Une publication.
  */
 function findPostById(idPubli) {
 
@@ -161,8 +163,8 @@ function findPostById(idPubli) {
 
 
 module.exports = {
-    createImagePost,
-    findAllPostsWithImages,
+    createMediaPost,
+    findAllPostsWithMedia,
     findPostsByUserId,
     findPostById
 };

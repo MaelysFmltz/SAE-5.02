@@ -32,9 +32,7 @@
 <div class="app-container">
 
 
-    <!-- =====================================================
-         HEADER
-    ====================================================== -->
+    <!-- HEADER -->
 
     <header class="post-page-header">
 
@@ -79,12 +77,9 @@
     </header>
 
 
-    <!-- =====================================================
-         FORMULAIRE DE PUBLICATION
-    ====================================================== -->
+    <!-- CONTENU -->
 
     <main class="post-page-main">
-
 
         <h1>
             Nouvelle publication
@@ -94,7 +89,7 @@
         <section class="upload-box">
 
             <h2>
-                Publier une photo
+                Partager une photo ou une vidéo
             </h2>
 
 
@@ -103,40 +98,60 @@
             >
 
 
-                <!-- IMAGE -->
+                <!-- MEDIA -->
 
                 <div class="form-group">
 
-                    <label for="image">
-                        Photo
+                    <label for="media">
+
+                        Photo ou vidéo
+
                     </label>
 
 
                     <input
                         type="file"
-                        id="image"
-                        name="image"
-                        accept=".jpg,.jpeg,image/jpeg"
+                        id="media"
+                        name="media"
+                        accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/ogg,video/quicktime"
                         required
                     >
 
 
-                    <!-- PREVISUALISATION -->
+                    <p class="file-help">
+
+                        Images : JPEG, PNG, WEBP — 20 Mo maximum<br>
+
+                        Vidéos : MP4, WEBM, OGG, MOV — 100 Mo maximum
+
+                    </p>
+
+
+                    <!-- PREVIEW -->
 
                     <div
                         id="preview-container"
-                        style="display:none;"
+                        class="preview-container"
+                        style="display: none;"
                     >
 
-                        <p>
+                        <p class="preview-title">
                             Prévisualisation :
                         </p>
 
-
                         <img
-                            id="preview"
-                            alt="Prévisualisation de l'image"
+                            id="image-preview"
+                            src=""
+                            alt="Aperçu de l'image"
+                            style="display: none;"
                         >
+
+                        <video
+                            id="video-preview"
+                            controls
+                            preload="metadata"
+                            style="display: none;"
+                        ></video>
 
                     </div>
 
@@ -148,7 +163,9 @@
                 <div class="form-group">
 
                     <label for="contenuPub">
+
                         Description
+
                     </label>
 
 
@@ -166,7 +183,9 @@
                 <div class="form-group">
 
                     <label for="visibilite">
+
                         Visibilité
+
                     </label>
 
 
@@ -194,24 +213,26 @@
                     type="submit"
                     class="publish-button"
                 >
+
                     Publier
+
                 </button>
 
 
-                <div id="message"></div>
+                <div
+                    id="message"
+                    role="status"
+                ></div>
 
 
             </form>
 
         </section>
 
-
     </main>
 
 
-    <!-- =====================================================
-         NAVIGATION BASSE
-    ====================================================== -->
+    <!-- NAVIGATION -->
 
     <%- include('navbar') %>
 

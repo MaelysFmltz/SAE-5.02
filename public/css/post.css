@@ -312,3 +312,40 @@ select {
     }
 
 }
+.file-help {
+    margin-top: 8px;
+
+    color: #8f8e9d;
+
+    font-size: 12px;
+
+    line-height: 1.5;
+}
+
+
+.preview-container {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 10px;
+    background: #f5f5f5;
+}
+
+.preview-title {
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+#image-preview,
+#video-preview {
+    display: block;
+    width: 100%;
+    max-width: 700px;
+    max-height: 600px;
+    margin: 0 auto;
+    border-radius: 10px;
+    object-fit: contain;
+}
+
+#video-preview {
+    background: #000;
+}

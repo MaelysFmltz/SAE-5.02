@@ -1,293 +1,334 @@
 const fs = require('fs/promises');
+const postService = require('../services/postService');
 
-const postService =
-    require('../services/postService');
-
-const { isRealJPEG } =
-    require('../utils/imageUtils');
-
-
-/**
- * Affiche la page permettant de créer une publication.
- *
- * IMPORTANT :
- * Cette page ne doit PAS afficher les publications.
- * Les publications sont affichées dans le Feed et le Profile.
+/*
+ * Vérifie la signature réelle d'un JPEG.
  */
-async function getImages(req, res) {
-
-    try {
-
-        return res.render(
-            'posts',
-            {
-                user: req.user
-            }
-        );
-
-    } catch (err) {
-
-        console.error(err);
-
-        return res.status(500).send(
-            'Erreur lors du chargement de la page de publication'
-        );
+function isRealJPEG(buffer) {
+    if (!buffer || buffer.length < 3) {
+        return false;
     }
+
+    return (
+        buffer[0] === 0xFF &&
+        buffer[1] === 0xD8 &&
+        buffer[2] === 0xFF
+    );
 }
 
-
-/**
- * Upload d'une image.
+/*
+ * Vérifie la signature réelle d'un PNG.
  */
-async function uploadImage(req, res) {
+function isRealPNG(buffer) {
+    if (!buffer || buffer.length < 8) {
+        return false;
+    }
 
+    return (
+        buffer[0] === 0x89 &&
+        buffer[1] === 0x50 &&
+        buffer[2] === 0x4E &&
+        buffer[3] === 0x47 &&
+        buffer[4] === 0x0D &&
+        buffer[5] === 0x0A &&
+        buffer[6] === 0x1A &&
+        buffer[7] === 0x0A
+    );
+}
+
+/*
+ * Vérifie la signature réelle d'un WebP.
+ */
+function isRealWebP(buffer) {
+    if (!buffer || buffer.length < 12) {
+        return false;
+    }
+
+    return (
+        buffer.toString('ascii', 0, 4) === 'RIFF' &&
+        buffer.toString('ascii', 8, 12) === 'WEBP'
+    );
+}
+
+async function uploadImage(req, res) {
     let uploadedFilePath = null;
 
     try {
-
+        /*
+         * Vérification de l'utilisateur connecté.
+         */
         if (!req.user || !req.user.idUser) {
-
             return res.status(401).json({
                 error: 'Utilisateur non authentifié'
             });
         }
 
-
+        /*
+         * Vérification du fichier.
+         */
         if (!req.file) {
-
             return res.status(400).json({
-                error: 'Aucune image envoyée'
+                error: 'Aucun fichier envoyé'
             });
         }
 
+        const file = req.file;
+        uploadedFilePath = file.path;
 
-        uploadedFilePath = req.file.path;
+        const imageTypes = [
+            'image/jpeg',
+            'image/png',
+            'image/webp'
+        ];
 
+        const videoTypes = [
+            'video/mp4',
+            'video/webm',
+            'video/ogg',
+            'video/quicktime'
+        ];
+
+        let typeMedia;
 
         /*
-         * Vérification réelle du JPEG.
+         * =========================
+         * IMAGE
+         * =========================
          */
-        const validJPEG =
-            await isRealJPEG(req.file.path);
+        if (imageTypes.includes(file.mimetype)) {
 
-        if (!validJPEG) {
+            typeMedia = 'image';
 
-            await fs.unlink(req.file.path);
+            /*
+             * Une image est limitée à 20 Mo.
+             */
+            if (file.size > 20 * 1024 * 1024) {
+                await fs.unlink(uploadedFilePath).catch(() => {});
+
+                return res.status(400).json({
+                    error: 'L’image ne doit pas dépasser 20 Mo.'
+                });
+            }
+
+            /*
+             * On lit le fichier depuis le disque.
+             * IMPORTANT :
+             * avec diskStorage(), il faut utiliser
+             * fs.readFile() et non file.buffer.
+             */
+            const buffer = await fs.readFile(file.path);
+
+            /*
+             * Vérification du vrai format.
+             */
+            if (file.mimetype === 'image/jpeg') {
+
+                if (!isRealJPEG(buffer)) {
+                    await fs.unlink(uploadedFilePath).catch(() => {});
+
+                    return res.status(400).json({
+                        error: 'Le fichier envoyé n’est pas un véritable JPEG.'
+                    });
+                }
+
+            } else if (file.mimetype === 'image/png') {
+
+                if (!isRealPNG(buffer)) {
+                    await fs.unlink(uploadedFilePath).catch(() => {});
+
+                    return res.status(400).json({
+                        error: 'Le fichier envoyé n’est pas un véritable PNG.'
+                    });
+                }
+
+            } else if (file.mimetype === 'image/webp') {
+
+                if (!isRealWebP(buffer)) {
+                    await fs.unlink(uploadedFilePath).catch(() => {});
+
+                    return res.status(400).json({
+                        error: 'Le fichier envoyé n’est pas un véritable WebP.'
+                    });
+                }
+            }
+        }
+
+        /*
+         * =========================
+         * VIDÉO
+         * =========================
+         */
+        else if (videoTypes.includes(file.mimetype)) {
+
+            typeMedia = 'video';
+
+            /*
+             * Une vidéo est limitée à 100 Mo.
+             */
+            if (file.size > 100 * 1024 * 1024) {
+                await fs.unlink(uploadedFilePath).catch(() => {});
+
+                return res.status(400).json({
+                    error: 'La vidéo ne doit pas dépasser 100 Mo.'
+                });
+            }
+        }
+
+        /*
+         * =========================
+         * FORMAT INCONNU
+         * =========================
+         */
+        else {
+
+            await fs.unlink(uploadedFilePath).catch(() => {});
 
             return res.status(400).json({
-                error:
-                    'Le fichier envoyé n’est pas un véritable JPEG'
+                error: 'Format de fichier non autorisé.'
             });
         }
 
+        /*
+         * Description.
+         */
+        const contenuPub =
+            req.body.contenuPub
+                ? String(req.body.contenuPub).trim()
+                : null;
 
-        const {
+        /*
+         * Visibilité.
+         */
+        const visibilite =
+            req.body.visibilite !== undefined
+                ? Number(req.body.visibilite)
+                : 1;
+
+        /*
+         * Vérification de la visibilité.
+         */
+        if (visibilite !== 0 && visibilite !== 1) {
+
+            await fs.unlink(uploadedFilePath).catch(() => {});
+
+            return res.status(400).json({
+                error: 'Visibilité invalide.'
+            });
+        }
+
+        /*
+         * Création de la publication.
+         */
+        const post = await postService.createMediaPost(
+            req.user.idUser,
             contenuPub,
-            visibilite
-        } = req.body;
-
-
-        const visibility =
-            visibilite === undefined
-                ? 1
-                : Number(visibilite);
-
-
-        if (![0, 1].includes(visibility)) {
-
-            await fs.unlink(req.file.path);
-
-            return res.status(400).json({
-                error:
-                    'Valeur de visibilité invalide'
-            });
-        }
-
-
-        /*
-         * IMPORTANT :
-         * idUser vient de l'utilisateur authentifié,
-         * et non du formulaire.
-         */
-        const post =
-            postService.createImagePost(
-                req.user.idUser,
-                contenuPub,
-                visibility,
-                req.file.filename
-            );
-
+            visibilite,
+            file.filename,
+            typeMedia
+        );
 
         return res.status(201).json({
-
-            message:
-                'Image publiée avec succès',
-
-            post: {
-
-                idPubli: post.idPubli,
-
-                idUser: post.idUser,
-
-                pseudo: post.pseudo,
-
-                contenuPub: post.contenuPub,
-
-                visibilite: post.visibilite,
-
-                datePubli: post.datePubli,
-
-                nomMedia: post.nomMedia,
-
-                typeMedia: post.typeMedia,
-
-                url:
-                    `/uploads/${post.nomMedia}`
-            }
+            message: 'Publication créée avec succès.',
+            post,
+            url: `/uploads/${file.filename}`
         });
 
-    } catch (err) {
+    } catch (error) {
 
-        console.error(err);
-
+        console.error('Erreur upload :', error);
 
         /*
-         * Suppression du fichier si la BDD
-         * n'a pas pu enregistrer la publication.
+         * Si une erreur arrive après l'envoi du fichier,
+         * on supprime le fichier pour éviter les fichiers orphelins.
          */
         if (uploadedFilePath) {
-
-            try {
-
-                await fs.unlink(
-                    uploadedFilePath
-                );
-
-            } catch (deleteError) {
-                // Rien à faire si le fichier n'existe plus.
-            }
+            await fs.unlink(uploadedFilePath).catch(() => {});
         }
 
-
         return res.status(500).json({
-            error:
-                'Erreur lors de la publication de l’image'
+            error: 'Erreur lors de la publication.'
         });
     }
 }
 
 
-/**
- * API : toutes les publications.
+/*
+ * Page de création de publication.
+ */
+async function getImages(req, res) {
+    try {
+
+        const posts = await postService.getAllPosts();
+
+        return res.render('posts', {
+            user: req.user,
+            posts
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).send(
+            'Erreur lors du chargement de la page.'
+        );
+    }
+}
+
+
+/*
+ * API de toutes les publications.
  */
 async function getImagesApi(req, res) {
-
     try {
 
-        const posts =
-            postService.getAllImagePosts();
+        const posts = await postService.getAllPosts();
 
+        return res.status(200).json(posts);
 
-        const formattedPosts =
-            posts.map(post => ({
+    } catch (error) {
 
-                idPubli: post.idPubli,
-
-                idUser: post.idUser,
-
-                pseudo: post.pseudo,
-
-                contenuPub: post.contenuPub,
-
-                visibilite: post.visibilite,
-
-                datePubli: post.datePubli,
-
-                idMedia: post.idMedia,
-
-                nomMedia: post.nomMedia,
-
-                typeMedia: post.typeMedia,
-
-                url:
-                    `/uploads/${post.nomMedia}`
-            }));
-
-
-        return res.status(200).json(
-            formattedPosts
-        );
-
-    } catch (err) {
-
-        console.error(err);
+        console.error(error);
 
         return res.status(500).json({
-            error:
-                'Erreur lors du chargement des publications'
+            error: 'Erreur lors du chargement des publications.'
         });
     }
 }
 
 
-/**
- * API : publications d'un utilisateur.
+/*
+ * API des publications d'un utilisateur.
  */
 async function getUserImagesApi(req, res) {
-
     try {
 
-        const posts =
-            postService.getUserImagePosts(
-                req.params.idUser
-            );
+        const idUser = Number(req.params.idUser);
 
+        if (!idUser) {
+            return res.status(400).json({
+                error: 'Identifiant utilisateur invalide.'
+            });
+        }
 
-        const formattedPosts =
-            posts.map(post => ({
+        const posts = await postService.getUserPosts(idUser);
 
-                idPubli: post.idPubli,
+        return res.status(200).json(posts);
 
-                idUser: post.idUser,
+    } catch (error) {
 
-                pseudo: post.pseudo,
-
-                contenuPub: post.contenuPub,
-
-                visibilite: post.visibilite,
-
-                datePubli: post.datePubli,
-
-                idMedia: post.idMedia,
-
-                nomMedia: post.nomMedia,
-
-                typeMedia: post.typeMedia,
-
-                url:
-                    `/uploads/${post.nomMedia}`
-            }));
-
-
-        return res.status(200).json(
-            formattedPosts
-        );
-
-    } catch (err) {
-
-        console.error(err);
+        console.error(error);
 
         return res.status(500).json({
-            error:
-                'Erreur lors du chargement des publications'
+            error: 'Erreur lors du chargement des publications.'
         });
     }
 }
 
 
 module.exports = {
-    getImages,
     uploadImage,
+    getImages,
     getImagesApi,
     getUserImagesApi
 };

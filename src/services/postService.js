@@ -1,40 +1,42 @@
-const postModel = require('../models/postModel');
+const postModel =
+    require('../models/postModel');
 
 
 /**
- * Crée une publication contenant une image.
+ * Création d'une publication
+ * photo OU vidéo.
  */
-function createImagePost(
+function createMediaPost(
     idUser,
     contenuPub,
     visibilite,
-    nomMedia
+    nomMedia,
+    typeMedia
 ) {
-    return postModel.createImagePost(
+    return postModel.createMediaPost(
         idUser,
         contenuPub,
         visibilite,
-        nomMedia
+        nomMedia,
+        typeMedia
     );
 }
 
 
 /**
- * Récupère toutes les publications.
- *
- * Utilisé pour le Feed.
+ * Toutes les publications.
  */
-function getAllImagePosts() {
-    return postModel.findAllPostsWithImages();
+function getAllPosts() {
+
+    return postModel.findAllPostsWithMedia();
+
 }
 
 
 /**
- * Récupère les publications d'un utilisateur.
- *
- * Utilisé pour son profil.
+ * Publications d'un utilisateur.
  */
-function getUserImagePosts(idUser) {
+function getUserPosts(idUser) {
 
     if (!idUser) {
         throw new Error(
@@ -42,12 +44,14 @@ function getUserImagePosts(idUser) {
         );
     }
 
-    return postModel.findPostsByUserId(idUser);
+    return postModel.findPostsByUserId(
+        idUser
+    );
 }
 
 
 module.exports = {
-    createImagePost,
-    getAllImagePosts,
-    getUserImagePosts
+    createMediaPost,
+    getAllPosts,
+    getUserPosts
 };

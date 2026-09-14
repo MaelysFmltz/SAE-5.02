@@ -1,151 +1,211 @@
-const form =
-    document.getElementById('upload-form');
+document.addEventListener('DOMContentLoaded', () => {
 
-const imageInput =
-    document.getElementById('image');
+    const form = document.getElementById('upload-form');
 
-const preview =
-    document.getElementById('preview');
+    const mediaInput =
+        document.getElementById('media');
 
-const previewContainer =
-    document.getElementById('preview-container');
+    const previewContainer =
+        document.getElementById('preview-container');
 
-const message =
-    document.getElementById('message');
+    const imagePreview =
+        document.getElementById('image-preview');
 
+    const videoPreview =
+        document.getElementById('video-preview');
 
-const MAX_SIZE =
-    20 * 1024 * 1024;
-
-
-let previewUrl = null;
+    const message =
+        document.getElementById('message');
 
 
-/*
- * ============================================================
- * PRÉVISUALISATION
- * ============================================================
- */
+    if (!form || !mediaInput) {
+        console.error('Formulaire de publication introuvable.');
+        return;
+    }
 
-imageInput.addEventListener(
-    'change',
-    function () {
 
-        const file =
-            imageInput.files[0];
+    let previewUrl = null;
 
+
+    /*
+     * =========================
+     * CHOIX DU FICHIER
+     * =========================
+     */
+
+    mediaInput.addEventListener('change', () => {
+
+        const file = mediaInput.files[0];
+
+        /*
+         * Nettoyage de l'ancien aperçu.
+         */
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+            previewUrl = null;
+        }
+
+        imagePreview.style.display = 'none';
+        videoPreview.style.display = 'none';
+        previewContainer.style.display = 'none';
+
+        imagePreview.src = '';
+        videoPreview.src = '';
 
         message.textContent = '';
 
 
         if (!file) {
-
-            hidePreview();
-
             return;
         }
 
 
+        const isImage =
+            file.type.startsWith('image/');
+
+        const isVideo =
+            file.type.startsWith('video/');
+
+
         /*
-         * Vérification JPEG.
+         * Format non autorisé.
          */
-        if (file.type !== 'image/jpeg') {
-
-            imageInput.value = '';
-
-            hidePreview();
+        if (!isImage && !isVideo) {
 
             message.textContent =
-                'Veuillez sélectionner une image JPEG.';
+                'Veuillez sélectionner une image ou une vidéo.';
+
+            mediaInput.value = '';
 
             return;
         }
 
 
         /*
-         * Vérification taille.
+         * =========================
+         * LIMITES
+         * =========================
          */
-        if (file.size > MAX_SIZE) {
 
-            imageInput.value = '';
+        const maxSize = isImage
+            ? 20 * 1024 * 1024
+            : 100 * 1024 * 1024;
 
-            hidePreview();
 
-            message.textContent =
-                'L’image ne doit pas dépasser 20 Mo.';
+        if (file.size > maxSize) {
+
+            message.textContent = isImage
+                ? 'L’image ne doit pas dépasser 20 Mo.'
+                : 'La vidéo ne doit pas dépasser 100 Mo.';
+
+            mediaInput.value = '';
 
             return;
         }
 
 
         /*
-         * Supprimer l'ancienne URL.
+         * =========================
+         * APERÇU
+         * =========================
          */
-        if (previewUrl) {
 
-            URL.revokeObjectURL(
-                previewUrl
-            );
-        }
-
-
-        /*
-         * Créer une URL temporaire.
-         */
         previewUrl =
             URL.createObjectURL(file);
 
 
-        preview.src =
-            previewUrl;
+        /*
+         * PHOTO
+         */
+        if (isImage) {
+
+            imagePreview.src = previewUrl;
+
+            imagePreview.style.display = 'block';
+
+            videoPreview.style.display = 'none';
+
+            previewContainer.style.display = 'block';
+        }
 
 
-        previewContainer.style.display =
-            'block';
+        /*
+         * VIDÉO
+         */
+        if (isVideo) {
 
-    }
-);
+            videoPreview.src = previewUrl;
+
+            videoPreview.style.display = 'block';
+
+            imagePreview.style.display = 'none';
+
+            previewContainer.style.display = 'block';
+
+            /*
+             * Permet au navigateur de charger
+             * la vidéo pour l'aperçu.
+             */
+            videoPreview.load();
+        }
+
+    });
 
 
-/*
- * ============================================================
- * ENVOI DU FORMULAIRE
- * ============================================================
- */
+    /*
+     * =========================
+     * PUBLICATION
+     * =========================
+     */
 
-form.addEventListener(
-    'submit',
-    async function (event) {
+    form.addEventListener('submit', async (event) => {
 
         event.preventDefault();
 
 
         const file =
-            imageInput.files[0];
+            mediaInput.files[0];
 
 
         if (!file) {
 
             message.textContent =
-                'Veuillez sélectionner une image.';
+                'Veuillez sélectionner une photo ou une vidéo.';
 
             return;
         }
 
 
-        if (file.type !== 'image/jpeg') {
+        /*
+         * Vérification côté navigateur.
+         */
+
+        const isImage =
+            file.type.startsWith('image/');
+
+        const isVideo =
+            file.type.startsWith('video/');
+
+
+        if (!isImage && !isVideo) {
 
             message.textContent =
-                'Seules les images JPEG sont autorisées.';
+                'Format de fichier non autorisé.';
 
             return;
         }
 
 
-        if (file.size > MAX_SIZE) {
+        const maxSize = isImage
+            ? 20 * 1024 * 1024
+            : 100 * 1024 * 1024;
 
-            message.textContent =
-                'L’image ne doit pas dépasser 20 Mo.';
+
+        if (file.size > maxSize) {
+
+            message.textContent = isImage
+                ? 'L’image ne doit pas dépasser 20 Mo.'
+                : 'La vidéo ne doit pas dépasser 100 Mo.';
 
             return;
         }
@@ -153,30 +213,24 @@ form.addEventListener(
 
         /*
          * FormData.
+         *
+         * Le nom "media" doit correspondre à :
+         *
+         * upload.single('media')
          */
         const formData =
-            new FormData();
+            new FormData(form);
 
+
+        /*
+         * On s'assure qu'un seul fichier
+         * est envoyé dans "media".
+         */
+        formData.delete('media');
 
         formData.append(
-            'image',
+            'media',
             file
-        );
-
-
-        formData.append(
-            'contenuPub',
-            document.getElementById(
-                'contenuPub'
-            ).value
-        );
-
-
-        formData.append(
-            'visibilite',
-            document.getElementById(
-                'visibilite'
-            ).value
         );
 
 
@@ -191,37 +245,48 @@ form.addEventListener(
                     '/post/upload',
                     {
                         method: 'POST',
-                        credentials: 'same-origin',
                         body: formData
                     }
                 );
 
 
-            const data =
-                await response.json();
-
-
             /*
-             * Session expirée.
+             * Le serveur doit répondre en JSON.
              */
-            if (response.status === 401) {
+            const contentType =
+                response.headers.get('content-type') || '';
 
-                message.textContent =
-                    data.error ||
-                    'Votre session a expiré.';
 
-                setTimeout(() => {
+            let data;
 
-                    window.location.href = '/';
 
-                }, 1000);
+            if (
+                contentType.includes(
+                    'application/json'
+                )
+            ) {
 
-                return;
+                data =
+                    await response.json();
+
+            } else {
+
+                const text =
+                    await response.text();
+
+                console.error(
+                    'Réponse serveur :',
+                    text
+                );
+
+                throw new Error(
+                    'Le serveur a renvoyé une réponse inattendue.'
+                );
             }
 
 
             /*
-             * Erreur.
+             * Erreur serveur.
              */
             if (!response.ok) {
 
@@ -236,67 +301,33 @@ form.addEventListener(
              * Publication réussie.
              */
             message.textContent =
-                data.message ||
-                'Image publiée avec succès.';
+                'Publication réussie !';
 
 
             /*
-             * Petit délai pour laisser
-             * apparaître le message.
+             * On revient sur le feed.
+             * La publication sera visible dedans.
              */
             setTimeout(() => {
 
-                /*
-                 * Le post est maintenant en BDD.
-                 *
-                 * Le Feed va donc le récupérer
-                 * automatiquement.
-                 */
                 window.location.href =
                     '/home';
 
-            }, 500);
+            }, 300);
 
 
         } catch (error) {
 
             console.error(
-                'Erreur publication :',
+                'Erreur :',
                 error
             );
 
-
             message.textContent =
                 error.message ||
-                'Erreur réseau lors de la publication.';
-
+                'Une erreur est survenue.';
         }
 
-    }
-);
+    });
 
-
-/*
- * ============================================================
- * MASQUER LA PRÉVISUALISATION
- * ============================================================
- */
-
-function hidePreview() {
-
-    if (previewUrl) {
-
-        URL.revokeObjectURL(
-            previewUrl
-        );
-
-        previewUrl = null;
-    }
-
-
-    preview.src = '';
-
-
-    previewContainer.style.display =
-        'none';
-}
+});

@@ -146,13 +146,31 @@
             </div>
 
 
-            <!-- IMAGE -->
+            <% if (post.typeMedia === 'video') { %>
 
-            <img
-              src="/uploads/<%= post.nomMedia %>"
-              alt="Photo publiée par <%= post.pseudo %>"
-              class="feed-post-image"
-            >
+                <video
+                    class="feed-post-video"
+                    controls
+                    preload="metadata"
+                >
+
+                    <source
+                        src="/uploads/<%= post.nomMedia %>"
+                    >
+
+                    Votre navigateur ne supporte pas la lecture vidéo.
+
+                </video>
+
+            <% } else { %>
+
+                <img
+                    src="/uploads/<%= post.nomMedia %>"
+                    alt="Photo publiée par <%= post.pseudo %>"
+                    class="feed-post-image"
+                >
+
+            <% } %>
 
 
             <!-- DESCRIPTION -->

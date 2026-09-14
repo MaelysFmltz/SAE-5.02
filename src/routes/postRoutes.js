@@ -1,69 +1,34 @@
 const express = require('express');
 
-const postController =
-    require('../controllers/postController');
-
-const authMiddleware =
-    require('../middlewares/authMiddleware');
-
-const upload =
-    require('../middlewares/uploadMiddleware');
-
+const postController = require('../controllers/postController');
+const authMiddleware = require('../middlewares/authMiddleware');
+const upload = require('../middlewares/uploadMiddleware');
 
 const router = express.Router();
 
-
-/*
- * Toutes les routes de publication
- * nécessitent une authentification.
- */
-router.use(authMiddleware);
-
-
-/*
- * GET /post
- *
- * Affiche UNIQUEMENT le formulaire
- * de création d'une publication.
- */
 router.get(
     '/',
+    authMiddleware,
     postController.getImages
 );
 
-
-/*
- * POST /post/upload
- *
- * Crée la publication.
- */
 router.post(
     '/upload',
-    upload.single('image'),
+    authMiddleware,
+    upload.single('media'),
     postController.uploadImage
 );
 
-
-/*
- * GET /post/api
- *
- * Toutes les publications.
- */
 router.get(
     '/api',
+    authMiddleware,
     postController.getImagesApi
 );
 
-
-/*
- * GET /post/api/user/:idUser
- *
- * Publications d'un utilisateur.
- */
 router.get(
     '/api/user/:idUser',
+    authMiddleware,
     postController.getUserImagesApi
 );
-
 
 module.exports = router;
