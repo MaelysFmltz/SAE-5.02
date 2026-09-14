@@ -1,8 +1,39 @@
-import { describe, test, expect } from 'vitest';
+process.env.DB_PATH = ':memory:';
 
-import postService from '../src/services/postService.js';
-import postModel from '../src/models/postModel.js';
-import db from '../src/config/database.js';
+const db = require('../src/config/database');
+const postService = require('../src/services/postService');
+const postModel = require('../src/models/postModel');
+
+beforeAll(() => {
+    db.exec(`
+        INSERT INTO Utilisateur
+        (idUser, pseudo, email, motDePasse)
+        VALUES
+        (1, 'user1', 'user1@test.fr', 'password'),
+        (2, 'user2', 'user2@test.fr', 'password'),
+        (3, 'user3', 'user3@test.fr', 'password');
+
+        INSERT INTO Publication
+        (idPubli, idUser, contenuPub, visibilite, idPubliPartagee, typePublication)
+        VALUES
+        (1, 1, 'Publication publique', 1, NULL, 'original'),
+        (2, 2, NULL, 1, 1, 'repost');
+
+    `);
+});
+
+afterEach(() => {
+    db.exec(`
+        DELETE FROM Publication
+        WHERE idPubli > 2;
+
+        DELETE FROM Abonnement;
+    `);
+});
+
+afterAll(() => {
+    db.close();
+});
 
 describe('Partage de publications', () => {
 
@@ -19,6 +50,44 @@ describe('Partage de publications', () => {
         expect(publication.typePublication).toBe('repost');
         expect(publication.visibilite).toBe(1);
     });
+
+    test('ne pas divulguer l’identifiant d’une publication privée dans le feed', () => {
+        const publicationPrivee = postModel.createPublication(
+            1,
+            'Publication privée',
+            0
+        );
+
+        db.prepare(`
+            INSERT INTO Abonnement
+            (idUserAbonne, idUserSuivi)
+            VALUES
+            (1, 2),
+            (2, 1)
+        `).run();
+
+        const repost = postService.createRepost(
+            2,
+            publicationPrivee.idPubli,
+            1
+        );
+
+        const feed = postService.getFeedForUser(3);
+
+        const repostDansFeed = feed.find(
+            publication => publication.idPubli === repost.idPubli
+        );
+
+        expect(repostDansFeed).toBeDefined();
+
+        expect(repostDansFeed.idPubliPartagee).toBeNull();
+        expect(repostDansFeed.originalIdPubli).toBeNull();
+        expect(repostDansFeed.originalIdUser).toBeNull();
+        expect(repostDansFeed.originalContenuPub).toBeNull();
+        expect(repostDansFeed.auteurOriginalPseudo).toBeNull();
+    });
+
+
 
     test('refuser le repost d’une publication inexistante', () => {
         expect(() => {
@@ -91,24 +160,28 @@ describe('Partage de publications', () => {
             2
         );
 
-        const dernierePublication = chain[chain.length - 1];
+        const dernierePublication =
+            chain[chain.length - 1];
 
         expect(dernierePublication.idPubli).toBe(1);
-        expect(dernierePublication.typePublication).toBe('original');
+        expect(dernierePublication.typePublication)
+            .toBe('original');
     });
 
     test('détecter une boucle dans une chaîne de remixes', () => {
-        const publication1 = postModel.createPublication(
-            1,
-            'Publication boucle 1',
-            1
-        );
+        const publication1 =
+            postModel.createPublication(
+                1,
+                'Publication boucle 1',
+                1
+            );
 
-        const publication2 = postModel.createRepost(
-            1,
-            publication1.idPubli,
-            1
-        );
+        const publication2 =
+            postModel.createRepost(
+                1,
+                publication1.idPubli,
+                1
+            );
 
         db.prepare(`
             UPDATE Publication
@@ -120,16 +193,19 @@ describe('Partage de publications', () => {
         );
 
         expect(() => {
-            postModel.findRemixChain(publication1.idPubli);
+            postModel.findRemixChain(
+                publication1.idPubli
+            );
         }).toThrow('boucle détectée');
     });
 
     test('refuser l’accès à une publication privée par un autre utilisateur', () => {
-        const publication = postModel.createPublication(
-            1,
-            'Publication privée pour test',
-            0
-        );
+        const publication =
+            postModel.createPublication(
+                1,
+                'Publication privée pour test',
+                0
+            );
 
         expect(() => {
             postService.getRemixChainForUser(

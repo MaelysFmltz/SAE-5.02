@@ -303,16 +303,10 @@ function getFeedForUser(idUser) {
 
             // Si la publication est basée sur une autre publication,
             // on vérifie que l'utilisateur peut également voir l'original.
-            if (
-                publication.originalIdPubli &&
-                !peutVoirPublication(
-                    db,
-                    publication.originalIdPubli,
-                    idUser
-                )
-            ) {
+            if (publication.originalIdPubli && !peutVoirPublication(db, publication.originalIdPubli, idUser)) {
                 return {
                     ...publication,
+                    idPubliPartagee: null,
                     originalIdPubli: null,
                     originalIdUser: null,
                     originalContenuPub: null,
