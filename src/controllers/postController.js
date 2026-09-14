@@ -25,11 +25,12 @@ function createPublication(req, res) {
 
 function createRepost(req, res) {
     try {
+        const idPubli = Number(req.params.idPubli);
         const visibilite = Number(req.body.visibilite);
 
         const publication = postService.createRepost(
             req.user.idUser,
-            req.params.idPubli,
+            idPubli,
             visibilite
         );
 
