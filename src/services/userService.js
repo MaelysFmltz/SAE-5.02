@@ -26,12 +26,12 @@ function modifierStatut(db, idUser, statut, idUserModificateur) {
     }
 
     if (
-        statut === 'suspendu' &&
+        ['suspendu', 'supprime'].includes(statut) &&
         idUser === idUserModificateur
     ) {
         return {
             succes: false,
-            erreur: 'Un administrateur ne peut pas suspendre son propre compte'
+            erreur: 'Un administrateur ne peut pas modifier son propre statut'
         };
     }
 

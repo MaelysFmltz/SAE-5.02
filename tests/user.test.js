@@ -117,7 +117,7 @@ describe('Gestion des utilisateurs', () => {
 
         expect(resultat.succes).toBe(false);
         expect(resultat.erreur).toBe(
-            'Un administrateur ne peut pas suspendre son propre compte'
+            'Un administrateur ne peut pas modifier son propre statut'
         );
 
         const utilisateur = db.prepare(`
@@ -128,5 +128,28 @@ describe('Gestion des utilisateurs', () => {
 
         expect(utilisateur.statut).toBe('actif');
     });
+
+    test('un administrateur ne peut pas supprimer son propre compte', () => {
+        const resultat = userService.modifierStatut(
+            db,
+            2,
+            'supprime',
+            2
+        );
+
+        expect(resultat.succes).toBe(false);
+        expect(resultat.erreur).toBe(
+            'Un administrateur ne peut pas modifier son propre statut'
+        );
+
+        const utilisateur = db.prepare(`
+            SELECT statut
+            FROM Utilisateur
+            WHERE idUser = 2
+        `).get();
+
+        expect(utilisateur.statut).toBe('actif');
+    });
+
 
 });
