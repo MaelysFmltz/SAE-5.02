@@ -1,4 +1,4 @@
-﻿function adminOrModeratorMiddleware(req, res, next) {
+function adminOrModeratorMiddleware(req, res, next) {
     if (
         !req.user ||
         !['admin', 'moderator'].includes(req.user.role)
