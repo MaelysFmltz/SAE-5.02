@@ -328,6 +328,13 @@ async function inspectVideo(filePath) {
  * ============================================================
  */
 
+/**
+ * Convertit une vidéo en WebM.
+ *
+ * Les options deadline=realtime et cpu-used=8 rendent la conversion
+ * beaucoup plus rapide que les paramètres VP9 par défaut.
+ */
+
 async function convertToWebM(
   sourcePath,
   destinationPath
@@ -336,34 +343,62 @@ async function convertToWebM(
     'ffmpeg',
     [
       '-hide_banner',
-
       '-loglevel',
       'error',
-
       '-nostdin',
-
       '-y',
 
       '-i',
       sourcePath,
 
-      '-c:v',
-      'libvpx-vp9',
-
-      '-c:a',
-      'libopus',
-
+      // Conserver uniquement la première vidéo et le premier audio.
       '-map',
       '0:v:0',
 
       '-map',
       '0:a:0?',
 
+      // Limiter la résolution sans agrandir les petites vidéos.
+      '-vf',
+      'scale=1920:-2:force_original_aspect_ratio=decrease',
+
+      // Codec vidéo WebM.
+      '-c:v',
+      'libvpx-vp9',
+
+      // Réglages rapides de VP9.
+      '-deadline',
+      'realtime',
+
+      '-cpu-used',
+      '8',
+
+      '-row-mt',
+      '1',
+
+      '-threads',
+      '0',
+
+      // Qualité constante.
+      '-crf',
+      '34',
+
+      '-b:v',
+      '0',
+
+      // Codec audio WebM.
+      '-c:a',
+      'libopus',
+
+      '-b:a',
+      '128k',
+
       '-f',
       'webm',
 
       destinationPath
-    ]
+    ],
+    FFMPEG_TIMEOUT
   );
 }
 
