@@ -3,7 +3,8 @@ const Database = require('better-sqlite3');
 const {
     creerSignalement,
     obtenirSignalement,
-    obtenirSignalements
+    obtenirSignalements,
+    modifierStatutSignalement
 } = require('../src/services/reportService');
 
 describe('Système de signalement', () => {
@@ -203,6 +204,35 @@ describe('Système de signalement', () => {
         expect(signalements).toHaveLength(2);
     });
 
+    test('Un utilisateur ne voit pas un signalement qui le concerne', () => {
+        creerSignalement(
+            db,
+            2,
+            'publication',
+            10,
+            'Signalement concernant l’utilisateur 1'
+        );
+
+        db.prepare(`
+            INSERT INTO Publication (idPubli, idUser)
+            VALUES (?, ?)
+        `).run(20, 2);
+
+        creerSignalement(
+            db,
+            2,
+            'publication',
+            20,
+            'Signalement concernant l’utilisateur 2'
+        );
+
+        const signalements = obtenirSignalements(db, 1);
+
+        expect(signalements).toHaveLength(1);
+        expect(signalements[0].idContenu).toBe(20);
+    });
+
+
     test('Un signalement inexistant retourne null', () => {
         const signalement = obtenirSignalement(db, 999);
 
@@ -332,4 +362,36 @@ describe('Système de signalement', () => {
         expect(premierSignalement.succes).toBe(true);
         expect(deuxiemeSignalement.succes).toBe(true);
     });
+
+    test('Un utilisateur ne peut pas traiter un signalement qui le concerne', () => {
+        const resultatCreation = creerSignalement(
+            db,
+            2,
+            'publication',
+            10,
+            'Signalement concernant l’utilisateur 1'
+        );
+
+        const resultat = modifierStatutSignalement(
+            db,
+            resultatCreation.idSignalement,
+            'traite',
+            1
+        );
+
+        expect(resultat.succes).toBe(false);
+        expect(resultat.code).toBe(403);
+        expect(resultat.erreur).toBe(
+            'Vous ne pouvez pas traiter un signalement qui vous concerne'
+        );
+
+        const signalement = db.prepare(`
+            SELECT statut
+            FROM Signalement
+            WHERE idSignalement = ?
+        `).get(resultatCreation.idSignalement);
+
+        expect(signalement.statut).toBe('en_attente');
+    });
+
 });

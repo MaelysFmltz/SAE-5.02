@@ -232,11 +232,27 @@ function obtenirSignalement(
     return signalement;
 }
 
-function obtenirSignalements(db) {
-    return reportModel.trouverSignalements(db);
+function obtenirSignalements(db, idUserConnecte) {
+    const signalements = reportModel.trouverSignalements(db);
+
+    return signalements.filter((signalement) => {
+        const utilisateurCible = obtenirUtilisateurCible(
+            db,
+            signalement.typeContenu,
+            signalement.idContenu
+        );
+
+        return !utilisateurCible ||
+            utilisateurCible.idUser !== idUserConnecte;
+    });
 }
 
-function modifierStatutSignalement(db, idSignalement, statut) {
+function modifierStatutSignalement(
+    db,
+    idSignalement,
+    statut,
+    idUserConnecte
+) {
     const STATUTS_AUTORISES = [
         'traite',
         'rejete'
@@ -267,6 +283,24 @@ function modifierStatutSignalement(db, idSignalement, statut) {
             erreur: 'Signalement introuvable'
         };
     }
+
+    const utilisateurCible = obtenirUtilisateurCible(
+        db,
+        signalement.typeContenu,
+        signalement.idContenu
+    );
+
+    if (
+        utilisateurCible &&
+        utilisateurCible.idUser === idUserConnecte
+    ) {
+        return {
+            succes: false,
+            erreur: 'Vous ne pouvez pas traiter un signalement qui vous concerne',
+            code: 403
+        };
+    }
+
 
     reportModel.modifierStatutSignalement(
         db,

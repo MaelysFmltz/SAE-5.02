@@ -44,7 +44,10 @@ function obtenirSignalement(req, res) {
 }
 
 function obtenirSignalements(req, res) {
-    const signalements = reportService.obtenirSignalements(db);
+    const signalements = reportService.obtenirSignalements(
+        db,
+        req.user?.idUser
+    );
 
     return res.status(200).json(signalements);
 }
@@ -56,11 +59,12 @@ function modifierStatutSignalement(req, res) {
     const resultat = reportService.modifierStatutSignalement(
         db,
         idSignalement,
-        statut
+        statut,
+        req.user?.idUser
     );
 
     if (!resultat.succes) {
-        return res.status(400).json({
+        return res.status(resultat.code || 400).json({
             erreur: resultat.erreur
         });
     }
