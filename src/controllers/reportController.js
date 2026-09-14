@@ -30,7 +30,8 @@ function obtenirSignalement(req, res) {
 
     const signalement = reportService.obtenirSignalement(
         db,
-        idSignalement
+        idSignalement,
+        req.user?.idUser
     );
 
     if (!signalement) {

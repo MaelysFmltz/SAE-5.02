@@ -133,12 +133,84 @@ function creerSignalement(db, idUserAuteur, typeContenu, idContenu, motif) {
     };
 }
 
-function obtenirSignalement(db, idSignalement) {
+function obtenirUtilisateurCible(
+    db,
+    typeContenu,
+    idContenu
+) {
+    if (typeContenu === 'utilisateur') {
+        return db.prepare(`
+            SELECT idUser
+            FROM Utilisateur
+            WHERE idUser = ?
+        `).get(idContenu);
+    }
+
+    if (typeContenu === 'publication') {
+        return db.prepare(`
+            SELECT idUser
+            FROM Publication
+            WHERE idPubli = ?
+        `).get(idContenu);
+    }
+
+    if (typeContenu === 'commentaire') {
+        return db.prepare(`
+            SELECT idUser
+            FROM Commentaire
+            WHERE idComm = ?
+        `).get(idContenu);
+    }
+
+    if (typeContenu === 'media') {
+        return db.prepare(`
+            SELECT p.idUser
+            FROM Media m
+            JOIN Publication p
+                ON p.idPubli = m.idPubli
+            WHERE m.idMedia = ?
+        `).get(idContenu);
+    }
+
+    return null;
+}
+
+
+
+function obtenirSignalement(
+    db,
+    idSignalement,
+    idUserConnecte
+) {
     if (!Number.isInteger(idSignalement) || idSignalement <= 0) {
         return null;
     }
 
-    return reportModel.trouverSignalementParId(db, idSignalement) || null;
+    const signalement =
+        reportModel.trouverSignalementParId(
+            db,
+            idSignalement
+        );
+
+    if (!signalement) {
+        return null;
+    }
+
+    const utilisateurCible =
+        obtenirUtilisateurCible(
+            db,
+            signalement.typeContenu,
+            signalement.idContenu
+        );
+
+    if (
+        utilisateurCible &&
+        utilisateurCible.idUser === idUserConnecte
+    ) {
+        return null;
+    }
+
+    return signalement;
 }
 
 function obtenirSignalements(db) {
