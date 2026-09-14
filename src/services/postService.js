@@ -31,8 +31,8 @@ const TEMPORARY_DIR = path.join(
   'temporary'
 );
 
-const FFMPEG_TIMEOUT = 120000;
-
+// Temps maximal pour FFmpeg : 10 minutes
+const FFMPEG_TIMEOUT = 10 * 60 * 1000;
 
 /*
  * ============================================================
@@ -94,11 +94,8 @@ async function safeUnlink(filePath) {
 
 /*
  * ============================================================
- * EXECUTION SÉCURISÉE D'UN PROGRAMME
+ * EXÉCUTION D'UN PROGRAMME
  * ============================================================
- *
- * Aucun shell.
- * Aucun argument utilisateur concaténé dans une commande.
  */
 
 function runProcess(
@@ -123,7 +120,6 @@ function runProcess(
 
     let stdout = '';
     let stderr = '';
-
     let finished = false;
 
     const timer = setTimeout(() => {
@@ -206,10 +202,6 @@ function runProcess(
  * ============================================================
  * FFPROBE
  * ============================================================
- *
- * On ne fait pas confiance à l'extension ou au MIME.
- *
- * ffprobe vérifie réellement le conteneur et le flux vidéo.
  */
 
 async function inspectVideo(filePath) {
@@ -247,7 +239,9 @@ async function inspectVideo(filePath) {
   let data;
 
   try {
-    data = JSON.parse(result.stdout);
+    data = JSON.parse(
+      result.stdout
+    );
   } catch (error) {
     throw new Error(
       'Impossible de vérifier la vidéo'
@@ -264,9 +258,12 @@ async function inspectVideo(filePath) {
     );
   }
 
-  const videoStream = data.streams[0];
+  const videoStream =
+    data.streams[0];
 
-  if (videoStream.codec_type !== 'video') {
+  if (
+    videoStream.codec_type !== 'video'
+  ) {
     throw new Error(
       'Le fichier ne contient pas de flux vidéo'
     );
@@ -276,9 +273,8 @@ async function inspectVideo(filePath) {
     videoStream.duration ||
     data.format?.duration;
 
-  const duration = Number(
-    durationValue
-  );
+  const duration =
+    Number(durationValue);
 
   if (
     !Number.isFinite(duration) ||
@@ -313,11 +309,15 @@ async function inspectVideo(filePath) {
 
     formatName,
 
-    duration: Math.ceil(duration),
+    duration: Math.ceil(
+      duration
+    ),
 
-    width: videoStream.width,
+    width:
+      videoStream.width,
 
-    height: videoStream.height
+    height:
+      videoStream.height
   };
 }
 
@@ -347,30 +347,18 @@ async function convertToWebM(
       '-i',
       sourcePath,
 
-      /*
-       * Vidéo VP9 dans un conteneur WebM.
-       */
       '-c:v',
       'libvpx-vp9',
 
-      /*
-       * Audio Opus.
-       */
       '-c:a',
       'libopus',
 
-      /*
-       * Évite de conserver des flux supplémentaires.
-       */
       '-map',
       '0:v:0',
 
       '-map',
       '0:a:0?',
 
-      /*
-       * WebM.
-       */
       '-f',
       'webm',
 
@@ -389,15 +377,14 @@ async function convertToWebM(
 async function processVideo(file) {
   validateVideoFile(file);
 
-  const sourcePath = file.path;
+  const sourcePath =
+    file.path;
 
   const videoInfo =
-    await inspectVideo(sourcePath);
+    await inspectVideo(
+      sourcePath
+    );
 
-  /*
-   * Un fichier n'est considéré comme WebM que si ffprobe
-   * confirme un conteneur WebM.
-   */
   const isWebM =
     videoInfo.formatName === 'webm' ||
     videoInfo.formatName.includes(',webm');
@@ -405,14 +392,21 @@ async function processVideo(file) {
   const finalFilename =
     await generateRandomFilename();
 
-  const finalPath = path.join(
-    UPLOAD_DIR,
-    finalFilename
-  );
+  const finalPath =
+    path.join(
+      UPLOAD_DIR,
+      finalFilename
+    );
 
   /*
-   * Sécurité supplémentaire :
-   * le chemin final est toujours construit par notre serveur.
+   * Le fichier .part est utilisé pendant
+   * toute la durée de la conversion.
+   */
+  const temporaryOutputPath =
+    `${finalPath}.part`;
+
+  /*
+   * Vérification du chemin de destination.
    */
   if (
     path.dirname(finalPath) !==
@@ -423,57 +417,105 @@ async function processVideo(file) {
     );
   }
 
-  if (isWebM) {
+  try {
+    if (isWebM) {
+      /*
+       * La vidéo est déjà au format WebM.
+       */
+      await fs.promises.rename(
+        sourcePath,
+        finalPath
+      );
+    } else {
+      /*
+       * Conversion dans le fichier temporaire.
+       */
+      await convertToWebM(
+        sourcePath,
+        temporaryOutputPath
+      );
+
+      /*
+       * Vérification du fichier WebM créé.
+       */
+      const convertedInfo =
+        await inspectVideo(
+          temporaryOutputPath
+        );
+
+      const convertedIsWebM =
+        convertedInfo.formatName === 'webm' ||
+        convertedInfo.formatName.includes(',webm');
+
+      if (!convertedIsWebM) {
+        throw new Error(
+          'La conversion WebM a échoué'
+        );
+      }
+
+      /*
+       * La conversion est terminée.
+       * Le fichier peut devenir définitif.
+       */
+      await fs.promises.rename(
+        temporaryOutputPath,
+        finalPath
+      );
+
+      /*
+       * Suppression du fichier original.
+       */
+      await safeUnlink(
+        sourcePath
+      );
+    }
+
     /*
-     * Le fichier a déjà été vérifié par ffprobe.
-     *
-     * On le déplace simplement vers son nom définitif.
+     * Vérification finale du fichier.
      */
-    await fs.promises.rename(
-      sourcePath,
+    const finalInfo =
+      await inspectVideo(
+        finalPath
+      );
+
+    const finalIsWebM =
+      finalInfo.formatName === 'webm' ||
+      finalInfo.formatName.includes(',webm');
+
+    if (!finalIsWebM) {
+      throw new Error(
+        'La conversion WebM a échoué'
+      );
+    }
+
+    return {
+      filename:
+        finalFilename,
+
+      path:
+        finalPath,
+
+      duration:
+        finalInfo.duration
+    };
+  } catch (error) {
+    /*
+     * Suppression du fichier temporaire
+     * en cas d'erreur.
+     */
+    await safeUnlink(
+      temporaryOutputPath
+    );
+
+    /*
+     * Suppression du fichier final éventuel.
+     */
+    await safeUnlink(
       finalPath
     );
-  } else {
-    /*
-     * MP4 / MOV / AVI :
-     * conversion vers WebM.
-     */
-    await convertToWebM(
-      sourcePath,
-      finalPath
-    );
 
-    /*
-     * Le fichier temporaire original n'est plus nécessaire.
-     */
-    await safeUnlink(sourcePath);
+    throw error;
   }
-
-  /*
-   * Vérification du fichier WebM produit.
-   *
-   * Cela évite d'enregistrer en base un fichier de sortie
-   * corrompu ou incomplet.
-   */
-  const finalInfo =
-    await inspectVideo(finalPath);
-
-  if (
-    finalInfo.formatName !== 'webm' &&
-    !finalInfo.formatName.includes(',webm')
-  ) {
-    await safeUnlink(finalPath);
-
-    throw new Error(
-      'La conversion WebM a échoué'
-    );
-  }
-
-  return {
-    filename: finalFilename,
-    path: finalPath,
-    duration: finalInfo.duration
-  };
 }
 
 
@@ -503,9 +545,13 @@ async function createPost({
     );
 
   /*
-   * Il faut au minimum un contenu ou une vidéo.
+   * Une publication doit contenir
+   * du texte ou une vidéo.
    */
-  if (!cleanContent && !video) {
+  if (
+    !cleanContent &&
+    !video
+  ) {
     throw new Error(
       'La publication doit contenir du texte ou une vidéo'
     );
@@ -518,33 +564,27 @@ async function createPost({
 
   try {
     /*
-     * --------------------------------------------------------
-     * 1. Création de la publication
-     * --------------------------------------------------------
+     * Création de la publication.
      */
-
-    idPubli = createPublication(
-      idUser,
-      cleanContent
-    );
-
+    idPubli =
+      createPublication(
+        idUser,
+        cleanContent
+      );
 
     /*
-     * --------------------------------------------------------
-     * 2. Traitement vidéo
-     * --------------------------------------------------------
+     * Traitement de la vidéo.
      */
-
     if (video) {
       processedVideo =
-        await processVideo(video);
+        await processVideo(
+          video
+        );
 
       /*
-       * ------------------------------------------------------
-       * 3. Création du média associé
-       * ------------------------------------------------------
+       * Création du média associé
+       * dans la base de données.
        */
-
       createVideoMedia(
         idPubli,
         processedVideo.filename,
@@ -554,32 +594,40 @@ async function createPost({
 
     return {
       idPubli,
+
       idUser,
-      contenuPub: cleanContent,
-      media: processedVideo
-        ? {
-            nomMedia:
-              processedVideo.filename,
 
-            typeMedia: 'video',
+      contenuPub:
+        cleanContent,
 
-            duree:
-              processedVideo.duration
-          }
-        : null
+      media:
+        processedVideo
+          ? {
+              nomMedia:
+                processedVideo.filename,
+
+              typeMedia:
+                'video',
+
+              duree:
+                processedVideo.duration
+            }
+          : null
     };
   } catch (error) {
-
     /*
-     * Suppression du fichier temporaire/original
-     * en cas d'échec.
+     * Suppression du fichier uploadé
+     * en cas d'erreur.
      */
     if (video?.path) {
-      await safeUnlink(video.path);
+      await safeUnlink(
+        video.path
+      );
     }
 
     /*
-     * Suppression du fichier final éventuel.
+     * Suppression du fichier final
+     * en cas d'erreur.
      */
     if (processedVideo?.path) {
       await safeUnlink(
@@ -588,15 +636,14 @@ async function createPost({
     }
 
     /*
-     * Suppression de la publication créée si le traitement
-     * du média échoue.
-     *
-     * Grâce à la clé étrangère ON DELETE CASCADE,
-     * un éventuel Media associé est également supprimé.
+     * Suppression de la publication
+     * créée avant l'erreur.
      */
     if (idPubli !== null) {
       try {
-        deletePublication(idPubli);
+        deletePublication(
+          idPubli
+        );
       } catch (deleteError) {
         console.error(
           'Impossible de supprimer la publication après erreur :',
