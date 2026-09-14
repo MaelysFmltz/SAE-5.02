@@ -2,6 +2,26 @@ const db = require('../config/database');
 const postModel = require('../models/postModel');
 const userModel = require('../models/userModel');
 
+
+function validerContenuPublication(contenuPub) {
+    if (typeof contenuPub !== 'string') {
+        throw new Error('Le contenu de la publication doit être une chaîne de caractères');
+    }
+
+    const contenu = contenuPub.trim();
+
+    if (contenu.length === 0) {
+        throw new Error('Le contenu de la publication ne peut pas être vide');
+    }
+
+    if (contenu.length > 5000) {
+        throw new Error('Le contenu de la publication ne peut pas dépasser 5000 caractères');
+    }
+
+    return contenu;
+}
+
+
 // ================================
 // PARTIE 4 : VISIBILITÉ
 // ================================
@@ -66,12 +86,9 @@ function modifierVisibilite(db, idPubli, idUser, nouvelleVisibilite) {
 // PARTIE 6 : PUBLICATIONS
 // ================================
 
-function createPublication(
-    idUser,
-    contenuPub,
-    visibilite = 1,
-    idPubliPartagee = null
-) {
+function createPublication(idUser, contenuPub, visibilite = 1, idPubliPartagee = null) {
+    contenuPub = validerContenuPublication(contenuPub);
+
     const user = userModel.findById(idUser);
 
     if (!user) {

@@ -252,4 +252,35 @@ describe('Partage de publications', () => {
         expect(publication.auteurOriginalPseudo).toBeNull();
     });
 
+    test('refuser une publication avec un contenu vide', () => {
+        expect(() => {
+            postService.createPublication(1, '   ', 1);
+        }).toThrow('contenu de la publication ne peut pas être vide');
+    });
+
+    test('refuser un contenu de publication qui n’est pas une chaîne', () => {
+        expect(() => {
+            postService.createPublication(1, 12345, 1);
+        }).toThrow('contenu de la publication doit être une chaîne');
+    });
+
+    test('refuser un contenu de publication trop long', () => {
+        const contenuTropLong = 'a'.repeat(5001);
+
+        expect(() => {
+            postService.createPublication(1, contenuTropLong, 1);
+        }).toThrow('ne peut pas dépasser 5000 caractères');
+    });
+
+    test('nettoyer les espaces autour du contenu d’une publication', () => {
+        const publication = postService.createPublication(
+            1,
+            '   Bonjour Pixora   ',
+            1
+        );
+
+        expect(publication.contenuPub).toBe('Bonjour Pixora');
+    });
+
+
 });
