@@ -35,7 +35,10 @@ function peutVoirPublication(db, idPubli, idUser) {
 }
 
 function modifierVisibilite(db, idPubli, idUser, nouvelleVisibilite) {
-    if (nouvelleVisibilite !== 0 && nouvelleVisibilite !== 1) {
+    if (
+        !Number.isInteger(nouvelleVisibilite) ||
+        (nouvelleVisibilite !== 0 && nouvelleVisibilite !== 1)
+    ) {
         return false;
     }
 
