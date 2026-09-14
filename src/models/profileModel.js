@@ -57,15 +57,18 @@ function getProfileByPseudo(pseudo) {
 }
 
 /**
- * Met à jour les données textuelles du profil
+ * Met à jour les données textuelles du profil (ou l'insère s'il n'existait pas)
  */
 function updateProfile(idUser, { nom, prenom, bio }) {
   const query = `
-    UPDATE Profil
-    SET nom = ?, prenom = ?, bio = ?
-    WHERE idUser = ?
+    INSERT INTO Profil (idUser, nom, prenom, bio)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(idUser) DO UPDATE SET
+      nom = excluded.nom,
+      prenom = excluded.prenom,
+      bio = excluded.bio
   `;
-  return db.prepare(query).run(nom, prenom, bio, idUser);
+  return db.prepare(query).run(idUser, nom, prenom, bio);
 }
 
 module.exports = {

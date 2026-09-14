@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= profile.pseudo %> — Pixora</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/profile.css?v=5">
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- En-tête : retour à gauche, pseudo centré -->
+    <header class="profile-header">
+      <a href="/home" class="icon-btn" title="Retour à l'accueil">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </a>
+      <h1 class="header-title"><%= profile.pseudo %></h1>
+      <div class="header-spacer"></div>
+    </header>
+
+    <!-- Zone principale -->
+    <main class="profile-container">
+      
+      <!-- 1. En-tête profil : photo à gauche + identité à droite -->
+      <section class="profile-identity-row">
+        <!-- Photo à gauche -->
+        <div class="avatar-circle">
+          <% if (profile.avatarUrl) { %>
+            <img src="<%= profile.avatarUrl %>" alt="Photo de profil" class="avatar-img">
+          <% } else { %>
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+          <% } %>
+        </div>
+
+        <!-- Infos alignées à côté de la photo -->
+        <div class="identity-info">
+          <div class="pseudo-wrap">
+            <span class="profile-pseudo"><%= profile.pseudo %></span>
+            <% if (profile.role === 'admin') { %>
+              <span class="badge badge-admin">Admin</span>
+            <% } else if (profile.role === 'moderateur' || profile.role === 'modo') { %>
+              <span class="badge badge-modo">Modo</span>
+            <% } %>
+          </div>
+
+          <% if (profile.prenom || profile.nom) { %>
+            <p class="real-name"><%= [profile.prenom, profile.nom].filter(Boolean).join(' ') %></p>
+          <% } %>
+        </div>
+      </section>
+
+      <!-- 2. Biographie prenant toute la largeur sous la photo -->
+      <section class="bio-fullwidth">
+        <span class="bio-label">À propos de moi</span>
+        <div class="bio-frame">
+          <p><%= profile.bio || 'Aucune biographie rédigée.' %></p>
+        </div>
+      </section>
+
+      <!-- 3. Bouton modifier le profil -->
+      <% if (isOwner) { %>
+        <a href="/profile/edit" class="btn-edit">Modifier le profil</a>
+      <% } %>
+
+      <!-- 4. Section publications -->
+      <section class="posts-section">
+        <p class="empty-posts">Aucune publication pour l'instant</p>
+      </section>
+
+    </main>
+
+    <!-- 5 boutons en bas -->
+    <%- include('navbar') %>
+  </div>
+</body>
+</html>

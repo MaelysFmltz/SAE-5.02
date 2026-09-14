@@ -1,3 +1,4 @@
+const db = require('../config/database');
 const userModel = require('../models/userModel');
 const profileModel = require('../models/profileModel');
 
@@ -17,6 +18,14 @@ const {
   validateBirthDate
 } = require('../utils/validationUtils');
 
+// Transaction atomique : si la création du profil échoue, l'utilisateur n'est pas créé
+const executeRegisterTransaction = db.transaction((pseudo, email, hashedPassword, birthDate) => {
+  const newUser = userModel.createUser(pseudo, email, hashedPassword, birthDate);
+  const newUserId = newUser?.lastInsertRowid || newUser?.idUser || newUser;
+  profileModel.createProfile(newUserId);
+  return newUser;
+});
+
 async function register(
   pseudo,
   email,
@@ -24,9 +33,7 @@ async function register(
   dateNaissance
 ) {
   if (!pseudo || !email || !motDePasse) {
-    throw new Error(
-      'Pseudo, email et mot de passe obligatoires'
-    );
+    throw new Error('Pseudo, email et mot de passe obligatoires');
   }
 
   const validPseudo = validatePseudo(pseudo);
@@ -46,25 +53,17 @@ async function register(
 
   const hashedPassword = await hashPassword(validPassword);
 
-  const newUser = await userModel.createUser(
+  return executeRegisterTransaction(
     validPseudo,
     validEmail,
     hashedPassword,
     validBirthDate
   );
-
-  // better-sqlite3 retourne l'id inséré via .lastInsertRowid sur l'objet RunResult
-  const newUserId = newUser?.lastInsertRowid || newUser?.idUser || newUser;
-  profileModel.createProfile(newUserId);
-
-  return newUser;
 }
 
 async function login(email, motDePasse) {
   if (!email || !motDePasse) {
-    throw new Error(
-      'Email et mot de passe obligatoires'
-    );
+    throw new Error('Email et mot de passe obligatoires');
   }
 
   const validEmail = validateEmail(email);
@@ -73,34 +72,28 @@ async function login(email, motDePasse) {
     typeof motDePasse !== 'string' ||
     motDePasse.length > 128
   ) {
-    throw new Error(
-      'Email ou mot de passe incorrect'
-    );
+    throw new Error('Email ou mot de passe incorrect');
   }
 
   const user = await userModel.findByEmail(validEmail);
 
   if (!user) {
-    throw new Error(
-      'Email ou mot de passe incorrect'
-    );
+    throw new Error('Email ou mot de passe incorrect');
   }
 
-  if (user.statut !== 'actif') {
-    throw new Error(
-      'Ce compte n’est pas actif'
-    );
-  }
-
+  // 1. Vérification du mot de passe en premier pour éviter l'oracle de statut
   const passwordIsValid = await comparePassword(
     motDePasse,
     user.motDePasse
   );
 
   if (!passwordIsValid) {
-    throw new Error(
-      'Email ou mot de passe incorrect'
-    );
+    throw new Error('Email ou mot de passe incorrect');
+  }
+
+  // 2. Vérification du statut après confirmation du mot de passe
+  if (user.statut !== 'actif') {
+    throw new Error('Ce compte n’est pas actif');
   }
 
   await userModel.updateLastLogin(user.idUser);

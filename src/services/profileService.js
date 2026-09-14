@@ -1,5 +1,16 @@
 const profileModel = require('../models/profileModel');
-const { validatePseudo } = require('../utils/validationUtils');
+const { validatePseudo, sanitizeText } = require('../utils/validationUtils');
+
+/**
+ * Formate un objet profil pour y adjoindre l'URL d'avatar
+ */
+function formatProfileData(profile) {
+  if (!profile) return null;
+  return {
+    ...profile,
+    avatarUrl: profile.idMedia ? `/media/${profile.idMedia}` : null
+  };
+}
 
 /**
  * Récupère le profil personnel complet de l'utilisateur connecté
@@ -14,7 +25,7 @@ async function getMyProfile(idUser) {
     throw new Error('Profil introuvable');
   }
 
-  return profile;
+  return formatProfileData(profile);
 }
 
 /**
@@ -35,7 +46,8 @@ async function getPublicProfile(pseudo) {
     nom: profile.nom,
     prenom: profile.prenom,
     bio: profile.bio,
-    idMedia: profile.idMedia
+    idMedia: profile.idMedia,
+    avatarUrl: profile.idMedia ? `/media/${profile.idMedia}` : null
   };
 }
 
@@ -47,9 +59,14 @@ async function updateMyProfile(idUser, data) {
     throw new Error('Action non autorisée');
   }
 
-  const nom = data.nom ? String(data.nom).trim() : null;
-  const prenom = data.prenom ? String(data.prenom).trim() : null;
-  const bio = data.bio ? String(data.bio).trim() : null;
+  // Sanitisation contre le XSS stocké et normalisation
+  const cleanNom = data.nom ? sanitizeText(String(data.nom)) : null;
+  const cleanPrenom = data.prenom ? sanitizeText(String(data.prenom)) : null;
+  const cleanBio = data.bio ? sanitizeText(String(data.bio)) : null;
+
+  const nom = cleanNom && cleanNom.length > 0 ? cleanNom : null;
+  const prenom = cleanPrenom && cleanPrenom.length > 0 ? cleanPrenom : null;
+  const bio = cleanBio && cleanBio.length > 0 ? cleanBio : null;
 
   if (nom && nom.length > 50) {
     throw new Error('Le nom ne peut pas dépasser 50 caractères');
@@ -65,7 +82,8 @@ async function updateMyProfile(idUser, data) {
 
   profileModel.updateProfile(idUser, { nom, prenom, bio });
 
-  return profileModel.getProfileByUserId(idUser);
+  const updatedProfile = profileModel.getProfileByUserId(idUser);
+  return formatProfileData(updatedProfile);
 }
 
 module.exports = {
