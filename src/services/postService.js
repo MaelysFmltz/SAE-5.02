@@ -156,9 +156,23 @@ function getPublicationForUser(idPubli, idUser) {
     }
 
     if (!peutVoirPublication(db, idPubli, idUser)) {
-        throw new Error(
-            'Vous n’avez pas accès à cette publication'
-        );
+        throw new Error('Vous n’avez pas accès à cette publication');
+    }
+
+    if (
+        publication.originalIdPubli &&
+        !peutVoirPublication(db, publication.originalIdPubli, idUser)
+    ) {
+        return {
+            ...publication,
+            idPubliPartagee: null,
+            originalIdPubli: null,
+            originalIdUser: null,
+            originalContenuPub: null,
+            originalVisibilite: null,
+            originalTypePublication: null,
+            auteurOriginalPseudo: null
+        };
     }
 
     return publication;

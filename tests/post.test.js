@@ -215,4 +215,41 @@ describe('Partage de publications', () => {
         }).toThrow('accès');
     });
 
+    test('ne pas divulguer l’original privé lors de la récupération d’un repost', () => {
+        const publicationPrivee = postModel.createPublication(
+            1,
+            'Contenu privé de Alice',
+            0
+        );
+
+        db.prepare(`
+            INSERT INTO Abonnement
+            (idUserAbonne, idUserSuivi)
+            VALUES
+            (1, 2),
+            (2, 1)
+        `).run();
+
+        const repost = postService.createRepost(
+            2,
+            publicationPrivee.idPubli,
+            1
+        );
+
+        const publication = postService.getPublicationForUser(
+            repost.idPubli,
+            3
+        );
+
+        expect(publication).toBeDefined();
+        expect(publication.idPubli).toBe(repost.idPubli);
+
+        expect(publication.idPubliPartagee).toBeNull();
+        expect(publication.originalIdPubli).toBeNull();
+        expect(publication.originalIdUser).toBeNull();
+        expect(publication.originalContenuPub).toBeNull();
+        expect(publication.originalVisibilite).toBeNull();
+        expect(publication.auteurOriginalPseudo).toBeNull();
+    });
+
 });
