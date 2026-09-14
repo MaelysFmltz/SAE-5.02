@@ -283,4 +283,26 @@ describe('Partage de publications', () => {
     });
 
 
+    test('un repost classique ne contient pas de contenu propre', () => {
+        const repost = postService.createRepost(2, 1, 1);
+
+        expect(repost.typePublication).toBe('repost');
+        expect(repost.idPubliPartagee).toBe(1);
+        expect(repost.contenuPub).toBeNull();
+    });
+
+    test('un repost créé via une publication peut contenir un contenu personnalisé', () => {
+        const repost = postService.createPublication(
+            2,
+            'Mon commentaire sur cette publication',
+            1,
+            1
+        );
+
+        expect(repost.typePublication).toBe('repost');
+        expect(repost.idPubliPartagee).toBe(1);
+        expect(repost.contenuPub).toBe('Mon commentaire sur cette publication');
+    });
+
+
 });
