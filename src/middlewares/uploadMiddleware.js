@@ -1,13 +1,12 @@
+
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-
-const uploadDir =
-    path.join(
-        __dirname,
-        '../../uploads'
-    );
+const uploadDir = path.join(
+    __dirname,
+    '../../uploads'
+);
 
 
 /*
@@ -15,63 +14,89 @@ const uploadDir =
  * s'il n'existe pas.
  */
 if (!fs.existsSync(uploadDir)) {
-
     fs.mkdirSync(
         uploadDir,
         {
             recursive: true
         }
     );
-
 }
+
+
+/*
+ * Extensions imposées par le serveur.
+ *
+ * IMPORTANT :
+ * On ne doit JAMAIS utiliser
+ * path.extname(file.originalname)
+ * car le nom original est contrôlé
+ * par le client.
+ */
+const extensionsParMime = {
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/webp': '.webp',
+
+    'video/mp4': '.mp4',
+    'video/webm': '.webm',
+    'video/ogg': '.ogg',
+    'video/quicktime': '.mov'
+};
 
 
 /*
  * Stockage des fichiers.
  */
-const storage =
-    multer.diskStorage({
+const storage = multer.diskStorage({
 
-        destination: function (
-            req,
-            file,
-            cb
-        ) {
+    destination: function (req, file, cb) {
 
-            cb(
-                null,
-                uploadDir
+        cb(
+            null,
+            uploadDir
+        );
+
+    },
+
+    filename: function (req, file, cb) {
+
+        /*
+         * L'extension vient UNIQUEMENT
+         * de la liste contrôlée par le serveur.
+         */
+        const extension =
+            extensionsParMime[file.mimetype];
+
+        /*
+         * Sécurité supplémentaire :
+         * normalement impossible car le fileFilter
+         * vérifie déjà le MIME.
+         */
+        if (!extension) {
+            return cb(
+                new Error(
+                    'Format de fichier non autorisé.'
+                )
             );
-
-        },
-
-
-        filename: function (
-            req,
-            file,
-            cb
-        ) {
-
-            const extension =
-                path.extname(
-                    file.originalname
-                ).toLowerCase();
-
-
-            const uniqueName =
-                `${Date.now()}-${Math.round(
-                    Math.random() * 1E9
-                )}${extension}`;
-
-
-            cb(
-                null,
-                uniqueName
-            );
-
         }
 
-    });
+        /*
+         * Nom généré par le serveur.
+         * Le nom original du fichier n'est jamais utilisé.
+         */
+        const uniqueName =
+            `${Date.now()}-${Math.round(
+                Math.random() * 1E9
+            )}${extension}`;
+
+        cb(
+            null,
+            uniqueName
+        );
+
+    }
+
+});
 
 
 /*
@@ -81,7 +106,6 @@ const allowedMimeTypes = [
 
     // Images
     'image/jpeg',
-    'image/jpg',
     'image/png',
     'image/webp',
 
@@ -94,36 +118,42 @@ const allowedMimeTypes = [
 ];
 
 
-const fileFilter =
-    function (
-        req,
-        file,
-        cb
+/*
+ * Vérification du MIME déclaré.
+ *
+ * IMPORTANT :
+ * Le MIME n'est PAS considéré comme une preuve
+ * que le fichier est réellement une vidéo ou une image.
+ *
+ * Le contenu sera vérifié dans le controller.
+ */
+const fileFilter = function (
+    req,
+    file,
+    cb
+) {
+
+    if (
+        allowedMimeTypes.includes(
+            file.mimetype
+        )
     ) {
 
-        if (
-            allowedMimeTypes.includes(
-                file.mimetype
-            )
-        ) {
+        return cb(
+            null,
+            true
+        );
 
-            cb(
-                null,
-                true
-            );
+    }
 
-        } else {
+    return cb(
+        new Error(
+            'Format de fichier non autorisé. Utilisez une image ou une vidéo.'
+        ),
+        false
+    );
 
-            cb(
-                new Error(
-                    'Format de fichier non autorisé. Utilisez une image ou une vidéo.'
-                ),
-                false
-            );
-
-        }
-
-    };
+};
 
 
 /*
@@ -132,25 +162,25 @@ const fileFilter =
  * Image : 20 Mo
  * Vidéo : 100 Mo
  *
- * Comme multer n'a qu'une limite globale,
- * on utilise 100 Mo ici puis on vérifie
- * la taille exacte dans le controller.
+ * Multer utilise ici 100 Mo comme limite maximale.
+ * Le controller vérifie ensuite la limite spécifique
+ * aux images.
  */
-const upload =
-    multer({
+const upload = multer({
 
-        storage,
+    storage,
 
-        fileFilter,
+    fileFilter,
 
-        limits: {
+    limits: {
 
-            fileSize:
-                100 * 1024 * 1024
+        fileSize:
+            100 * 1024 * 1024
 
-        }
+    }
 
-    });
+});
 
 
 module.exports = upload;
+

@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs/promises');
 const cookieParser = require('cookie-parser');
 
 const authRoutes =
@@ -86,9 +87,8 @@ app.get(
 
         try {
 
-            const posts = 
-                 postService.getAllPosts();
-
+            const posts =
+                postService.getAllPosts();
 
             return res.render(
                 'feed',
@@ -222,7 +222,6 @@ app.get(
                     req.user.idUser
                 );
 
-
             return res.render(
                 'editProfile',
                 {
@@ -253,16 +252,14 @@ app.post(
                 bio
             } = req.body;
 
-
             await profileService.updateMyProfile(
                 req.user.idUser,
                 {
-                    prenom,
                     nom,
+                    prenom,
                     bio
                 }
             );
-
 
             return res.redirect(
                 '/profile'
@@ -270,22 +267,13 @@ app.post(
 
         } catch (err) {
 
-            const profile =
-                await profileService.getMyProfile(
-                    req.user.idUser
-                );
+            console.error(
+                'Erreur modification profil :',
+                err
+            );
 
-
-            return res.render(
-                'editProfile',
-                {
-                    profile: {
-                        ...profile,
-                        ...req.body
-                    },
-
-                    error: err.message
-                }
+            return res.redirect(
+                '/profile/edit'
             );
         }
     }
@@ -293,19 +281,162 @@ app.post(
 
 
 // ============================================================
-// UPLOADS
+// MÉDIAS UPLOADÉS
 // ============================================================
 
-app.use(
-    '/uploads',
-    express.static(
-        path.join(__dirname, '../uploads')
-    )
+/*
+ * IMPORTANT :
+ *
+ * On ne laisse plus express.static() déterminer
+ * automatiquement le Content-Type des fichiers utilisateurs.
+ *
+ * Le fichier doit avoir été enregistré avec une extension
+ * contrôlée par le serveur (.jpg, .png, .webp, .mp4, .webm,
+ * .ogg ou .mov).
+ *
+ * X-Content-Type-Options: nosniff empêche également le navigateur
+ * d'essayer de deviner un autre type MIME.
+ */
+
+app.get(
+    '/uploads/:filename',
+    async (req, res) => {
+
+        try {
+
+            const filename =
+                req.params.filename;
+
+
+            /*
+             * Protection contre les chemins comme :
+             *
+             * ../fichier.html
+             *
+             * ou toute tentative de traversée.
+             */
+            if (
+                filename !== path.basename(filename)
+            ) {
+
+                return res.status(400).send(
+                    'Nom de fichier invalide.'
+                );
+
+            }
+
+
+            /*
+             * Extensions autorisées.
+             */
+            const contentTypes = {
+
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.webp': 'image/webp',
+
+                '.mp4': 'video/mp4',
+                '.webm': 'video/webm',
+                '.ogg': 'video/ogg',
+                '.mov': 'video/quicktime'
+
+            };
+
+
+            const extension =
+                path.extname(
+                    filename
+                ).toLowerCase();
+
+
+            const contentType =
+                contentTypes[extension];
+
+
+            /*
+             * Une extension inconnue ne doit jamais
+             * être servie comme HTML, SVG, PHP, etc.
+             */
+            if (!contentType) {
+
+                return res.status(404).send(
+                    'Fichier non trouvé.'
+                );
+
+            }
+
+
+            const filePath =
+                path.join(
+                    __dirname,
+                    '../uploads',
+                    filename
+                );
+
+
+            /*
+             * Vérification que le fichier existe.
+             */
+            try {
+
+                await fs.access(
+                    filePath
+                );
+
+            } catch {
+
+                return res.status(404).send(
+                    'Fichier non trouvé.'
+                );
+
+            }
+
+
+            /*
+             * Empêche le navigateur de renifler
+             * un autre type MIME.
+             */
+            res.set(
+                'X-Content-Type-Options',
+                'nosniff'
+            );
+
+
+            /*
+             * Le navigateur peut afficher les images
+             * et vidéos normalement.
+             */
+            res.type(
+                contentType
+            );
+
+
+            return res.sendFile(
+                path.resolve(filePath)
+            );
+
+        }
+
+        catch (error) {
+
+            console.error(
+                'Erreur accès média :',
+                error
+            );
+
+            return res.status(500).send(
+                'Erreur lors de la récupération du fichier.'
+            );
+
+        }
+
+    }
 );
 
 
 // ============================================================
-// API
+// ROUTES
 // ============================================================
 
 app.use(
