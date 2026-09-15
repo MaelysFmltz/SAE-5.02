@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= titreConversation %> — Pixora</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/messages.css">
+</head>
+<body>
+  <div class="app-container">
+
+    <header class="messages-header">
+      <a href="/messages" class="icon-btn" title="Retour aux messages">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </a>
+      <h1 class="header-title"><%= titreConversation %></h1>
+      <div class="header-spacer"></div>
+    </header>
+
+    <div class="chat-container">
+      <div class="chat-messages" id="chat-messages">
+        <% messages.forEach(msg => { %>
+          <div class="bubble <%= msg.idUser === idUserCourant ? 'mine' : 'theirs' %>">
+            <%= msg.contenu %>
+            <div class="bubble-meta"><%= new Date(msg.dateEnvoi).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) %></div>
+          </div>
+        <% }) %>
+      </div>
+
+      <form class="chat-input-bar" id="chat-form">
+        <input type="text" id="chat-input" placeholder="Écrire un message..." autocomplete="off">
+        <button type="submit" class="chat-send-btn" title="Envoyer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2 21l21-9L2 3v7l15 2-15 2z"></path>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/messages.js" data-conversation-id="<%= idConversation %>"></script>
+</body>
+</html>
