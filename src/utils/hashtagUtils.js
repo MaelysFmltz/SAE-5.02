@@ -1,7 +1,7 @@
 const HASHTAG_REGEX = /#([a-zA-Z0-9_\u00C0-\u017F]{1,30})/g;
 
 /**
- * Échappe les caractères HTML dangereux pour prévenir les attaques XSS
+ * Échappe le HTML pour le corps de texte sans briser les apostrophes
  * @param {string} str 
  * @returns {string}
  */
@@ -10,9 +10,7 @@ function escapeHtml(str) {
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/>/g, '&gt;');
 }
 
 /**
@@ -39,8 +37,7 @@ function extractHashtags(text) {
 }
 
 /**
- * Échappe d'abord le texte pour neutraliser tout script malveillant, 
- * puis transforme les #tags en liens cliquables sécurisés
+ * Échappe d'abord le HTML (<, >, &), puis transforme les vrais #tags en liens cliquables
  * @param {string} text 
  * @returns {string} HTML sécurisé
  */
@@ -50,7 +47,7 @@ function linkifyHashtags(text) {
   const safeText = escapeHtml(text);
   return safeText.replace(HASHTAG_REGEX, (fullMatch, tagName) => {
     const cleanTag = tagName.toLowerCase();
-    return `<a href="/search?q=%23${encodeURIComponent(cleanTag)}" class="hashtag-link">#${escapeHtml(tagName)}</a>`;
+    return `<a href="/search?q=%23${encodeURIComponent(cleanTag)}" class="hashtag-link">#${tagName}</a>`;
   });
 }
 
