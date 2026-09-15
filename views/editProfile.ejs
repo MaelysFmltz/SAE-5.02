@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modifier le profil — Pixora</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/profile.css">
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- En-tête : bouton retour et titre centré -->
+    <header class="profile-header">
+      <a href="/profile" class="icon-btn" title="Annuler">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </a>
+      <h1 class="header-title">Modifier le profil</h1>
+      <div class="header-spacer"></div>
+    </header>
+
+    <!-- Formulaire centré -->
+    <main class="profile-container">
+      <form action="/profile/edit" method="POST" class="edit-form">
+
+        <!-- Pseudo -->
+        <div class="form-group">
+          <label for="pseudo">Pseudo</label>
+          <input type="text" id="pseudo" name="pseudo" value="<%= profile.pseudo %>" disabled>
+        </div>
+
+        <!-- Prénom -->
+        <div class="form-group">
+          <label for="prenom">Prénom</label>
+          <input type="text" id="prenom" name="prenom" value="<%= profile.prenom || '' %>" maxlength="50" placeholder="Ton prénom">
+        </div>
+
+        <!-- Nom -->
+        <div class="form-group">
+          <label for="nom">Nom</label>
+          <input type="text" id="nom" name="nom" value="<%= profile.nom || '' %>" maxlength="50" placeholder="Ton nom">
+        </div>
+
+        <!-- Biographie -->
+        <div class="form-group">
+          <label for="bio">Biographie</label>
+          <textarea id="bio" name="bio" rows="4" maxlength="300" placeholder="Parle un peu de toi..."><%= profile.bio || '' %></textarea>
+        </div>
+
+        <button type="submit" class="btn-primary">Enregistrer les modifications</button>
+      </form>
+    </main>
+
+    <!-- 5 boutons en bas -->
+    <%- include('navbar') %>
+  </div>
+</body>
+</html>
