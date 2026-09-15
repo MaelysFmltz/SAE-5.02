@@ -2,27 +2,28 @@ const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
 
-const dbPath = process.env.DB_PATH;
+// 1. Chemin prioritaire pour les tests (:memory:), sinon database/database.db
+const dbPath = process.env.DB_PATH || path.resolve(__dirname, '../../database/database.db');
 
-let db;
+// Si ce n'est pas une base en mémoire, s'assurer que le dossier parent existe
+if (dbPath !== ':memory:') {
+  const dbDir = path.dirname(dbPath);
 
-if (dbPath === ':memory:') {
-  db = new Database(':memory:');
-} else {
-  const dbDirPath = path.resolve(__dirname, '../../data');
-  const dbFilePath = dbPath || path.join(dbDirPath, 'app.db');
-
-  if (!fs.existsSync(dbDirPath)) {
-    fs.mkdirSync(dbDirPath, { recursive: true });
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
   }
-
-  db = new Database(dbFilePath);
 }
+
+// 2. Ouverture de la base
+const db = new Database(dbPath);
 
 db.pragma('foreign_keys = ON');
 
-console.log('Connexion à SQLite réussie.');
+console.log(
+  `Connexion à SQLite réussie (${dbPath === ':memory:' ? 'in-memory' : dbPath}).`
+);
 
+// 3. Initialisation du schéma si la base est neuve
 const tableExists = db
   .prepare(
     "SELECT name FROM sqlite_master WHERE type='table' AND name='Utilisateur'"

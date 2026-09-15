@@ -7,6 +7,7 @@
   --text-primary: #ffffff;
   --text-secondary: #9090a8;
   --gradient-pixora: linear-gradient(135deg, #f35b6b 0%, #d83d97 50%, #7d33d9 100%);
+  --primary: #6366f1;
 }
 
 * {
@@ -22,7 +23,7 @@ body {
   min-height: 100vh;
 }
 
-/* Bouton principal avec le dégradé du logo */
+/* Boutons et alertes génériques */
 .btn-primary {
   width: 100%;
   padding: 0.85rem;
@@ -56,4 +57,68 @@ body {
   background-color: rgba(239, 68, 68, 0.15);
   border: 1px solid rgba(239, 68, 68, 0.3);
   color: #f87171;
+}
+
+/* Conteneur principal : pleine largeur */
+.app-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-bottom: 70px;
+}
+
+/* Barre de navigation basse : traverse tout l'écran */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: var(--bg-surface);
+  border-top: 1px solid var(--border-color);
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Les 5 boutons : centrés et resserrés */
+.nav-container {
+  width: 100%;
+  max-width: 420px;
+  height: 100%;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 10px;
+}
+
+.nav-item {
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.nav-item:hover, .nav-item.active {
+  color: var(--text-primary);
+}
+
+.nav-item.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.nav-create {
+  background: var(--gradient-pixora);
+  color: #ffffff !important;
+  border-radius: 12px;
+  width: 40px;
+  height: 40px;
 }

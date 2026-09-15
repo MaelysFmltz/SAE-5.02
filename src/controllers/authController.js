@@ -1,5 +1,31 @@
 const authService = require('../services/authService');
 
+/**
+ * Normalise les messages d'erreur pour éviter la fuite d'informations SQL ou serveur
+ */
+function handleAuthError(err, res, defaultStatus = 400) {
+  console.error(err);
+
+  // Détection des conflits d'unicité SQLite (inscriptions concurrentes ou doublons)
+  if (err.code === 'SQLITE_CONSTRAINT_UNIQUE' || (err.message && err.message.includes('UNIQUE constraint failed'))) {
+    return res.status(409).json({
+      error: 'Cet email ou pseudo est déjà utilisé'
+    });
+  }
+
+  // Si c'est une autre erreur interne SQLite
+  if (err.code && err.code.startsWith('SQLITE_')) {
+    return res.status(500).json({
+      error: 'Une erreur interne est survenue'
+    });
+  }
+
+  // Erreurs applicatives contrôlées (validation, mauvais identifiants, etc.)
+  return res.status(defaultStatus).json({
+    error: err.message || 'Une erreur est survenue'
+  });
+}
+
 async function register(req, res) {
   try {
     const {
@@ -21,10 +47,7 @@ async function register(req, res) {
       user
     });
   } catch (err) {
-    console.error(err);
-    res.status(400).json({
-      error: err.message
-    });
+    handleAuthError(err, res, 400);
   }
 }
 
@@ -43,6 +66,7 @@ async function login(req, res) {
     // Stockage du token dans un cookie HTTP sécurisé
     res.cookie('token', result.token, {
       httpOnly: true,
+      sameSite: 'lax',
       maxAge: 2 * 60 * 60 * 1000 // 2 heures (identique à l'expiration du JWT)
     });
 
@@ -52,10 +76,7 @@ async function login(req, res) {
       user: result.user
     });
   } catch (err) {
-    console.error(err);
-    res.status(401).json({
-      error: err.message
-    });
+    handleAuthError(err, res, 401);
   }
 }
 

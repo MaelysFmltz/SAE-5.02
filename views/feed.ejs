@@ -4,145 +4,189 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Pixora — Accueil</title>
-
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/feed.css">
 </head>
 
 <body>
 
-  <header class="navbar">
+  <div class="app-container">
 
-    <div class="nav-brand">
-      <img src="/images/logo.jpg" alt="Pixora Logo" class="nav-logo">
-      <span class="nav-title">PIXORA</span>
-    </div>
+    <header class="navbar">
+      <div class="nav-brand">
+        <img src="/images/logo.jpg" alt="Pixora Logo" class="nav-logo">
+        <span class="nav-title">PIXORA</span>
+      </div>
 
-    <div class="nav-user">
-      <span class="user-greeting">
-        Bonjour, <strong><%= user.pseudo %></strong>
-      </span>
+      <div class="nav-user">
+        <span class="user-greeting">
+          Bonjour, <strong><%= user.pseudo %></strong>
+        </span>
 
-      <form action="/api/auth/logout" method="POST">
-        <button type="submit" class="btn-logout">
-          Déconnexion
-        </button>
-      </form>
-    </div>
+        <form action="/api/auth/logout" method="POST">
+          <button type="submit" class="btn-logout">
+            Déconnexion
+          </button>
+        </form>
+      </div>
+    </header>
 
-  </header>
+    <main class="feed-container">
 
-  <main class="feed-container">
+      <div class="card">
+        <h2>Fil d'actualité</h2>
+        <p>Découvre les dernières publications de Pixora.</p>
+      </div>
 
-    <div class="card">
-      <h2>Fil d'actualité</h2>
-      <p>Découvre les dernières publications de Pixora.</p>
-    </div>
+      <!-- PUBLICATIONS -->
+      <% if (publications && publications.length > 0) { %>
 
-    <% if (publications && publications.length > 0) { %>
+        <% publications.forEach(publication => { %>
 
-      <% publications.forEach(publication => { %>
+          <article class="publication-card">
 
-        <article class="publication-card">
+            <!-- En-tête de la publication -->
+            <div class="publication-header">
+              <strong>
+                @<%= publication.auteurPseudo %>
+              </strong>
 
-          <!-- En-tête de la publication -->
-          <div class="publication-header">
+              <span class="publication-type">
+                <% if (publication.typePublication === 'original') { %>
+                  Publication
+                <% } else if (publication.typePublication === 'repost') { %>
+                  🔁 Repost
+                <% } else if (publication.typePublication === 'duo') { %>
+                  🎭 Duo
+                <% } else if (publication.typePublication === 'collage') { %>
+                  🧩 Collage
+                <% } %>
+              </span>
+            </div>
 
-            <strong>
-              @<%= publication.auteurPseudo %>
-            </strong>
+            <!-- Contenu -->
+            <% if (publication.contenuPub) { %>
+              <p class="publication-content">
+                <%= publication.contenuPub %>
+              </p>
+            <% } %>
 
-            <span class="publication-type">
+            <!-- Publication d'origine -->
+            <% if (publication.idPubliPartagee) { %>
+              <div class="shared-publication">
+                Cette publication est basée sur
+                <strong>
+                  #<%= publication.idPubliPartagee %>
+                </strong>
+              </div>
+            <% } %>
 
-              <% if (publication.typePublication === 'original') { %>
-                Publication
+            <!-- Actions de partage -->
+            <div class="publication-actions">
 
-              <% } else if (publication.typePublication === 'repost') { %>
-                🔁 Repost
+              <button
+                type="button"
+                class="share-btn repost-btn"
+                onclick="repartager(<%= publication.idPubli %>)">
+                🔁 Reposter
+              </button>
 
-              <% } else if (publication.typePublication === 'duo') { %>
-                🎭 Duo
+              <button
+                type="button"
+                class="share-btn duo-btn"
+                onclick="creerDuo(<%= publication.idPubli %>)">
+                🎭 Créer un Duo
+              </button>
 
-              <% } else if (publication.typePublication === 'collage') { %>
-                🧩 Collage
+              <button
+                type="button"
+                class="share-btn collage-btn"
+                onclick="creerCollage(<%= publication.idPubli %>)">
+                🧩 Créer un collage
+              </button>
 
-              <% } %>
+              <button
+                type="button"
+                class="share-btn link-btn"
+                onclick="copierLien(<%= publication.idPubli %>)">
+                🔗 Copier le lien
+              </button>
 
-            </span>
+            </div>
 
-          </div>
+          </article>
 
-          <!-- Contenu -->
-          <% if (publication.contenuPub) { %>
+        <% }); %>
 
-            <p class="publication-content">
-              <%= publication.contenuPub %>
+      <% } else { %>
+
+        <div class="card">
+          <p>Aucune publication pour le moment.</p>
+        </div>
+
+      <% } %>
+
+      <!-- SECTION DÉCOUVERTE DES PROFILS -->
+      <section class="discover-section">
+
+        <h4 class="section-title">
+          Découvrir des membres
+        </h4>
+
+        <div class="user-list">
+
+          <% if (typeof suggestions !== 'undefined' && suggestions.length > 0) { %>
+
+            <% suggestions.forEach(function(u) { %>
+
+              <a
+                href="/profile/<%= u.pseudo %>"
+                class="user-card-link">
+
+                <div class="user-mini-avatar">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </div>
+
+                <div class="user-info">
+
+                  <span class="user-pseudo">
+                    @<%= u.pseudo %>
+                  </span>
+
+                  <% if (u.bio) { %>
+                    <span class="user-bio">
+                      <%= u.bio.slice(0, 45) %><%= u.bio.length > 45 ? '...' : '' %>
+                    </span>
+                  <% } %>
+
+                </div>
+
+                <span class="view-arrow">›</span>
+
+              </a>
+
+            <% }); %>
+
+          <% } else { %>
+
+            <p class="empty-users">
+              Aucun autre membre inscrit pour le moment.
             </p>
 
           <% } %>
 
-          <!-- Publication d'origine -->
-          <% if (publication.idPubliPartagee) { %>
+        </div>
 
-            <div class="shared-publication">
+      </section>
 
-              Cette publication est basée sur
-              <strong>
-                #<%= publication.idPubliPartagee %>
-              </strong>
+    </main>
 
-            </div>
+    <%- include('navbar') %>
 
-          <% } %>
-
-          <!-- Actions de partage -->
-          <div class="publication-actions">
-
-            <button
-              type="button"
-              class="share-btn repost-btn"
-              onclick="repartager(<%= publication.idPubli %>)">
-              🔁 Reposter
-            </button>
-
-            <button
-              type="button"
-              class="share-btn duo-btn"
-              onclick="creerDuo(<%= publication.idPubli %>)">
-              🎭 Créer un Duo
-            </button>
-
-            <button
-              type="button"
-              class="share-btn collage-btn"
-              onclick="creerCollage(<%= publication.idPubli %>)">
-              🧩 Créer un collage
-            </button>
-
-            <button
-              type="button"
-              class="share-btn link-btn"
-              onclick="copierLien(<%= publication.idPubli %>)">
-              🔗 Copier le lien
-            </button>
-
-          </div>
-
-        </article>
-
-      <% }); %>
-
-    <% } else { %>
-
-      <div class="card">
-        <p>Aucune publication pour le moment.</p>
-      </div>
-
-    <% } %>
-
-  </main>
+  </div>
 
 
   <script>
@@ -157,11 +201,9 @@
         `/api/publications/${idPubli}/repartage`,
         {
           method: 'POST',
-
           headers: {
             'Content-Type': 'application/json'
           },
-
           body: JSON.stringify({
             visibilite: 1
           })
@@ -171,18 +213,13 @@
       const data = await response.json();
 
       if (response.ok) {
-
         alert('Publication repartagée !');
-
         location.reload();
-
       } else {
-
         alert(
           data.error ||
           'Erreur lors du repartage'
         );
-
       }
     }
 
@@ -205,11 +242,9 @@
         `/api/publications/${idPubli}/duo`,
         {
           method: 'POST',
-
           headers: {
             'Content-Type': 'application/json'
           },
-
           body: JSON.stringify({
             contenuPub,
             visibilite: 1
@@ -220,18 +255,13 @@
       const data = await response.json();
 
       if (response.ok) {
-
         alert('Duo créé !');
-
         location.reload();
-
       } else {
-
         alert(
           data.error ||
           'Erreur lors de la création du Duo'
         );
-
       }
     }
 
@@ -254,11 +284,9 @@
         `/api/publications/${idPubli}/collage`,
         {
           method: 'POST',
-
           headers: {
             'Content-Type': 'application/json'
           },
-
           body: JSON.stringify({
             contenuPub,
             visibilite: 1
@@ -269,18 +297,13 @@
       const data = await response.json();
 
       if (response.ok) {
-
         alert('Collage créé !');
-
         location.reload();
-
       } else {
-
         alert(
           data.error ||
           'Erreur lors de la création du collage'
         );
-
       }
     }
 
