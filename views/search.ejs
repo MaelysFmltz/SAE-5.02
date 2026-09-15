@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Explorer & Rechercher — Pixora</title>
   <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/search.css?v=4">
+  <link rel="stylesheet" href="/css/search.css?v=6">
 </head>
 <body>
   <div class="app-container search-layout">
@@ -18,20 +18,32 @@
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
           <input 
-            type="search" 
+            type="text" 
             name="q" 
             id="search-input" 
             placeholder="Rechercher un tag (#paris) ou un membre..." 
             value="<%= query || '' %>" 
             autocomplete="off"
+            maxlength="100"
             autofocus>
+          <button 
+            type="button" 
+            id="clear-search-btn" 
+            class="clear-search-btn" 
+            aria-label="Effacer la recherche" 
+            <%= query ? '' : 'hidden' %>>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
       </form>
     </header>
 
     <main class="search-content" id="search-content">
 
-      <!-- 1. Vue Tendances (masquée si une recherche est en cours) -->
+      <!-- 1. Vue Tendances (Hashtags publics uniquement) -->
       <section class="trends-section" id="trends-section" <%= query ? 'hidden' : '' %>>
         <h2 class="section-title">Hashtags populaires</h2>
         
@@ -77,7 +89,7 @@
           <div class="users-results-list" id="list-users">
             <% if (resultats.utilisateurs) { %>
               <% resultats.utilisateurs.forEach(u => { %>
-                <a href="/profile/<%= u.pseudo %>" class="user-item">
+                <a href="/profile/<%= encodeURIComponent(u.pseudo) %>" class="user-item">
                   <div class="user-avatar-placeholder">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
@@ -104,7 +116,7 @@
                 <article class="mosaic-post-card">
                   <div class="post-media-preview">
                     <% if (post.nomMedia) { %>
-                      <img src="/uploads/<%= post.nomMedia %>" alt="Publication" class="post-img">
+                      <img src="/uploads/<%= encodeURIComponent(post.nomMedia) %>" alt="Publication" class="post-img">
                     <% } else { %>
                       <div class="media-placeholder">
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -117,7 +129,7 @@
                   </div>
                   <div class="post-card-body">
                     <div class="post-card-author">
-                      <a href="/profile/<%= post.pseudo %>" class="post-author-link">@<%= post.pseudo %></a>
+                      <a href="/profile/<%= encodeURIComponent(post.pseudo) %>" class="post-author-link">@<%= post.pseudo %></a>
                     </div>
                     <p class="post-text-desc"><%- linkifyHashtags(post.contenuPub) %></p>
                   </div>
@@ -139,6 +151,7 @@
 
   <script>
     const searchInput = document.getElementById('search-input');
+    const clearBtn = document.getElementById('clear-search-btn');
     const trendsSection = document.getElementById('trends-section');
     const dynamicResults = document.getElementById('dynamic-results');
 
@@ -155,17 +168,28 @@
     let debounceTimer = null;
 
     function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
+      if (typeof text !== 'string') return '';
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
     function linkify(text) {
       const safeText = escapeHtml(text);
       const regex = /#([a-zA-Z0-9_\u00C0-\u017F]{1,30})/g;
       return safeText.replace(regex, (match, tag) => {
-        return `<a href="/search?q=%23${encodeURIComponent(tag.toLowerCase())}" class="hashtag-link">#${tag}</a>`;
+        return `<a href="/search?q=%23${encodeURIComponent(tag.toLowerCase())}" class="hashtag-link">#${escapeHtml(tag)}</a>`;
       });
+    }
+
+    function resetToHome() {
+      trendsSection.hidden = false;
+      dynamicResults.hidden = true;
+      clearBtn.hidden = true;
+      window.history.replaceState({}, '', '/search');
     }
 
     searchInput.addEventListener('input', (e) => {
@@ -173,12 +197,11 @@
       const val = e.target.value.trim();
 
       if (!val) {
-        trendsSection.hidden = false;
-        dynamicResults.hidden = true;
-        window.history.replaceState({}, '', '/search');
+        resetToHome();
         return;
       }
 
+      clearBtn.hidden = false;
       window.history.replaceState({}, '', `/search?q=${encodeURIComponent(val)}`);
 
       debounceTimer = setTimeout(async () => {
@@ -194,6 +217,13 @@
       }, 250);
     });
 
+    clearBtn.addEventListener('click', () => {
+      clearTimeout(debounceTimer);
+      searchInput.value = '';
+      resetToHome();
+      searchInput.focus();
+    });
+
     function renderResults(data, query) {
       trendsSection.hidden = true;
       dynamicResults.hidden = false;
@@ -204,7 +234,7 @@
         listHashtags.innerHTML = data.hashtags.map(t => `
           <a href="/search?q=%23${encodeURIComponent(t.nom)}" class="tag-chip">
             <span class="chip-name">#${escapeHtml(t.nom)}</span>
-            <span class="chip-count">${t.nbPosts}</span>
+            <span class="chip-count">${parseInt(t.nbPosts, 10) || 0}</span>
           </a>
         `).join('');
       } else {
@@ -236,7 +266,7 @@
         listUsers.innerHTML = '';
       }
 
-      // 3. Publications (Mosaïque)
+      // 3. Publications
       if (data.publications && data.publications.length > 0) {
         listPosts.style.display = 'grid';
         postsEmptyMsg.hidden = true;
@@ -244,7 +274,7 @@
           <article class="mosaic-post-card">
             <div class="post-media-preview">
               ${p.nomMedia 
-                ? `<img src="/uploads/${escapeHtml(p.nomMedia)}" alt="Publication" class="post-img">`
+                ? `<img src="/uploads/${encodeURIComponent(p.nomMedia)}" alt="Publication" class="post-img">`
                 : `<div class="media-placeholder">
                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -265,10 +295,10 @@
       } else {
         listPosts.style.display = 'none';
         listPosts.innerHTML = '';
-        postsEmptyMsg.textContent = `Aucune publication trouvée pour « ${query} ».`;
+        postsEmptyMsg.textContent = `Aucune publication trouvée pour « ${escapeHtml(query)} ».`;
         postsEmptyMsg.hidden = false;
       }
     }
   </script>
 </body>
-</html>
+</html> 

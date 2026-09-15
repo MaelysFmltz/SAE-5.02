@@ -1,4 +1,14 @@
 /**
+ * Échappe les méta-caractères LIKE (% et _) pour éviter les fuites ou scans involontaires
+ * @param {string} str 
+ * @returns {string}
+ */
+function escapeLike(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
+
+/**
  * Récupère un hashtag par son nom ou l'insère s'il n'existe pas encore.
  * @param {object} db Instance SQLite
  * @param {string} nom Nom normalisé du hashtag (sans '#')
@@ -24,7 +34,6 @@ function findOrCreateHashtag(db, nom) {
 
 /**
  * Associe une liste de noms de hashtags à une publication.
- * Supprime les anciennes liaisons de la publication avant de réinsérer.
  * @param {object} db Instance SQLite
  * @param {number} idPubli Identifiant de la publication
  * @param {string[]} tagNames Liste des hashtags (sans '#')
@@ -33,7 +42,6 @@ function associerHashtagsPubli(db, idPubli, tagNames) {
   if (!idPubli || !Array.isArray(tagNames)) return;
 
   const transaction = db.transaction(() => {
-    // Nettoyer d'éventuelles liaisons existantes pour cette publication
     db.prepare(`
       DELETE FROM PubliHashtag WHERE idPubli = ?
     `).run(idPubli);
@@ -53,68 +61,96 @@ function associerHashtagsPubli(db, idPubli, tagNames) {
 }
 
 /**
- * Récupère les hashtags les plus populaires classés par nombre de publications associées.
+ * Récupère les hashtags les plus populaires basés UNIQUEMENT sur les publications publiques.
+ * Les publications en visibilité privée/amis et les messages n'y figurent pas.
  * @param {object} db Instance SQLite
- * @param {number} limit Nombre maximum de hashtags renvoyés
+ * @param {number} limit
  * @returns {Array<{ nom: string, nbPosts: number }>}
  */
 function getTendances(db, limit = 10) {
   return db.prepare(`
-    SELECT h.nom, COUNT(ph.idPubli) AS nbPosts
+    SELECT h.nom, COUNT(p.idPubli) AS nbPosts
     FROM Hashtag h
     JOIN PubliHashtag ph ON h.idHashtag = ph.idHashtag
+    JOIN Publication p ON ph.idPubli = p.idPubli
+    WHERE p.visibilite = 1
     GROUP BY h.idHashtag
+    HAVING nbPosts > 0
     ORDER BY nbPosts DESC, h.nom ASC
     LIMIT ?
   `).all(limit);
 }
 
 /**
- * Récupère les publications associées à un hashtag donné (les plus récentes en premier).
+ * Récupère les publications associées à un hashtag en respectant scrupuleusement la visibilité :
+ * - Publication publique (visibilite = 1)
+ * - OU auteur est l'utilisateur connecté
+ * - OU publication 'amis uniquement' ET l'utilisateur connecté est un ami réciproque de l'auteur
  * @param {object} db Instance SQLite
  * @param {string} nom Nom du hashtag (sans '#')
- * @returns {Array} Liste des publications avec leur auteur
+ * @param {number} idCurrentUser ID de l'utilisateur effectuant la requête
+ * @returns {Array} Liste des publications filtrées
  */
-function getPublicationsByHashtag(db, nom) {
+function getPublicationsByHashtag(db, nom, idCurrentUser) {
   const cleanNom = nom.toLowerCase().trim();
 
   return db.prepare(`
-    SELECT 
+    SELECT DISTINCT
       p.idPubli,
       p.contenuPub,
       p.datePubli,
+      p.visibilite,
       u.idUser,
       u.pseudo,
-      pr.idMedia AS idAvatar
+      pr.idMedia AS idAvatar,
+      m.nomMedia
     FROM Hashtag h
     JOIN PubliHashtag ph ON h.idHashtag = ph.idHashtag
     JOIN Publication p ON ph.idPubli = p.idPubli
     JOIN Utilisateur u ON p.idUser = u.idUser
     LEFT JOIN Profil pr ON u.idUser = pr.idUser
+    LEFT JOIN Media m ON m.idPubli = p.idPubli
     WHERE h.nom = ?
+      AND (
+        p.visibilite = 1
+        OR p.idUser = ?
+        OR EXISTS (
+          SELECT 1
+          FROM Abonnement a1
+          JOIN Abonnement a2 
+            ON a1.idUserAbonne = a2.idUserSuivi 
+            AND a1.idUserSuivi = a2.idUserAbonne
+          WHERE a1.idUserAbonne = ? 
+            AND a1.idUserSuivi = p.idUser
+        )
+      )
     ORDER BY p.datePubli DESC
-  `).all(cleanNom);
+  `).all(cleanNom, idCurrentUser, idCurrentUser);
 }
 
 /**
- * Recherche des hashtags qui commencent par un préfixe (pour autocomplétion / barre de recherche).
+ * Recherche des hashtags par préfixe sur les publications publiques uniquement.
  * @param {object} db Instance SQLite
  * @param {string} query Terme recherché
  * @param {number} limit
  * @returns {Array<{ nom: string, nbPosts: number }>}
  */
 function searchHashtags(db, query, limit = 5) {
-  const cleanQuery = query.toLowerCase().replace(/^#/, '').trim();
+  const cleanQuery = escapeLike(query.toLowerCase().replace(/^#/, '').trim());
+  if (!cleanQuery) return [];
 
   return db.prepare(`
-    SELECT h.nom, COUNT(ph.idPubli) AS nbPosts
+    SELECT h.nom, COUNT(p.idPubli) AS nbPosts
     FROM Hashtag h
-    LEFT JOIN PubliHashtag ph ON h.idHashtag = ph.idHashtag
-    WHERE h.nom LIKE ?
+    JOIN PubliHashtag ph ON h.idHashtag = ph.idHashtag
+    JOIN Publication p ON ph.idPubli = p.idPubli
+    WHERE p.visibilite = 1
+      AND h.nom LIKE (? || '%') ESCAPE '\\'
     GROUP BY h.idHashtag
+    HAVING nbPosts > 0
     ORDER BY nbPosts DESC
     LIMIT ?
-  `).all(`${cleanQuery}%`, limit);
+  `).all(cleanQuery, limit);
 }
 
 module.exports = {
@@ -122,5 +158,6 @@ module.exports = {
   associerHashtagsPubli,
   getTendances,
   getPublicationsByHashtag,
-  searchHashtags
+  searchHashtags,
+  escapeLike
 };

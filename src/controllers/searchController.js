@@ -8,11 +8,12 @@ const db = require('../config/database');
 function afficherPageRecherche(req, res) {
   try {
     const query = (req.query.q || '').trim();
+    const currentUserId = req.user.idUser;
     const tendances = hashtagService.obtenirTendances(db, 10);
 
     let resultats = { utilisateurs: [], hashtags: [], publications: [] };
     if (query) {
-      resultats = hashtagService.rechercherTout(db, query);
+      resultats = hashtagService.rechercherTout(db, query, currentUserId);
     }
 
     res.render('search', {
@@ -20,7 +21,7 @@ function afficherPageRecherche(req, res) {
       query,
       tendances,
       resultats,
-      linkifyHashtags // Permet d'injecter les balises <a> sécurisées sur les #tags
+      linkifyHashtags
     });
   } catch (err) {
     console.error('Erreur afficherPageRecherche :', err);
@@ -34,11 +35,13 @@ function afficherPageRecherche(req, res) {
 function apiRecherche(req, res) {
   try {
     const query = (req.query.q || '').trim();
+    const currentUserId = req.user.idUser;
+
     if (!query) {
       return res.json({ utilisateurs: [], hashtags: [], publications: [] });
     }
 
-    const resultats = hashtagService.rechercherTout(db, query);
+    const resultats = hashtagService.rechercherTout(db, query, currentUserId);
     res.json(resultats);
   } catch (err) {
     console.error('Erreur apiRecherche :', err);
@@ -51,7 +54,7 @@ function apiRecherche(req, res) {
  */
 function apiTendances(req, res) {
   try {
-    const limit = parseInt(req.query.limit, 10) || 10;
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 50);
     const tendances = hashtagService.obtenirTendances(db, limit);
     res.json(tendances);
   } catch (err) {

@@ -17,7 +17,7 @@ function traiterHashtagsPublication(db, idPubli, contenuPub) {
 }
 
 /**
- * Récupère le classement des hashtags les plus populaires
+ * Récupère le classement des hashtags les plus populaires (publications publiques uniquement)
  * @param {object} db Instance SQLite
  * @param {number} limit
  */
@@ -26,65 +26,88 @@ function obtenirTendances(db, limit = 10) {
 }
 
 /**
- * Récupère les publications associées à un hashtag spécifique
+ * Récupère les publications associées à un hashtag en filtrant selon la visibilité et les amis
  * @param {object} db Instance SQLite
  * @param {string} tag
+ * @param {number} idCurrentUser
  */
-function obtenirPublicationsParHashtag(db, tag) {
+function obtenirPublicationsParHashtag(db, tag, idCurrentUser) {
   const cleanTag = tag.replace(/^#/, '').trim();
   if (!cleanTag) return [];
-  return hashtagModel.getPublicationsByHashtag(db, cleanTag);
+  return hashtagModel.getPublicationsByHashtag(db, cleanTag, idCurrentUser);
 }
 
 /**
- * Recherche globale unifiée (profils, hashtags et publications)
+ * Recherche globale unifiée (profils, hashtags et publications) avec respect strict de la confidentialité
  * @param {object} db Instance SQLite
  * @param {string} query Terme recherché
+ * @param {number} idCurrentUser Identifiant de l'utilisateur demandeur
  */
-function rechercherTout(db, query) {
+function rechercherTout(db, query, idCurrentUser) {
   const q = (query || '').trim();
   if (!q) {
     return { utilisateurs: [], hashtags: [], publications: [] };
   }
 
-  // 1. Si la recherche commence par '#', cibler en priorité les hashtags
   const isHashtagSearch = q.startsWith('#');
   const tagQuery = q.replace(/^#/, '');
 
-  // Recherche des hashtags correspondants
+  // 1. Recherche de hashtags (publics uniquement)
   const hashtags = hashtagModel.searchHashtags(db, tagQuery, 10);
 
-  // Recherche d'utilisateurs par pseudo ou nom/prénom
-  const utilisateurs = isHashtagSearch
-    ? []
-    : db.prepare(`
-        SELECT u.idUser, u.pseudo, pr.nom, pr.prenom, pr.idMedia AS idAvatar
-        FROM Utilisateur u
-        LEFT JOIN Profil pr ON u.idUser = pr.idUser
-        WHERE u.pseudo LIKE ? OR pr.prenom LIKE ? OR pr.nom LIKE ?
-        LIMIT 10
-      `).all(`%${q}%`, `%${q}%`, `%${q}%`);
+  // 2. Recherche d'utilisateurs (avec échappement LIKE)
+  let utilisateurs = [];
+  if (!isHashtagSearch) {
+    const escapedUserQuery = hashtagModel.escapeLike(q);
+    utilisateurs = db.prepare(`
+      SELECT u.idUser, u.pseudo, pr.nom, pr.prenom, pr.idMedia AS idAvatar
+      FROM Utilisateur u
+      LEFT JOIN Profil pr ON u.idUser = pr.idUser
+      WHERE (u.pseudo LIKE (? || '%') ESCAPE '\\'
+         OR pr.prenom LIKE (? || '%') ESCAPE '\\'
+         OR pr.nom LIKE (? || '%') ESCAPE '\\')
+        AND u.statut = 'actif'
+      LIMIT 10
+    `).all(escapedUserQuery, escapedUserQuery, escapedUserQuery);
+  }
 
-  // Recherche de publications (soit par le tag lié, soit par texte brut dans le contenu)
+  // 3. Recherche de publications avec contrôle d'accès
   let publications = [];
   if (isHashtagSearch) {
-    publications = hashtagModel.getPublicationsByHashtag(db, tagQuery);
+    publications = hashtagModel.getPublicationsByHashtag(db, tagQuery, idCurrentUser);
   } else {
+    const escapedPostQuery = hashtagModel.escapeLike(q);
     publications = db.prepare(`
-      SELECT 
+      SELECT DISTINCT
         p.idPubli,
         p.contenuPub,
         p.datePubli,
+        p.visibilite,
         u.idUser,
         u.pseudo,
-        pr.idMedia AS idAvatar
+        pr.idMedia AS idAvatar,
+        m.nomMedia
       FROM Publication p
       JOIN Utilisateur u ON p.idUser = u.idUser
       LEFT JOIN Profil pr ON u.idUser = pr.idUser
-      WHERE p.contenuPub LIKE ?
+      LEFT JOIN Media m ON m.idPubli = p.idPubli
+      WHERE p.contenuPub LIKE ('%' || ? || '%') ESCAPE '\\'
+        AND (
+          p.visibilite = 1
+          OR p.idUser = ?
+          OR EXISTS (
+            SELECT 1
+            FROM Abonnement a1
+            JOIN Abonnement a2 
+              ON a1.idUserAbonne = a2.idUserSuivi 
+              AND a1.idUserSuivi = a2.idUserAbonne
+            WHERE a1.idUserAbonne = ? 
+              AND a1.idUserSuivi = p.idUser
+          )
+        )
       ORDER BY p.datePubli DESC
       LIMIT 15
-    `).all(`%${q}%`);
+    `).all(escapedPostQuery, idCurrentUser, idCurrentUser);
   }
 
   return {

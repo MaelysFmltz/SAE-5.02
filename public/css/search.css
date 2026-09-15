@@ -51,6 +51,26 @@
   color: var(--profile-text-dimmed, #8b92a5);
 }
 
+/* Bouton croix pour vider la recherche */
+.clear-search-btn {
+  background: transparent;
+  border: none;
+  color: var(--profile-text-dimmed, #8b92a5);
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.15s, background-color 0.15s;
+  flex-shrink: 0;
+}
+
+.clear-search-btn:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
 /* Conteneur principal */
 .search-content {
   padding: 24px 20px 90px;

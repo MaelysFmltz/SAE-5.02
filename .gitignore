@@ -6,8 +6,13 @@ node_modules/
 .env.*
 !.env.example
 
-# Base de données locale
-database/database.db
+# Base de données SQLite (dossiers + racine + fichiers WAL/SHM)
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+database/*.db
 database/*.sqlite
 database/*.sqlite3
 data/*.db
@@ -17,6 +22,8 @@ data/*.db-wal
 # Fichiers uploadés par les utilisateurs
 uploads/
 !uploads/.gitkeep
+public/uploads/*
+!public/uploads/.gitkeep
 
 # Logs
 logs/
@@ -45,4 +52,3 @@ docs/build/
 tmp/
 temp/
 *.tmp
-

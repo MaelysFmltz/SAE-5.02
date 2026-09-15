@@ -1,10 +1,24 @@
-// Regex : un # suivi de 1-30 lettres/chiffres
 const HASHTAG_REGEX = /#([a-zA-Z0-9_\u00C0-\u017F]{1,30})/g;
 
 /**
- * Extrait la liste des hashtags uniques d'un texte, normalisés en minuscules et sans le '#'
+ * Échappe les caractères HTML dangereux pour prévenir les attaques XSS
+ * @param {string} str 
+ * @returns {string}
+ */
+function escapeHtml(str) {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Extrait les hashtags uniques d'un texte (minuscules, sans '#')
  * @param {string} text 
- * @returns {string[]} Tableau des noms de hashtags (ex: ['paris', 'photo'])
+ * @returns {string[]}
  */
 function extractHashtags(text) {
   if (typeof text !== 'string' || !text.trim()) {
@@ -16,7 +30,6 @@ function extractHashtags(text) {
 
   for (const match of matches) {
     const cleanTag = match[1].toLowerCase();
-    // Limite de sécurité : entre 1 et 30 caractères
     if (cleanTag.length >= 1 && cleanTag.length <= 30) {
       tags.add(cleanTag);
     }
@@ -26,22 +39,23 @@ function extractHashtags(text) {
 }
 
 /**
- * Remplace les #tag dans un texte sécurisé par un lien hypertexte cliquable vers /search?q=%23tag
- * @param {string} escapedText Texte préalablement échappé contre le XSS
- * @returns {string} Texte HTML avec liens cliquables
+ * Échappe d'abord le texte pour neutraliser tout script malveillant, 
+ * puis transforme les #tags en liens cliquables sécurisés
+ * @param {string} text 
+ * @returns {string} HTML sécurisé
  */
-function linkifyHashtags(escapedText) {
-  if (typeof escapedText !== 'string') {
-    return '';
-  }
-
-  return escapedText.replace(HASHTAG_REGEX, (fullMatch, tagName) => {
+function linkifyHashtags(text) {
+  if (typeof text !== 'string') return '';
+  
+  const safeText = escapeHtml(text);
+  return safeText.replace(HASHTAG_REGEX, (fullMatch, tagName) => {
     const cleanTag = tagName.toLowerCase();
-    return `<a href="/search?q=%23${encodeURIComponent(cleanTag)}" class="hashtag-link">#${tagName}</a>`;
+    return `<a href="/search?q=%23${encodeURIComponent(cleanTag)}" class="hashtag-link">#${escapeHtml(tagName)}</a>`;
   });
 }
 
 module.exports = {
+  escapeHtml,
   extractHashtags,
   linkifyHashtags
 };
