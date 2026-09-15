@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Explorer & Rechercher — Pixora</title>
   <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/search.css?v=3">
+  <link rel="stylesheet" href="/css/search.css?v=4">
 </head>
 <body>
   <div class="app-container search-layout">
@@ -31,8 +31,8 @@
 
     <main class="search-content" id="search-content">
 
-      <!-- 1. Vue Tendances (affichée par défaut quand la barre est vide) -->
-      <section class="trends-section" id="trends-section" style="<%= query ? 'display: none;' : '' %>">
+      <!-- 1. Vue Tendances (masquée si une recherche est en cours) -->
+      <section class="trends-section" id="trends-section" <%= query ? 'hidden' : '' %>>
         <h2 class="section-title">Hashtags populaires</h2>
         
         <% if (tendances && tendances.length > 0) { %>
@@ -54,10 +54,10 @@
       </section>
 
       <!-- 2. Conteneur des Résultats en direct -->
-      <div id="dynamic-results" style="<%= query ? '' : 'display: none;' %>">
+      <div id="dynamic-results" <%= query ? '' : 'hidden' %>>
         
         <!-- Section Hashtags -->
-        <section class="results-section" id="section-hashtags" style="<%= (resultats.hashtags && resultats.hashtags.length > 0) ? '' : 'display: none;' %>">
+        <section class="results-section" id="section-hashtags" <%= (resultats.hashtags && resultats.hashtags.length > 0) ? '' : 'hidden' %>>
           <h3 class="results-subtitle">Hashtags</h3>
           <div class="tags-chips-wrapper" id="list-hashtags">
             <% if (resultats.hashtags) { %>
@@ -72,7 +72,7 @@
         </section>
 
         <!-- Section Utilisateurs -->
-        <section class="results-section" id="section-users" style="<%= (resultats.utilisateurs && resultats.utilisateurs.length > 0) ? '' : 'display: none;' %>">
+        <section class="results-section" id="section-users" <%= (resultats.utilisateurs && resultats.utilisateurs.length > 0) ? '' : 'hidden' %>>
           <h3 class="results-subtitle">Comptes</h3>
           <div class="users-results-list" id="list-users">
             <% if (resultats.utilisateurs) { %>
@@ -125,7 +125,7 @@
               <% }); %>
             <% } %>
           </div>
-          <p class="empty-state" id="posts-empty-message" style="<%= (!resultats.publications || resultats.publications.length === 0) ? '' : 'display: none;' %>">
+          <p class="empty-state" id="posts-empty-message" <%= (!resultats.publications || resultats.publications.length === 0) ? '' : 'hidden' %>>
             Aucune publication trouvée.
           </p>
         </section>
@@ -154,14 +154,12 @@
 
     let debounceTimer = null;
 
-    // Helper client pour échapper le HTML (anti-XSS)
     function escapeHtml(text) {
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
     }
 
-    // Helper client pour transformer les #tags en liens cliquables
     function linkify(text) {
       const safeText = escapeHtml(text);
       const regex = /#([a-zA-Z0-9_\u00C0-\u017F]{1,30})/g;
@@ -174,18 +172,15 @@
       clearTimeout(debounceTimer);
       const val = e.target.value.trim();
 
-      // Si le champ est vide : retour immédiat à la page d'accueil avec les tendances
       if (!val) {
-        trendsSection.style.display = '';
-        dynamicResults.style.display = 'none';
+        trendsSection.hidden = false;
+        dynamicResults.hidden = true;
         window.history.replaceState({}, '', '/search');
         return;
       }
 
-      // Mise à jour de l'URL sans recharger
       window.history.replaceState({}, '', `/search?q=${encodeURIComponent(val)}`);
 
-      // Déclenchement de la recherche avec un léger délai pour la fluidité
       debounceTimer = setTimeout(async () => {
         try {
           const res = await fetch(`/search/api?q=${encodeURIComponent(val)}`);
@@ -200,12 +195,12 @@
     });
 
     function renderResults(data, query) {
-      trendsSection.style.display = 'none';
-      dynamicResults.style.display = '';
+      trendsSection.hidden = true;
+      dynamicResults.hidden = false;
 
-      // 1. Rendu des Hashtags
+      // 1. Hashtags
       if (data.hashtags && data.hashtags.length > 0) {
-        sectionHashtags.style.display = '';
+        sectionHashtags.hidden = false;
         listHashtags.innerHTML = data.hashtags.map(t => `
           <a href="/search?q=%23${encodeURIComponent(t.nom)}" class="tag-chip">
             <span class="chip-name">#${escapeHtml(t.nom)}</span>
@@ -213,13 +208,13 @@
           </a>
         `).join('');
       } else {
-        sectionHashtags.style.display = 'none';
+        sectionHashtags.hidden = true;
         listHashtags.innerHTML = '';
       }
 
-      // 2. Rendu des Utilisateurs
+      // 2. Utilisateurs
       if (data.utilisateurs && data.utilisateurs.length > 0) {
-        sectionUsers.style.display = '';
+        sectionUsers.hidden = false;
         listUsers.innerHTML = data.utilisateurs.map(u => {
           const realName = [u.prenom, u.nom].filter(Boolean).join(' ');
           return `
@@ -237,14 +232,14 @@
           `;
         }).join('');
       } else {
-        sectionUsers.style.display = 'none';
+        sectionUsers.hidden = true;
         listUsers.innerHTML = '';
       }
 
-      // 3. Rendu des Publications (Mosaïque)
+      // 3. Publications (Mosaïque)
       if (data.publications && data.publications.length > 0) {
         listPosts.style.display = 'grid';
-        postsEmptyMsg.style.display = 'none';
+        postsEmptyMsg.hidden = true;
         listPosts.innerHTML = data.publications.map(p => `
           <article class="mosaic-post-card">
             <div class="post-media-preview">
@@ -271,7 +266,7 @@
         listPosts.style.display = 'none';
         listPosts.innerHTML = '';
         postsEmptyMsg.textContent = `Aucune publication trouvée pour « ${query} ».`;
-        postsEmptyMsg.style.display = '';
+        postsEmptyMsg.hidden = false;
       }
     }
   </script>
