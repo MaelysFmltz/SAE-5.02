@@ -2,7 +2,14 @@ const fs = require('fs/promises');
 const postService = require('../services/postService');
 
 /*
- * Vérifie la signature réelle d'un JPEG.
+ * ============================================================
+ * Vérification des signatures réelles des fichiers
+ * ============================================================
+ */
+
+/*
+ * JPEG
+ * FF D8 FF
  */
 function isRealJPEG(buffer) {
     if (!buffer || buffer.length < 3) {
@@ -16,8 +23,10 @@ function isRealJPEG(buffer) {
     );
 }
 
+
 /*
- * Vérifie la signature réelle d'un PNG.
+ * PNG
+ * 89 50 4E 47 0D 0A 1A 0A
  */
 function isRealPNG(buffer) {
     if (!buffer || buffer.length < 8) {
@@ -36,8 +45,12 @@ function isRealPNG(buffer) {
     );
 }
 
+
 /*
- * Vérifie la signature réelle d'un WebP.
+ * WebP
+ *
+ * Un WebP commence par :
+ * RIFF .... WEBP
  */
 function isRealWebP(buffer) {
     if (!buffer || buffer.length < 12) {
@@ -50,12 +63,103 @@ function isRealWebP(buffer) {
     );
 }
 
+
+/*
+ * MP4 / MOV
+ *
+ * Les fichiers MP4 et MOV utilisent le format ISO Base Media File Format.
+ *
+ * Leur en-tête contient normalement une "box" ftyp.
+ *
+ * On recherche donc "ftyp" dans les premiers octets du fichier,
+ * au lieu de faire confiance au MIME type envoyé par le client.
+ */
+function isRealMP4(buffer) {
+    if (!buffer || buffer.length < 12) {
+        return false;
+    }
+
+    /*
+     * "ftyp" se trouve généralement à l'offset 4.
+     *
+     * On accepte plusieurs positions dans les premiers octets
+     * afin d'être compatible avec différentes variantes de MP4/MOV.
+     */
+    const maxOffset = Math.min(buffer.length - 4, 64);
+
+    for (let i = 0; i <= maxOffset; i++) {
+        if (
+            buffer[i] === 0x66 && // f
+            buffer[i + 1] === 0x74 && // t
+            buffer[i + 2] === 0x79 && // y
+            buffer[i + 3] === 0x70 // p
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+/*
+ * WebM
+ *
+ * Les fichiers WebM utilisent le conteneur Matroska/EBML.
+ *
+ * Signature EBML :
+ * 1A 45 DF A3
+ */
+function isRealWebM(buffer) {
+    if (!buffer || buffer.length < 4) {
+        return false;
+    }
+
+    return (
+        buffer[0] === 0x1A &&
+        buffer[1] === 0x45 &&
+        buffer[2] === 0xDF &&
+        buffer[3] === 0xA3
+    );
+}
+
+
+/*
+ * OGG
+ *
+ * Signature :
+ * OggS
+ */
+function isRealOGG(buffer) {
+    if (!buffer || buffer.length < 4) {
+        return false;
+    }
+
+    return buffer.toString('ascii', 0, 4) === 'OggS';
+}
+
+
+/*
+ * ============================================================
+ * Upload d'une publication
+ * ============================================================
+ */
+
 async function uploadImage(req, res) {
     let uploadedFilePath = null;
 
     try {
+
         /*
-         * Vérification de l'utilisateur connecté.
+         * --------------------------------------------------------
+         * Authentification
+         * --------------------------------------------------------
+         *
+         * L'id de l'utilisateur vient du JWT vérifié par
+         * authMiddleware.
+         *
+         * On ne fait JAMAIS confiance à un idUser envoyé
+         * par le navigateur.
          */
         if (!req.user || !req.user.idUser) {
             return res.status(401).json({
@@ -63,8 +167,11 @@ async function uploadImage(req, res) {
             });
         }
 
+
         /*
-         * Vérification du fichier.
+         * --------------------------------------------------------
+         * Fichier obligatoire
+         * --------------------------------------------------------
          */
         if (!req.file) {
             return res.status(400).json({
@@ -72,11 +179,32 @@ async function uploadImage(req, res) {
             });
         }
 
+
         const file = req.file;
+
+        /*
+         * Avec multer.diskStorage(), le fichier est déjà
+         * enregistré sur le disque.
+         */
         uploadedFilePath = file.path;
 
+
+        /*
+         * --------------------------------------------------------
+         * Types MIME autorisés
+         * --------------------------------------------------------
+         *
+         * ATTENTION :
+         *
+         * Le MIME type est fourni par le client.
+         * Il ne constitue donc PAS une preuve que le fichier
+         * est réellement une vidéo.
+         *
+         * Il sera vérifié plus bas avec la signature binaire.
+         */
         const imageTypes = [
             'image/jpeg',
+            'image/jpg',
             'image/png',
             'image/webp'
         ];
@@ -88,21 +216,25 @@ async function uploadImage(req, res) {
             'video/quicktime'
         ];
 
+
         let typeMedia;
 
+
         /*
-         * =========================
+         * ========================================================
          * IMAGE
-         * =========================
+         * ========================================================
          */
         if (imageTypes.includes(file.mimetype)) {
 
             typeMedia = 'image';
 
+
             /*
-             * Une image est limitée à 20 Mo.
+             * Taille maximale : 20 Mo
              */
             if (file.size > 20 * 1024 * 1024) {
+
                 await fs.unlink(uploadedFilePath).catch(() => {});
 
                 return res.status(400).json({
@@ -110,20 +242,23 @@ async function uploadImage(req, res) {
                 });
             }
 
+
             /*
-             * On lit le fichier depuis le disque.
-             * IMPORTANT :
-             * avec diskStorage(), il faut utiliser
-             * fs.readFile() et non file.buffer.
+             * Lecture du contenu réel du fichier.
              */
             const buffer = await fs.readFile(file.path);
 
+
             /*
-             * Vérification du vrai format.
+             * Vérification de la vraie signature.
              */
-            if (file.mimetype === 'image/jpeg') {
+            if (
+                file.mimetype === 'image/jpeg' ||
+                file.mimetype === 'image/jpg'
+            ) {
 
                 if (!isRealJPEG(buffer)) {
+
                     await fs.unlink(uploadedFilePath).catch(() => {});
 
                     return res.status(400).json({
@@ -134,6 +269,7 @@ async function uploadImage(req, res) {
             } else if (file.mimetype === 'image/png') {
 
                 if (!isRealPNG(buffer)) {
+
                     await fs.unlink(uploadedFilePath).catch(() => {});
 
                     return res.status(400).json({
@@ -144,6 +280,7 @@ async function uploadImage(req, res) {
             } else if (file.mimetype === 'image/webp') {
 
                 if (!isRealWebP(buffer)) {
+
                     await fs.unlink(uploadedFilePath).catch(() => {});
 
                     return res.status(400).json({
@@ -153,31 +290,118 @@ async function uploadImage(req, res) {
             }
         }
 
+
         /*
-         * =========================
-         * VIDÉO
-         * =========================
+         * ========================================================
+         * VIDEO
+         * ========================================================
          */
         else if (videoTypes.includes(file.mimetype)) {
 
             typeMedia = 'video';
 
+
             /*
-             * Une vidéo est limitée à 100 Mo.
+             * Taille maximale : 100 Mo
              */
             if (file.size > 100 * 1024 * 1024) {
+
                 await fs.unlink(uploadedFilePath).catch(() => {});
 
                 return res.status(400).json({
                     error: 'La vidéo ne doit pas dépasser 100 Mo.'
                 });
             }
+
+
+            /*
+             * ----------------------------------------------------
+             * IMPORTANT : vérification du contenu réel
+             * ----------------------------------------------------
+             *
+             * Avant cette correction, le serveur faisait
+             * essentiellement confiance à :
+             *
+             *     file.mimetype === 'video/mp4'
+             *
+             * Or le client peut envoyer :
+             *
+             *     fichier.html
+             *
+             * avec :
+             *
+             *     Content-Type: video/mp4
+             *
+             * Le serveur doit donc inspecter le fichier lui-même.
+             */
+            const buffer = await fs.readFile(file.path);
+
+
+            let validVideo = false;
+
+
+            /*
+             * MP4
+             */
+            if (file.mimetype === 'video/mp4') {
+
+                validVideo = isRealMP4(buffer);
+
+            }
+
+
+            /*
+             * MOV / QuickTime
+             *
+             * Les fichiers MOV utilisent également le conteneur
+             * ISO Base Media et possèdent généralement une box ftyp.
+             */
+            else if (file.mimetype === 'video/quicktime') {
+
+                validVideo = isRealMP4(buffer);
+
+            }
+
+
+            /*
+             * WebM
+             */
+            else if (file.mimetype === 'video/webm') {
+
+                validVideo = isRealWebM(buffer);
+
+            }
+
+
+            /*
+             * OGG
+             */
+            else if (file.mimetype === 'video/ogg') {
+
+                validVideo = isRealOGG(buffer);
+
+            }
+
+
+            /*
+             * Si la signature ne correspond pas au type annoncé,
+             * le fichier est rejeté.
+             */
+            if (!validVideo) {
+
+                await fs.unlink(uploadedFilePath).catch(() => {});
+
+                return res.status(400).json({
+                    error: 'Le fichier envoyé n’est pas une véritable vidéo.'
+                });
+            }
         }
 
+
         /*
-         * =========================
-         * FORMAT INCONNU
-         * =========================
+         * ========================================================
+         * TYPE INCONNU
+         * ========================================================
          */
         else {
 
@@ -188,24 +412,34 @@ async function uploadImage(req, res) {
             });
         }
 
+
         /*
-         * Description.
+         * ========================================================
+         * DESCRIPTION
+         * ========================================================
          */
         const contenuPub =
             req.body.contenuPub
                 ? String(req.body.contenuPub).trim()
                 : null;
 
+
         /*
-         * Visibilité.
+         * ========================================================
+         * VISIBILITÉ
+         * ========================================================
          */
         const visibilite =
             req.body.visibilite !== undefined
                 ? Number(req.body.visibilite)
                 : 1;
 
+
         /*
-         * Vérification de la visibilité.
+         * Seulement :
+         *
+         * 0 = privé
+         * 1 = public
          */
         if (visibilite !== 0 && visibilite !== 1) {
 
@@ -216,34 +450,45 @@ async function uploadImage(req, res) {
             });
         }
 
+
         /*
-         * Création de la publication.
+         * ========================================================
+         * CRÉATION DE LA PUBLICATION
+         * ========================================================
+         *
+         * IMPORTANT :
+         * idUser vient du JWT et non de req.body.
          */
-        const post = await postService.createMediaPost(
-            req.user.idUser,
-            contenuPub,
-            visibilite,
-            file.filename,
-            typeMedia
-        );
+        const post =
+            await postService.createMediaPost(
+                req.user.idUser,
+                contenuPub,
+                visibilite,
+                file.filename,
+                typeMedia
+            );
+
 
         return res.status(201).json({
             message: 'Publication créée avec succès.',
             post,
-            url: `/uploads/${file.filename}`
+            url: '/uploads/${file.filename}'
         });
+
 
     } catch (error) {
 
         console.error('Erreur upload :', error);
 
+
         /*
-         * Si une erreur arrive après l'envoi du fichier,
-         * on supprime le fichier pour éviter les fichiers orphelins.
+         * Si une erreur survient après l'enregistrement du fichier,
+         * on supprime le fichier afin d'éviter les fichiers orphelins.
          */
         if (uploadedFilePath) {
             await fs.unlink(uploadedFilePath).catch(() => {});
         }
+
 
         return res.status(500).json({
             error: 'Erreur lors de la publication.'
@@ -253,17 +498,25 @@ async function uploadImage(req, res) {
 
 
 /*
- * Page de création de publication.
+ * ============================================================
+ * Page de publication
+ * ============================================================
  */
+
 async function getImages(req, res) {
+
     try {
 
-        const posts = await postService.getAllPosts();
+        const posts =
+            await postService.getAllPosts();
 
-        return res.render('posts', {
-            user: req.user,
-            posts
-        });
+        return res.render(
+            'posts',
+            {
+                user: req.user,
+                posts
+            }
+        );
 
     } catch (error) {
 
@@ -277,12 +530,17 @@ async function getImages(req, res) {
 
 
 /*
- * API de toutes les publications.
+ * ============================================================
+ * API de toutes les publications
+ * ============================================================
  */
+
 async function getImagesApi(req, res) {
+
     try {
 
-        const posts = await postService.getAllPosts();
+        const posts =
+            await postService.getAllPosts();
 
         return res.status(200).json(posts);
 
@@ -298,20 +556,30 @@ async function getImagesApi(req, res) {
 
 
 /*
- * API des publications d'un utilisateur.
+ * ============================================================
+ * API des publications d'un utilisateur
+ * ============================================================
  */
+
 async function getUserImagesApi(req, res) {
+
     try {
 
-        const idUser = Number(req.params.idUser);
+        const idUser =
+            Number(req.params.idUser);
+
 
         if (!idUser) {
+
             return res.status(400).json({
                 error: 'Identifiant utilisateur invalide.'
             });
         }
 
-        const posts = await postService.getUserPosts(idUser);
+
+        const posts =
+            await postService.getUserPosts(idUser);
+
 
         return res.status(200).json(posts);
 
@@ -326,9 +594,29 @@ async function getUserImagesApi(req, res) {
 }
 
 
+/*
+ * ============================================================
+ * Exports
+ * ============================================================
+ */
+
 module.exports = {
     uploadImage,
     getImages,
     getImagesApi,
-    getUserImagesApi
+    getUserImagesApi,
+
+    /*
+     * Exports utilisés par les tests de sécurité.
+     *
+     * Ils permettent de tester directement les signatures
+     * binaires sans avoir besoin de démarrer tout le serveur.
+     */
+    isRealJPEG,
+    isRealPNG,
+    isRealWebP,
+    isRealMP4,
+    isRealWebM,
+    isRealOGG
 };
+
