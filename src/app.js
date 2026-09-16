@@ -1,10 +1,13 @@
 const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
 
+// Imports des routes et services
 const authRoutes = require('./routes/authRoutes');
 const postRoutes = require('./routes/postRoutes');
 const publicationRoutes = require('./routes/publicationRoutes');
+const commentRoutes = require('./routes/commentRoutes');
 const friendshipRoutes = require('./routes/friendshipRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 
@@ -33,6 +36,11 @@ app.get('/', (req, res) => {
 });
 
 // Fil d'actualité
+app.get('/login', (req, res) => {
+  res.render('login');
+});
+
+// ROUTE /home (Fil d'actualité avec suggestions)
 app.get('/home', authMiddleware, (req, res) => {
   try {
     const publications = postService.getFeedForUser(req.user.idUser);
@@ -84,6 +92,7 @@ app.get('/profile', authMiddleware, async (req, res) => {
     res.status(500).send('Erreur lors du chargement de votre profil.');
   }
 });
+
 
 // Modification de profil
 app.get('/profile/edit', authMiddleware, async (req, res) => {
@@ -191,5 +200,6 @@ app.use('/api/publications', postRoutes);
 app.use('/api/publications', publicationRoutes);
 app.use('/api/friendships', friendshipRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/comments', commentRoutes);
 
 module.exports = app;
