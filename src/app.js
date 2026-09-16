@@ -8,6 +8,10 @@ const authMiddleware = require('./middlewares/authMiddleware');
 const profileRoutes = require('./routes/profileRoutes');
 const profileService = require('./services/profileService');
 const friendshipModel = require('./models/friendshipModel');
+const conversationRoutes = require('./routes/conversationRoutes');
+const messageRoutes = require('./routes/messageRoutes');
+const conversationService = require('./services/conversationService');
+const messageService = require('./services/messageService');
 const db = require('./config/database');
 
 const app = express();
@@ -44,6 +48,49 @@ app.get('/home', authMiddleware, (req, res) => {
   } catch (err) {
     console.error('Erreur GET /home :', err);
     res.render('feed', { user: req.user, suggestions: [] });
+  }
+});
+
+// Affichage de la liste des conversations
+app.get('/messages', authMiddleware, async (req, res) => {
+  try {
+    const conversations = await conversationService.getMyConversations(req.user.idUser);
+    res.render('messages', {
+      user: req.user,
+      conversations: conversations || [],
+      activeTab: 'messages'
+    });
+  } catch (err) {
+    console.error('Erreur GET /messages :', err);
+    res.render('messages', {
+      user: req.user,
+      conversations: [],
+      activeTab: 'messages'
+    });
+  }
+});
+
+// Affichage d'une discussion ouverte spécifique
+app.get('/messages/:idConversation', authMiddleware, async (req, res) => {
+  try {
+    const idConversation = Number(req.params.idConversation);
+    const messages = await messageService.getMessages(idConversation, req.user.idUser);
+
+    // Récupération des informations de la conversation pour le titre
+    const conversations = await conversationService.getMyConversations(req.user.idUser);
+    const conv = conversations ? conversations.find(c => c.idConversation === idConversation) : null;
+
+    res.render('conversation', {
+      idConversation,
+      titreConversation: conv ? (conv.titreGroupe || conv.autrePseudo || 'Discussion') : 'Discussion',
+      messages: messages || [],
+      idUserCourant: req.user.idUser,
+      user: req.user,
+      activeTab: 'messages'
+    });
+  } catch (err) {
+    console.error('Erreur GET /messages/:idConversation :', err);
+    res.redirect('/messages');
   }
 });
 
@@ -138,5 +185,7 @@ app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/friendships', friendshipRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/conversations', conversationRoutes);
+app.use('/conversations', messageRoutes);
 
 module.exports = app;
