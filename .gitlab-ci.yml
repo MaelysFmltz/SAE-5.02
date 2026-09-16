@@ -1,6 +1,7 @@
 stages:
   - validate
   - test
+  - build
 
 variables:
   NODE_ENV: "test"
@@ -8,24 +9,28 @@ variables:
   JWT_SECRET: "secret-utilise-uniquement-pour-la-ci"
   NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
 
-default:
+.node_job:
   image: node:24-bookworm-slim
   interruptible: true
 
-cache:
-  key:
-    files:
-      - package-lock.json
-  paths:
-    - .npm/
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
 
-before_script:
-  - node --version
-  - npm --version
-  - npm ci --cache .npm --prefer-offline
+  before_script:
+    - node --version
+    - npm --version
+    - apt-get update
+    - apt-get install -y --no-install-recommends python3 make g++
+    - npm ci --cache .npm --prefer-offline
 
 validation_syntaxe:
+  extends: .node_job
   stage: validate
+
   script:
     - |
       find src tests \
@@ -35,7 +40,51 @@ validation_syntaxe:
         -print0 |
       xargs -0 -n1 node --check
 
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+
 tests_jest:
+  extends: .node_job
   stage: test
+
   script:
     - npm test -- --silent
+
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+
+construction_docker:
+  stage: build
+
+  image: docker:cli
+
+  services:
+    - name: docker:dind
+      command:
+        - "--tls=false"
+
+  variables:
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
+
+  before_script:
+    - docker version
+    - docker info
+    - echo "$CI_REGISTRY_PASSWORD" |
+      docker login
+      --username "$CI_REGISTRY_USER"
+      --password-stdin
+      "$CI_REGISTRY"
+
+  script:
+    - docker build
+      --tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+      --tag "$CI_REGISTRY_IMAGE:latest"
+      .
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - docker push "$CI_REGISTRY_IMAGE:latest"
+
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
