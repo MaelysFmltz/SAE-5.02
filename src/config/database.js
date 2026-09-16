@@ -1,11 +1,24 @@
+/**
+ * @file database.js
+ * @description Configuration, initialisation et connexion à la base de données SQLite via `better-sqlite3`.
+ * Gère le mode persistant sur disque, le mode en mémoire pour les tests unitaires (`:memory:`),
+ * l'activation des contraintes d'intégrité référentielle et l'exécution du schéma initial.
+ * @module config/database
+ */
+
 const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
 
-// 1. Chemin prioritaire pour les tests (:memory:), sinon data/app.db
+/**
+ * Chemin absolu vers le fichier de base de données SQLite.
+ * Défini prioritairement par la variable d'environnement `DB_PATH` (utilisée pour `:memory:` lors des tests),
+ * sinon pointe par défaut vers `database/database.db`.
+ * @constant {string}
+ */
 const dbPath = process.env.DB_PATH || path.resolve(__dirname, '../../database/database.db');
 
-// Si ce n'est pas une base en mémoire, s'assurer que le dossier parent existe
+// Création du répertoire parent si la base est persistée sur le disque
 if (dbPath !== ':memory:') {
   const dbDir = path.dirname(dbPath);
   if (!fs.existsSync(dbDir)) {
@@ -13,13 +26,17 @@ if (dbPath !== ':memory:') {
   }
 }
 
-// 2. Ouverture de la base
+/**
+ * Instance active de la base de données SQLite.
+ * Les clés étrangères (`foreign_keys`) sont activées systématiquement à l'ouverture.
+ * @type {import('better-sqlite3').Database}
+ */
 const db = new Database(dbPath);
 db.pragma('foreign_keys = ON');
 
 console.log(`Connexion à SQLite réussie (${dbPath === ':memory:' ? 'in-memory' : dbPath}).`);
 
-// 3. Initialisation du schéma si la base est neuve
+// Vérification de la présence de la table pivot Utilisateur pour détecter une base vierge
 const tableExists = db
   .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='Utilisateur'")
   .get();
@@ -35,4 +52,8 @@ if (!tableExists) {
   }
 }
 
+/**
+ * Exporte l'instance connectée de `better-sqlite3` prête pour les requêtes synchrones.
+ * @exports db
+ */
 module.exports = db;
