@@ -40,12 +40,20 @@ validation_syntaxe:
         -print0 |
       xargs -0 -n1 node --check
 
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+
 tests_jest:
   extends: .node_job
   stage: test
 
   script:
     - npm test -- --silent
+
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
 
 construction_docker:
   stage: build
@@ -79,4 +87,4 @@ construction_docker:
     - docker push "$CI_REGISTRY_IMAGE:latest"
 
   rules:
-    - if: '$CI_COMMIT_BRANCH == "ci-gitlab"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
