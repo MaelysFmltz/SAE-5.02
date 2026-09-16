@@ -1,9 +1,6 @@
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: pixora-app
+    image: registry.gitlab.com/alfatero/sae5.02pipe:latest
     container_name: pixora-app
     restart: unless-stopped
 
