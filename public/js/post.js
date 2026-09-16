@@ -1,333 +1,557 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener(
+'DOMContentLoaded',
+() => {
 
-    const form = document.getElementById('upload-form');
+
+    const form =
+        document.getElementById(
+            'upload-form'
+        );
+
 
     const mediaInput =
-        document.getElementById('media');
+        document.getElementById(
+            'media'
+        );
+
 
     const previewContainer =
-        document.getElementById('preview-container');
+        document.getElementById(
+            'preview-container'
+        );
+
 
     const imagePreview =
-        document.getElementById('image-preview');
+        document.getElementById(
+            'image-preview'
+        );
+
 
     const videoPreview =
-        document.getElementById('video-preview');
+        document.getElementById(
+            'video-preview'
+        );
+
 
     const message =
-        document.getElementById('message');
+        document.getElementById(
+            'message'
+        );
 
 
-    if (!form || !mediaInput) {
-        console.error('Formulaire de publication introuvable.');
+    if (
+        !form ||
+        !mediaInput
+    ) {
+
+        console.error(
+            'Formulaire de publication introuvable.'
+        );
+
         return;
     }
+
+
+    /*
+     * =====================================================
+     * CONSTANTES
+     * =====================================================
+     */
+
+    const IMAGE_MAX_SIZE =
+        20 * 1024 * 1024;
+
+
+    const VIDEO_MAX_SIZE =
+        100 * 1024 * 1024;
+
+
+    const ALLOWED_IMAGE_TYPES = [
+        'image/jpeg',
+        'image/png',
+        'image/webp'
+    ];
+
+
+    const ALLOWED_VIDEO_TYPES = [
+        'video/mp4',
+        'video/webm',
+        'video/ogg',
+        'video/quicktime'
+    ];
 
 
     let previewUrl = null;
 
 
     /*
-     * =========================
-     * CHOIX DU FICHIER
-     * =========================
+     * =====================================================
+     * FONCTIONS UTILITAIRES
+     * =====================================================
      */
 
-    mediaInput.addEventListener('change', () => {
 
-        const file = mediaInput.files[0];
+    function clearPreview() {
 
-        /*
-         * Nettoyage de l'ancien aperçu.
-         */
         if (previewUrl) {
-            URL.revokeObjectURL(previewUrl);
+
+            URL.revokeObjectURL(
+                previewUrl
+            );
+
             previewUrl = null;
         }
 
-        imagePreview.style.display = 'none';
-        videoPreview.style.display = 'none';
-        previewContainer.style.display = 'none';
 
-        imagePreview.src = '';
-        videoPreview.src = '';
+        imagePreview.style.display =
+            'none';
 
-        message.textContent = '';
+        videoPreview.style.display =
+            'none';
+
+        previewContainer.style.display =
+            'none';
 
 
-        if (!file) {
-            return;
+        imagePreview.src =
+            '';
+
+        videoPreview.pause();
+
+        videoPreview.removeAttribute(
+            'src'
+        );
+
+        videoPreview.load();
+    }
+
+
+    function clearMessage() {
+
+        message.textContent =
+            '';
+    }
+
+
+    function getMediaType(file) {
+
+        if (
+            ALLOWED_IMAGE_TYPES.includes(
+                file.type
+            )
+        ) {
+
+            return 'image';
         }
 
 
-        const isImage =
-            file.type.startsWith('image/');
+        if (
+            ALLOWED_VIDEO_TYPES.includes(
+                file.type
+            )
+        ) {
 
-        const isVideo =
-            file.type.startsWith('video/');
-
-
-        /*
-         * Format non autorisé.
-         */
-        if (!isImage && !isVideo) {
-
-            message.textContent =
-                'Veuillez sélectionner une image ou une vidéo.';
-
-            mediaInput.value = '';
-
-            return;
+            return 'video';
         }
 
 
-        /*
-         * =========================
-         * LIMITES
-         * =========================
-         */
-
-        const maxSize = isImage
-            ? 20 * 1024 * 1024
-            : 100 * 1024 * 1024;
+        return null;
+    }
 
 
-        if (file.size > maxSize) {
+    function validateFile(file) {
 
-            message.textContent = isImage
-                ? 'L’image ne doit pas dépasser 20 Mo.'
-                : 'La vidéo ne doit pas dépasser 100 Mo.';
+        const type =
+            getMediaType(file);
 
-            mediaInput.value = '';
 
-            return;
+        if (!type) {
+
+            return {
+                valid: false,
+                error:
+                    'Veuillez sélectionner une image ou une vidéo dans un format autorisé.'
+            };
         }
 
 
-        /*
-         * =========================
-         * APERÇU
-         * =========================
-         */
-
-        previewUrl =
-            URL.createObjectURL(file);
+        const maxSize =
+            type === 'image'
+                ? IMAGE_MAX_SIZE
+                : VIDEO_MAX_SIZE;
 
 
-        /*
-         * PHOTO
-         */
-        if (isImage) {
+        if (
+            file.size > maxSize
+        ) {
 
-            imagePreview.src = previewUrl;
-
-            imagePreview.style.display = 'block';
-
-            videoPreview.style.display = 'none';
-
-            previewContainer.style.display = 'block';
+            return {
+                valid: false,
+                error:
+                    type === 'image'
+                        ? 'L’image ne doit pas dépasser 20 Mo.'
+                        : 'La vidéo ne doit pas dépasser 100 Mo.'
+            };
         }
 
 
-        /*
-         * VIDÉO
-         */
-        if (isVideo) {
-
-            videoPreview.src = previewUrl;
-
-            videoPreview.style.display = 'block';
-
-            imagePreview.style.display = 'none';
-
-            previewContainer.style.display = 'block';
-
-            /*
-             * Permet au navigateur de charger
-             * la vidéo pour l'aperçu.
-             */
-            videoPreview.load();
-        }
-
-    });
+        return {
+            valid: true,
+            type
+        };
+    }
 
 
     /*
-     * =========================
-     * PUBLICATION
-     * =========================
+     * =====================================================
+     * CHOIX DU FICHIER
+     * =====================================================
      */
 
-    form.addEventListener('submit', async (event) => {
+    mediaInput.addEventListener(
+        'change',
+        () => {
 
-        event.preventDefault();
-
-
-        const file =
-            mediaInput.files[0];
-
-
-        if (!file) {
-
-            message.textContent =
-                'Veuillez sélectionner une photo ou une vidéo.';
-
-            return;
-        }
+            clearPreview();
+            clearMessage();
 
 
-        /*
-         * Vérification côté navigateur.
-         */
-
-        const isImage =
-            file.type.startsWith('image/');
-
-        const isVideo =
-            file.type.startsWith('video/');
+            const file =
+                mediaInput.files[0];
 
 
-        if (!isImage && !isVideo) {
-
-            message.textContent =
-                'Format de fichier non autorisé.';
-
-            return;
-        }
+            if (!file) {
+                return;
+            }
 
 
-        const maxSize = isImage
-            ? 20 * 1024 * 1024
-            : 100 * 1024 * 1024;
+            const validation =
+                validateFile(file);
 
 
-        if (file.size > maxSize) {
+            if (!validation.valid) {
 
-            message.textContent = isImage
-                ? 'L’image ne doit pas dépasser 20 Mo.'
-                : 'La vidéo ne doit pas dépasser 100 Mo.';
+                message.textContent =
+                    validation.error;
 
-            return;
-        }
+                mediaInput.value =
+                    '';
 
-
-        /*
-         * FormData.
-         *
-         * Le nom "media" doit correspondre à :
-         *
-         * upload.single('media')
-         */
-        const formData =
-            new FormData(form);
+                return;
+            }
 
 
-        /*
-         * On s'assure qu'un seul fichier
-         * est envoyé dans "media".
-         */
-        formData.delete('media');
-
-        formData.append(
-            'media',
-            file
-        );
-
-
-        message.textContent =
-            'Publication en cours...';
-
-
-        try {
-
-            const response =
-                await fetch(
-                    '/post/upload',
-                    {
-                        method: 'POST',
-                        body: formData
-                    }
+            /*
+             * Création de l'aperçu local.
+             */
+            previewUrl =
+                URL.createObjectURL(
+                    file
                 );
 
 
             /*
-             * Le serveur doit répondre en JSON.
+             * IMAGE
              */
-            const contentType =
-                response.headers.get('content-type') || '';
-
-
-            let data;
-
-
             if (
-                contentType.includes(
-                    'application/json'
-                )
+                validation.type ===
+                'image'
             ) {
 
-                data =
-                    await response.json();
+                imagePreview.src =
+                    previewUrl;
 
-            } else {
 
-                const text =
-                    await response.text();
+                imagePreview.style.display =
+                    'block';
 
-                console.error(
-                    'Réponse serveur :',
-                    text
-                );
 
-                throw new Error(
-                    'Le serveur a renvoyé une réponse inattendue.'
-                );
+                previewContainer.style.display =
+                    'block';
+
+
+                return;
             }
 
 
             /*
-             * Erreur serveur.
+             * VIDÉO
              */
-            if (!response.ok) {
+            if (
+                validation.type ===
+                'video'
+            ) {
 
-                throw new Error(
-                    data.error ||
-                    'Erreur lors de la publication.'
-                );
+                videoPreview.src =
+                    previewUrl;
+
+
+                videoPreview.style.display =
+                    'block';
+
+
+                previewContainer.style.display =
+                    'block';
+
+
+                videoPreview.load();
+            }
+        }
+    );
+
+
+    /*
+     * =====================================================
+     * PUBLICATION
+     * =====================================================
+     */
+
+    form.addEventListener(
+        'submit',
+        async (event) => {
+
+            event.preventDefault();
+
+
+            clearMessage();
+
+
+            const file =
+                mediaInput.files[0];
+
+
+            /*
+             * Aucun fichier.
+             */
+            if (!file) {
+
+                message.textContent =
+                    'Veuillez sélectionner une photo ou une vidéo.';
+
+                return;
             }
 
 
             /*
-             * Publication réussie.
+             * Nouvelle validation avant l'envoi.
+             *
+             * Elle évite de dépendre uniquement
+             * de l'événement "change".
              */
-            message.textContent =
-                'Publication réussie !';
+            const validation =
+                validateFile(file);
+
+
+            if (!validation.valid) {
+
+                message.textContent =
+                    validation.error;
+
+                return;
+            }
 
 
             /*
-             * On revient sur le feed.
-             * La publication sera visible dedans.
+             * Désactivation du bouton pour éviter
+             * plusieurs envois simultanés.
              */
-            setTimeout(() => {
-
-                window.location.href =
-                    '/home';
-
-            }, 300);
+            const submitButton =
+                form.querySelector(
+                    'button[type="submit"]'
+                );
 
 
-        } catch (error) {
+            if (submitButton) {
 
-            console.error(
-                'Erreur :',
-                error
+                submitButton.disabled =
+                    true;
+
+                submitButton.textContent =
+                    'Publication...';
+            }
+
+
+            /*
+             * =================================================
+             * FORMDATA
+             * =================================================
+             */
+
+            const formData =
+                new FormData(form);
+
+
+            /*
+             * Le champ "media" doit être exactement celui
+             * attendu par upload.single('media').
+             */
+            formData.delete(
+                'media'
             );
 
+
+            formData.append(
+                'media',
+                file
+            );
+
+
             message.textContent =
-                error.message ||
-                'Une erreur est survenue.';
+                'Publication en cours...';
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        '/post/upload',
+                        {
+                            method: 'POST',
+
+                            /*
+                             * Le JWT est dans le cookie
+                             * httpOnly "token".
+                             */
+                            credentials: 'include',
+
+                            body: formData,
+
+                            headers: {
+                                'Accept':
+                                    'application/json'
+                            }
+                        }
+                    );
+
+
+                const contentType =
+                    response.headers.get(
+                        'content-type'
+                    ) || '';
+
+
+                let data = {};
+
+
+                if (
+                    contentType.includes(
+                        'application/json'
+                    )
+                ) {
+
+                    data =
+                        await response.json();
+
+                } else {
+
+                    const text =
+                        await response.text();
+
+
+                    console.error(
+                        'Réponse serveur inattendue :',
+                        text
+                    );
+
+
+                    throw new Error(
+                        'Le serveur a renvoyé une réponse inattendue.'
+                    );
+                }
+
+
+                /*
+                 * =================================================
+                 * ERREUR
+                 * =================================================
+                 */
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.error ||
+                        'Erreur lors de la publication.'
+                    );
+                }
+
+
+                /*
+                 * =================================================
+                 * SUCCÈS
+                 * =================================================
+                 */
+
+                message.textContent =
+                    'Publication réussie !';
+
+
+                /*
+                 * Le serveur a créé la publication.
+                 * On retourne au feed pour l'afficher.
+                 */
+                setTimeout(
+                    () => {
+
+                        window.location.href =
+                            '/home';
+
+                    },
+                    300
+                );
+
+            } catch (error) {
+
+                console.error(
+                    'Erreur publication :',
+                    error
+                );
+
+
+                message.textContent =
+                    error.message ||
+                    'Une erreur est survenue lors de la publication.';
+
+
+                /*
+                 * Le bouton est réactivé uniquement
+                 * en cas d'échec.
+                 */
+                if (submitButton) {
+
+                    submitButton.disabled =
+                        false;
+
+                    submitButton.textContent =
+                        'Publier';
+                }
+            }
+
         }
+    );
 
-    });
 
-});
+    /*
+     * =====================================================
+     * NETTOYAGE
+     * =====================================================
+     */
+
+    window.addEventListener(
+        'beforeunload',
+        () => {
+
+            if (previewUrl) {
+
+                URL.revokeObjectURL(
+                    previewUrl
+                );
+
+                previewUrl = null;
+            }
+        }
+    );
+
+}
+
+
+);

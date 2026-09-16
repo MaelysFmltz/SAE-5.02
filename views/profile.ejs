@@ -1,14 +1,16 @@
 <!DOCTYPE html>
+
 <html lang="fr">
 
 <head>
 
   <meta charset="UTF-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0"
+
+>
 
   <title>
     <%= profile.pseudo %> — Pixora
@@ -26,11 +28,9 @@
 
 </head>
 
-
 <body>
 
 <div class="app-container">
-
 
   <!-- =====================================================
        HEADER
@@ -38,51 +38,50 @@
 
   <header class="profile-header">
 
-    <a
-      href="/home"
-      class="icon-btn"
-      title="Retour à l'accueil"
-    >
 
-      <svg
-        width="22"
-        height="22"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.5"
-      >
+<a
+  href="/home"
+  class="icon-btn"
+  title="Retour à l'accueil"
+>
 
-        <line
-          x1="18"
-          y1="6"
-          x2="6"
-          y2="18"
-        ></line>
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2.5"
+  >
 
-        <line
-          x1="6"
-          y1="6"
-          x2="18"
-          y2="18"
-        ></line>
+    <line
+      x1="18"
+      y1="6"
+      x2="6"
+      y2="18"
+    ></line>
 
-      </svg>
+    <line
+      x1="6"
+      y1="6"
+      x2="18"
+      y2="18"
+    ></line>
 
-    </a>
+  </svg>
 
-
-    <h1 class="header-title">
-
-      <%= profile.pseudo %>
-
-    </h1>
+</a>
 
 
-    <div class="header-spacer"></div>
+<h1 class="header-title">
+  <%= profile.pseudo %>
+</h1>
+
+
+<div class="header-spacer"></div>
+
 
   </header>
-
 
   <!-- =====================================================
        PROFIL
@@ -91,241 +90,246 @@
   <main class="profile-container">
 
 
-    <!-- IDENTITÉ -->
+<!-- IDENTITÉ -->
 
-    <section class="profile-identity-row">
+<section class="profile-identity-row">
 
-      <div class="avatar-circle">
+  <div class="avatar-circle">
 
-        <% if (profile.avatarUrl) { %>
+    <% if (profile.avatarUrl) { %>
 
-          <img
-            src="<%= profile.avatarUrl %>"
-            alt="Photo de profil"
-            class="avatar-img"
-          >
-
-        <% } else { %>
-
-          <svg
-            viewBox="0 0 24 24"
-            fill="currentColor"
-          >
-
-            <path
-              d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
-            />
-
-          </svg>
-
-        <% } %>
-
-      </div>
-
-
-      <div class="identity-info">
-
-        <div class="pseudo-wrap">
-
-          <span class="profile-pseudo">
-            <%= profile.pseudo %>
-          </span>
-
-
-          <% if (profile.role === 'admin') { %>
-
-            <span class="badge badge-admin">
-              Admin
-            </span>
-
-          <% } else if (
-            profile.role === 'moderator' ||
-            profile.role === 'moderateur' ||
-            profile.role === 'modo'
-          ) { %>
-
-            <span class="badge badge-modo">
-              Modo
-            </span>
-
-          <% } %>
-
-        </div>
-
-
-        <% if (profile.prenom || profile.nom) { %>
-
-          <p class="real-name">
-
-            <%= [
-              profile.prenom,
-              profile.nom
-            ].filter(Boolean).join(' ') %>
-
-          </p>
-
-        <% } %>
-
-      </div>
-
-    </section>
-
-
-    <!-- BIO -->
-
-    <section class="bio-fullwidth">
-
-      <span class="bio-label">
-        À propos de moi
-      </span>
-
-
-      <div class="bio-frame">
-
-        <p>
-
-          <%= profile.bio ||
-              'Aucune biographie rédigée.' %>
-
-        </p>
-
-      </div>
-
-    </section>
-
-
-    <!-- MODIFICATION UNIQUEMENT POUR SON PROPRE PROFIL -->
-
-    <% if (isOwner) { %>
-
-      <a
-        href="/profile/edit"
-        class="btn-edit"
+      <img
+        src="<%= profile.avatarUrl %>"
+        alt="Photo de profil"
+        class="avatar-img"
       >
-        Modifier le profil
-      </a>
+
+    <% } else { %>
+
+      <svg
+        viewBox="0 0 24 24"
+        fill="currentColor"
+      >
+
+        <path
+          d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"
+        />
+
+      </svg>
 
     <% } %>
 
-
-    <!-- =================================================
-         PUBLICATIONS
-    ================================================== -->
-
-    <section class="posts-section">
+  </div>
 
 
-      <h2 class="posts-title">
-        Publications
-      </h2>
+  <div class="identity-info">
+
+    <div class="pseudo-wrap">
+
+      <span class="profile-pseudo">
+        <%= profile.pseudo %>
+      </span>
 
 
-      <% if (!posts || posts.length === 0) { %>
+      <% if (profile.role === 'admin') { %>
 
-        <p class="empty-posts">
+        <span class="badge badge-admin">
+          Admin
+        </span>
 
-          Aucune publication pour l'instant
+      <% } else if (
+        profile.role === 'moderator' ||
+        profile.role === 'moderateur' ||
+        profile.role === 'modo'
+      ) { %>
 
-        </p>
-
-      <% } else { %>
-
-
-        <div class="profile-posts">
-
-
-          <% posts.forEach(function(post) { %>
-
-            <article class="profile-post">
-
-
-              <div class="profile-post-header">  
-                 <span class="profile-post-date">  
-                  <%= post.datePubli %> 
-                </span> 
-                
-                <% if (isOwner) { %> 
-                  <button 
-                    type="button" 
-                    class="delete-post" 
-                    data-id="<%= post.idPubli %>" 
-                  > 
-                    Supprimer 
-                  </button> 
-                <% } %>
-               </div>
-
-                <span class="profile-post-date">
-
-                  <%= post.datePubli %>
-
-                </span>
-
-              </div>
-
-
-              <% if (post.typeMedia === 'video') { %>
-
-                  <video
-                      class="profile-post-video"
-                      controls
-                      preload="metadata"
-                  >
-
-                      <source
-                          src="/uploads/<%= post.nomMedia %>"
-                      >
-
-                      Votre navigateur ne supporte pas la lecture vidéo.
-
-                  </video>
-
-              <% } else { %>
-
-                  <img
-                      src="/uploads/<%= post.nomMedia %>"
-                      alt="Publication de <%= profile.pseudo %>"
-                      class="profile-post-image"
-                  >
-
-              <% } %>
-
-
-              <% if (post.contenuPub) { %>
-
-                <div class="profile-post-content">
-
-                  <%= post.contenuPub %>
-
-                </div>
-
-              <% } %>
-
-
-            </article>
-
-          <% }); %>
-
-
-        </div>
-
+        <span class="badge badge-modo">
+          Modo
+        </span>
 
       <% } %>
 
+    </div>
 
-    </section>
+
+    <% if (profile.prenom || profile.nom) { %>
+
+      <p class="real-name">
+
+        <%= [
+          profile.prenom,
+          profile.nom
+        ].filter(Boolean).join(' ') %>
+
+      </p>
+
+    <% } %>
+
+  </div>
+
+</section>
+
+
+<!-- BIO -->
+
+<section class="bio-fullwidth">
+
+  <span class="bio-label">
+    À propos de moi
+  </span>
+
+
+  <div class="bio-frame">
+
+    <p>
+
+      <%= profile.bio ||
+          'Aucune biographie rédigée.' %>
+
+    </p>
+
+  </div>
+
+</section>
+
+
+<!-- MODIFICATION UNIQUEMENT POUR SON PROPRE PROFIL -->
+
+<% if (isOwner) { %>
+
+  <a
+    href="/profile/edit"
+    class="btn-edit"
+  >
+    Modifier le profil
+  </a>
+
+<% } %>
+
+
+<!-- =================================================
+     PUBLICATIONS
+================================================== -->
+
+<section class="posts-section">
+
+
+  <h2 class="posts-title">
+    Publications
+  </h2>
+
+
+  <% if (!posts || posts.length === 0) { %>
+
+    <p class="empty-posts">
+      Aucune publication pour l'instant
+    </p>
+
+  <% } else { %>
+
+
+    <div class="profile-posts">
+
+
+      <% posts.forEach(function(post) { %>
+
+        <article
+          class="profile-post"
+          data-id="<%= post.idPubli %>"
+        >
+
+          <!-- EN-TÊTE DE LA PUBLICATION -->
+
+          <div class="profile-post-header">
+
+            <span class="profile-post-date">
+              <%= post.datePubli %>
+            </span>
+
+
+            <% if (isOwner) { %>
+
+              <button
+                type="button"
+                class="delete-post"
+                data-id="<%= post.idPubli %>"
+              >
+                Supprimer
+              </button>
+
+            <% } %>
+
+          </div>
+
+
+          <!-- MÉDIA -->
+
+          <% if (post.typeMedia === 'video') { %>
+
+            <video
+              class="profile-post-video"
+              controls
+              preload="metadata"
+            >
+
+              <source
+                src="/uploads/<%= post.nomMedia %>"
+              >
+
+              Votre navigateur ne supporte pas la lecture vidéo.
+
+            </video>
+
+          <% } else { %>
+
+            <img
+              src="/uploads/<%= post.nomMedia %>"
+              alt="Publication de <%= profile.pseudo %>"
+              class="profile-post-image"
+            >
+
+          <% } %>
+
+
+          <!-- DESCRIPTION -->
+
+          <% if (post.contenuPub) { %>
+
+            <div class="profile-post-content">
+              <%= post.contenuPub %>
+            </div>
+
+          <% } %>
+
+
+        </article>
+
+      <% }); %>
+
+
+    </div>
+
+
+  <% } %>
+
+
+</section>
 
 
   </main>
-
 
   <!-- =====================================================
        NAVIGATION
   ====================================================== -->
 
-  <%- include('navbar') %>
+<%- include('navbar') %>
 
-<script src="/js/deletePost.js"></script>
+  <!-- =====================================================
+       SUPPRESSION DES PUBLICATIONS
+  ====================================================== -->
+
+  <script src="/js/deletePost.js"></script>
+
 </div>
 
 </body>
