@@ -41,11 +41,25 @@
       <form id="form-register" style="display: none;">
         <div class="form-group">
           <label for="reg-pseudo">Pseudo</label>
-          <input type="text" id="reg-pseudo" required placeholder="ex: alex">
+          <input 
+            type="text" 
+            id="reg-pseudo" 
+            required 
+            minlength="3" 
+            maxlength="30" 
+            pattern="^[a-zA-Z0-9_-]{3,30}$" 
+            title="Entre 3 et 30 caractères (lettres, chiffres, tirets, underscores)"
+            placeholder="ex: alex">
         </div>
         <div class="form-group">
           <label for="reg-email">Email</label>
-          <input type="email" id="reg-email" required placeholder="nom@exemple.com">
+          <input 
+            type="email" 
+            id="reg-email" 
+            required 
+            pattern="^[a-zA-Z0-9_%+-]+(?:\.[a-zA-Z0-9_%+-]+)*@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$"
+            title="Format d'email valide requis (ex: nom@exemple.com, sans point avant l'arobase)"
+            placeholder="nom@exemple.com">
         </div>
         <div class="form-group">
           <label for="reg-birth">Date de naissance</label>
@@ -53,7 +67,16 @@
         </div>
         <div class="form-group">
           <label for="reg-password">Mot de passe</label>
-          <input type="password" id="reg-password" required minlength="6" placeholder="••••••••">
+          <input 
+            type="password" 
+            id="reg-password" 
+            required 
+            minlength="8" 
+            maxlength="128"
+            placeholder="••••••••">
+          <small style="color: #8a8d9b; font-size: 0.8rem; display: block; margin-top: 4px;">
+            8 caractères minimum (au moins 1 majuscule, 1 minuscule, 1 chiffre et 1 symbole).
+          </small>
         </div>
         <button type="submit" class="btn-primary">Créer un compte</button>
       </form>
@@ -66,6 +89,22 @@
     const formLogin = document.getElementById('form-login');
     const formRegister = document.getElementById('form-register');
     const alertBox = document.getElementById('alert-box');
+    const regBirthInput = document.getElementById('reg-birth');
+
+    // Initialisation des bornes de date de naissance (entre 13 et 120 ans)
+    const today = new Date();
+    const maxDate = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate());
+    const minDate = new Date(today.getFullYear() - 120, today.getMonth(), today.getDate());
+
+    const formatDateToYMD = (d) => {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
+
+    regBirthInput.max = formatDateToYMD(maxDate);
+    regBirthInput.min = formatDateToYMD(minDate);
 
     function showError(msg) {
       alertBox.textContent = msg;
@@ -118,6 +157,37 @@
       const email = document.getElementById('reg-email').value.trim();
       const dateNaissance = document.getElementById('reg-birth').value;
       const motDePasse = document.getElementById('reg-password').value;
+
+      // Validation rapide de l'email
+      const emailRegex = /^[a-zA-Z0-9_%+-]+(?:\.[a-zA-Z0-9_%+-]+)*@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(email)) {
+        return showError('Le format de l’adresse email est incorrect (aucun point juste avant le @).');
+      }
+
+      // Contrôle de la date de naissance si renseignée
+      if (dateNaissance) {
+        const selectedDate = new Date(dateNaissance);
+        if (isNaN(selectedDate.getTime())) {
+          return showError('Date de naissance invalide.');
+        }
+
+        const now = new Date();
+        let age = now.getFullYear() - selectedDate.getFullYear();
+        const m = now.getMonth() - selectedDate.getMonth();
+        if (m < 0 || (m === 0 && now.getDate() < selectedDate.getDate())) {
+          age--;
+        }
+
+        if (selectedDate > now) {
+          return showError('La date de naissance ne peut pas être dans le futur.');
+        }
+        if (age < 13) {
+          return showError('Vous devez avoir au moins 13 ans pour vous inscrire.');
+        }
+        if (age > 120) {
+          return showError('La date de naissance saisie est incohérente.');
+        }
+      }
 
       try {
         const res = await fetch('/api/auth/register', {
