@@ -64,6 +64,19 @@ construction_docker:
   before_script:
     - docker version
     - docker info
+    - echo "$CI_REGISTRY_PASSWORD" |
+      docker login
+      --username "$CI_REGISTRY_USER"
+      --password-stdin
+      "$CI_REGISTRY"
 
   script:
-    - docker build -t "pixora-app:$CI_COMMIT_SHORT_SHA" .
+    - docker build
+      --tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+      --tag "$CI_REGISTRY_IMAGE:latest"
+      .
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - docker push "$CI_REGISTRY_IMAGE:latest"
+
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "ci-gitlab"'
