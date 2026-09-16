@@ -58,6 +58,43 @@ function createMediaPost(
 }
 
 
+/** * Supprime une publication uniquement si * elle appartient à l'utilisateur connecté. */ 
+function deletePostByIdAndUser(idPubli, idUser) { 
+        const transaction = db.transaction(() => { 
+            const media = db.prepare(` 
+                SELECT 
+                m.idMedia, 
+                m.nomMedia 
+            FROM Media m 
+            INNER JOIN Publication p 
+                ON p.idPubli = m.idPubli 
+            WHERE p.idPubli = ? 
+            AND p.idUser = ? 
+        `).get(
+            idPubli,
+            idUser 
+        ); 
+        /* * Publication inexistante ou utilisateur * qui n'est pas propriétaire. */ 
+        if (!media) { 
+            return null; 
+        } 
+        db.prepare(` 
+            DELETE FROM Media 
+            WHERE idPubli = ? 
+        `).run(idPubli); 
+        db.prepare(` 
+            DELETE FROM Publication 
+            WHERE idPubli = ? 
+            AND idUser = ? 
+        `).run( 
+            idPubli, 
+            idUser 
+        ); 
+        return media; 
+    }); 
+    return transaction(); 
+}
+
 /**
  * Toutes les publications.
  */
@@ -166,5 +203,6 @@ module.exports = {
     createMediaPost,
     findAllPostsWithMedia,
     findPostsByUserId,
-    findPostById
+    findPostById,
+    deletePostByIdAndUser
 };

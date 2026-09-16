@@ -47,6 +47,12 @@ router.post(
     postController.uploadImage
 );
 
+router.delete(
+    '/api/:idPubli',
+    authMiddleware,
+    postController.deletePost
+);
+
 router.get('/api', authMiddleware, postController.getImagesApi);
 
 router.get(

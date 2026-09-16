@@ -239,7 +239,21 @@
             <article class="profile-post">
 
 
-              <div class="profile-post-header">
+              <div class="profile-post-header">  
+                 <span class="profile-post-date">  
+                  <%= post.datePubli %> 
+                </span> 
+                
+                <% if (isOwner) { %> 
+                  <button 
+                    type="button" 
+                    class="delete-post" 
+                    data-id="<%= post.idPubli %>" 
+                  > 
+                    Supprimer 
+                  </button> 
+                <% } %>
+               </div>
 
                 <span class="profile-post-date">
 
@@ -311,7 +325,7 @@
 
   <%- include('navbar') %>
 
-
+<script src="/js/deletePost.js"></script>
 </div>
 
 </body>

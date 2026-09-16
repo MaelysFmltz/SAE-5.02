@@ -1,6 +1,7 @@
 
 const fs = require('fs/promises');
 const postService = require('../services/postService');
+const path = require('path');
 
 
 /*
@@ -557,6 +558,146 @@ async function uploadImage(req, res) {
 }
 
 
+
+/**
+ * Supprime une publication.
+ *
+ * Seul son propriétaire peut la supprimer.
+ */
+async function deletePost(req, res) {
+
+    try {
+
+        /*
+         * Vérification de l'utilisateur connecté.
+         */
+        if (!req.user || !req.user.idUser) {
+
+            return res.status(401).json({
+                error: 'Utilisateur non authentifié'
+            });
+        }
+
+
+        /*
+         * Vérification de l'identifiant.
+         */
+        const idPubli =
+            Number(req.params.idPubli);
+
+        if (
+            !Number.isInteger(idPubli) ||
+            idPubli <= 0
+        ) {
+
+            return res.status(400).json({
+                error: 'Identifiant de publication invalide'
+            });
+        }
+
+
+        /*
+         * Suppression en base.
+         *
+         * Le service vérifie que la publication
+         * appartient bien à req.user.idUser.
+         */
+        const media =
+            await postService.deletePost(
+                idPubli,
+                req.user.idUser
+            );
+
+
+        /*
+         * Sécurité supplémentaire :
+         * le nom du fichier vient de la base,
+         * mais on vérifie quand même qu'il reste
+         * dans le dossier uploads.
+         */
+        const uploadDir =
+            path.resolve(
+                __dirname,
+                '../../uploads'
+            );
+
+        const fileName =
+            path.basename(media.nomMedia);
+
+        const filePath =
+            path.resolve(
+                uploadDir,
+                fileName
+            );
+
+
+        if (
+            path.dirname(filePath) !== uploadDir
+        ) {
+
+            console.error(
+                'Tentative de chemin de fichier invalide'
+            );
+
+            return res.status(500).json({
+                error: 'Chemin de fichier invalide'
+            });
+        }
+
+
+        /*
+         * Suppression du fichier physique.
+         */
+        try {
+
+            await fs.unlink(filePath);
+
+        } catch (error) {
+
+            /*
+             * Le fichier peut déjà avoir été supprimé.
+             * Ce n'est pas une erreur bloquante.
+             */
+            if (error.code !== 'ENOENT') {
+
+                console.error(
+                    'Erreur suppression fichier :',
+                    error
+                );
+            }
+        }
+
+
+        return res.status(200).json({
+            message: 'Publication supprimée'
+        });
+
+    } catch (error) {
+
+        console.error(
+            'Erreur suppression publication :',
+            error
+        );
+
+
+        if (error.status) {
+
+            return res.status(
+                error.status
+            ).json({
+                error: error.message
+            });
+        }
+
+
+        return res.status(500).json({
+            error:
+                'Erreur lors de la suppression de la publication'
+        });
+    }
+}
+
+
 /*
  * ============================================================
  * PAGE DE CRÉATION DE PUBLICATION
@@ -694,7 +835,7 @@ module.exports = {
     isRealWebP,
     isRealMP4,
     isRealWebM,
-    isRealOGG
-
+    isRealOGG,
+    deletePost
 };
 

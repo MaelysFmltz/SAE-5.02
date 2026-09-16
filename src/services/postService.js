@@ -50,8 +50,42 @@ function getUserPosts(idUser) {
 }
 
 
+/**
+ * Supprime une publication appartenant à l'utilisateur.
+ */
+function deletePost(idPubli, idUser) {
+
+    if (!idPubli || !idUser) {
+        throw new Error(
+            'Identifiants de publication invalides'
+        );
+    }
+
+    const media =
+        postModel.deletePostByIdAndUser(
+            idPubli,
+            idUser
+        );
+
+    if (!media) {
+
+        const error = new Error(
+            'Publication introuvable ou non autorisée'
+        );
+
+        error.status = 403;
+
+        throw error;
+    }
+
+    return media;
+}
+
+
+
 module.exports = {
     createMediaPost,
     getAllPosts,
-    getUserPosts
+    getUserPosts,
+    deletePost
 };
