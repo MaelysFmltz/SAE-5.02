@@ -1,6 +1,7 @@
 const profileModel = require('../models/profileModel');
 const { validatePseudo, sanitizeText } = require('../utils/validationUtils');
-
+const postModel = require('../models/postModel');
+const reactionModel = require('../models/reactionModel');
 /**
  * Formate un objet profil pour y adjoindre l'URL d'avatar
  */
@@ -25,7 +26,45 @@ async function getMyProfile(idUser) {
     throw new Error('Profil introuvable');
   }
 
-  return formatProfileData(profile);
+  const publications = postModel.findByUserId(idUser)
+    .filter(publication => publication.typePublication === 'original')
+    .map(publication => {
+        const reactions = reactionModel.getPostReactions(
+            publication.idPubli,
+            idUser
+        );
+
+        return {
+            ...publication,
+            likes: reactions.likes,
+            dislikes: reactions.dislikes,
+            userReaction: reactions.userReaction
+        };
+    });
+
+  const reposts = postModel.findByUserId(idUser)
+    .filter(publication =>
+        ['repost', 'duo', 'collage'].includes(publication.typePublication)
+    )
+    .map(publication => {
+        const reactions = reactionModel.getPostReactions(
+            publication.idPubli,
+            idUser
+        );
+
+        return {
+            ...publication,
+            likes: reactions.likes,
+            dislikes: reactions.dislikes,
+            userReaction: reactions.userReaction
+        };
+    });
+
+  return {
+    ...formatProfileData(profile),
+    publications,
+    reposts
+  };
 }
 
 /**

@@ -7,7 +7,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 router.get('/view/:idPubli', commentController.renderPostPage);
 
 // 2. Consultation API (JSON)
-router.get('/:idPubli', commentController.getComments);
+router.get('/:idPubli', authMiddleware, commentController.getComments);
 
 // 3. Actions d'écriture sur les publications (routes fixes en premier)
 router.post('/', authMiddleware, commentController.addComment);

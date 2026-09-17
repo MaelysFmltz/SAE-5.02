@@ -1,7 +1,7 @@
 const db = require('../config/database');
 const postModel = require('../models/postModel');
 const userModel = require('../models/userModel');
-
+const reactionModel = require('../models/reactionModel');
 
 function validerContenuPublication(contenuPub) {
     if (typeof contenuPub !== 'string') {
@@ -290,12 +290,17 @@ function getRemixChainForUser(idPubli, idUser) {
     return chainAccessible;
 }
 
-// Récupérer le fil d'actualité d'un utilisateur
+    // Récupérer le fil d'actualité d'un utilisateur
 function getFeedForUser(idUser) {
     const publications = db.prepare(`
         SELECT
             p.idPubli,
             p.idUser,
+            (
+                SELECT COUNT(*)
+                FROM Commentaire c
+                WHERE c.idPubli = p.idPubli
+            ) AS nombreCommentaires,
             p.contenuPub,
             p.visibilite,
             p.idPubliPartagee,
@@ -334,8 +339,15 @@ function getFeedForUser(idUser) {
 
             // Si la publication est basée sur une autre publication,
             // on vérifie que l'utilisateur peut également voir l'original.
-            if (publication.originalIdPubli && !peutVoirPublication(db, publication.originalIdPubli, idUser)) {
-                return {
+            if (
+                publication.originalIdPubli &&
+                !peutVoirPublication(
+                    db,
+                    publication.originalIdPubli,
+                    idUser
+                )
+            ) {
+                publication = {
                     ...publication,
                     idPubliPartagee: null,
                     originalIdPubli: null,
@@ -347,9 +359,21 @@ function getFeedForUser(idUser) {
                 };
             }
 
-            return publication;
+            // Récupération des likes / dislikes
+            const reactions = reactionModel.getPostReactions(
+                publication.idPubli,
+                idUser
+            );
+
+            return {
+                ...publication,
+                likes: reactions.likes,
+                dislikes: reactions.dislikes,
+                userReaction: reactions.userReaction
+            };
         });
 }
+
 module.exports = {
     sontAmis,
     peutVoirPublication,

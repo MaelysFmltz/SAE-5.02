@@ -60,14 +60,33 @@ CREATE TABLE IF NOT EXISTS Profil (
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS Commentaire (
+
     idComm INTEGER PRIMARY KEY AUTOINCREMENT,
+
     idUser INTEGER NOT NULL,
+
     idPubli INTEGER NOT NULL,
+
+    idParent INTEGER,
+
     contenuCom TEXT NOT NULL,
+
     dateCommentaire DATETIME DEFAULT CURRENT_TIMESTAMP,
+
     dateModif DATETIME,
-    FOREIGN KEY (idUser) REFERENCES Utilisateur(idUser) ON DELETE CASCADE,
-    FOREIGN KEY (idPubli) REFERENCES Publication(idPubli) ON DELETE CASCADE
+
+    FOREIGN KEY (idUser)
+        REFERENCES Utilisateur(idUser)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (idPubli)
+        REFERENCES Publication(idPubli)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (idParent)
+        REFERENCES Commentaire(idComm)
+        ON DELETE CASCADE
+
 );
 
 CREATE TABLE IF NOT EXISTS LikeDislike (

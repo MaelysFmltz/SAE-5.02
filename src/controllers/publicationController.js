@@ -1,5 +1,41 @@
 const db = require('../config/database');
 
+const postModel = require('../models/postModel');
+
+function creerPublication(req, res) {
+    const idUser = req.user.idUser;
+
+    const {
+        contenuPub,
+        visibilite = 1
+    } = req.body;
+
+    if (!contenuPub || !contenuPub.trim()) {
+        return res.status(400).json({
+            error: 'Le contenu de la publication est obligatoire'
+        });
+    }
+
+    try {
+        const publication = postModel.createPublication(
+            idUser,
+            contenuPub.trim(),
+            Number(visibilite)
+        );
+
+        return res.status(201).json(publication);
+
+    } catch (error) {
+        console.error('Erreur création publication :', error);
+
+        return res.status(500).json({
+            error: 'Impossible de créer la publication'
+        });
+    }
+}
+
+
+
 function obtenirPublication(req, res) {
     const idPubli = Number(req.params.idPubli);
 
@@ -65,6 +101,7 @@ function modifierVisibilite(req, res) {
 }
 
 module.exports = {
+    creerPublication,
     obtenirPublication,
     modifierVisibilite
 };

@@ -63,6 +63,12 @@ async function login(req, res) {
       motDePasse
     );
 
+    console.log('LOGIN:', {
+      idUser: result.user.idUser,
+      email: result.user.email,
+      pseudo: result.user.pseudo
+    });
+
     // Stockage du token dans un cookie HTTP sécurisé
     res.cookie('token', result.token, {
       httpOnly: true,

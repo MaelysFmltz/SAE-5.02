@@ -118,7 +118,7 @@ function sharePublication(req, res) {
         const baseUrl = `${req.protocol}://${req.get('host')}`;
 
         const shareUrl =
-            `${baseUrl}/api/publications/${publication.idPubli}`;
+            `${baseUrl}/publication/${publication.idPubli}`;
 
         return res.status(200).json({
             message: 'Lien de partage généré',

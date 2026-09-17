@@ -402,3 +402,156 @@
         width: 100%;
     }
 }
+
+/* ==========================================================
+   ACTIONS COMMENTAIRES
+   ========================================================== */
+
+.comment-actions {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    margin-top: 8px;
+}
+
+
+.comment-reaction {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 4px;
+
+    border: none;
+
+    background: transparent;
+
+    color: #8f929d;
+
+    cursor: pointer;
+
+    font-size: 12px;
+
+    padding: 3px 5px;
+
+    border-radius: 8px;
+
+    transition:
+        color 0.15s ease,
+        background 0.15s ease;
+}
+
+
+.comment-reaction:hover {
+
+    background: #25262d;
+}
+
+
+.comment-reaction svg {
+
+    width: 18px;
+
+    height: 18px;
+
+    fill: none;
+
+    stroke: currentColor;
+
+    stroke-width: 2;
+
+    stroke-linecap: round;
+
+    stroke-linejoin: round;
+}
+
+
+/* LIKE */
+
+.comment-like.active {
+
+    color: #ff1744;
+}
+
+
+.comment-like.active svg {
+
+    fill: #ff1744;
+
+    stroke: #ff1744;
+}
+
+
+/* DISLIKE */
+
+.comment-dislike.active {
+
+    color: #263b91;
+}
+
+
+.comment-dislike.active svg {
+
+    fill: #263b91;
+
+    stroke: #263b91;
+}
+
+
+/* RÉPONDRE */
+
+.reply-button {
+
+    border: none;
+
+    background: transparent;
+
+    color: #9295a0;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    padding: 4px 5px;
+}
+
+
+.reply-button:hover {
+
+    color: #ffffff;
+}
+
+
+/* COMMENTAIRES ENFANTS */
+
+.comment-item {
+
+    transition:
+        margin-left 0.2s ease;
+}
+
+.comment-edit-button,
+.comment-delete-button {
+    border: none;
+    background: transparent;
+    color: #8b8b98;
+    cursor: pointer;
+    padding: 2px 4px;
+    font-size: 15px;
+    transition: color 0.2s ease;
+}
+
+.comment-edit-button:hover {
+    color: #ffffff;
+}
+
+.comment-delete-button:hover {
+    color: #d94b5b;
+}

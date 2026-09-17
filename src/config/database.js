@@ -45,4 +45,31 @@ if (!tableExists) {
   }
 }
 
+// ============================================================
+// MIGRATION COMMENTAIRES
+// Ajout de idParent si la base existante ne possède pas encore
+// cette colonne.
+// ============================================================
+
+const commentTableInfo = db
+  .prepare("PRAGMA table_info(Commentaire)")
+  .all();
+
+const hasIdParent = commentTableInfo.some(
+  column => column.name === 'idParent'
+);
+
+if (!hasIdParent) {
+  db.exec(`
+    ALTER TABLE Commentaire
+    ADD COLUMN idParent INTEGER
+  `);
+
+  console.log(
+    'Migration Commentaire : colonne idParent ajoutée.'
+  );
+}
+
+
+
 module.exports = db;

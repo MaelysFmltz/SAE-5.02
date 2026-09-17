@@ -442,10 +442,9 @@
     }
 
     function getAuthHeaders() {
-      const token = localStorage.getItem('jwt_token');
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = 'Bearer ' + token;
-      return headers;
+      return {
+        'Content-Type': 'application/json'
+      };
     }
 
     function toggleCommentsSection() {
@@ -623,6 +622,7 @@
       const res = await fetch('/api/comments/react', {
         method: 'POST',
         headers: getAuthHeaders(),
+        credentials: 'same-origin',
         body: JSON.stringify({ idPubli, type })
       });
 
@@ -646,6 +646,7 @@
       const res = await fetch('/api/comments/' + idComm + '/react', {
         method: 'POST',
         headers: getAuthHeaders(),
+        credentials: 'same-origin',
         body: JSON.stringify({ type })
       });
 

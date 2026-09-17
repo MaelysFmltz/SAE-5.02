@@ -3,150 +3,725 @@ const reactionModel = require('../models/reactionModel');
 const db = require('../config/database');
 const jwt = require('jsonwebtoken');
 
-// Fonction utilitaire pour attacher les compteurs de likes récursivement
+
+// ============================================================
+// ATTACHER LES RÉACTIONS AUX COMMENTAIRES
+// ============================================================
+
 function attachReactionsRecursively(comments, currentUserId) {
-  return comments.map(c => {
+  return comments.map(comment => {
     return {
-      ...c,
-      reactions: reactionModel.getCommentReactions(c.idComm, currentUserId),
-      replies: attachReactionsRecursively(c.replies || [], currentUserId)
+      ...comment,
+
+      reactions: reactionModel.getCommentReactions(
+        comment.idComm,
+        currentUserId
+      ),
+
+      replies: attachReactionsRecursively(
+        comment.replies || [],
+        currentUserId
+      )
     };
   });
 }
 
+
+// ============================================================
+// AFFICHER UNE PUBLICATION AVEC SES COMMENTAIRES
+// ============================================================
+
 async function renderPostPage(req, res) {
   try {
     const idPubli = parseInt(req.params.idPubli, 10);
-    if (isNaN(idPubli)) return res.status(400).send('Publication invalide.');
+
+    if (isNaN(idPubli)) {
+      return res.status(400).send(
+        'Publication invalide.'
+      );
+    }
+
+
+    // --------------------------------------------------------
+    // Récupération de la publication
+    // --------------------------------------------------------
 
     const post = db.prepare(`
-      SELECT p.*, u.pseudo AS auteurPseudo
+      SELECT
+        p.*,
+        u.pseudo AS auteurPseudo
       FROM Publication p
-      JOIN Utilisateur u ON p.idUser = u.idUser
+      JOIN Utilisateur u
+        ON p.idUser = u.idUser
       WHERE p.idPubli = ?
     `).get(idPubli);
 
-    if (!post) return res.status(404).send('Publication introuvable.');
+
+    if (!post) {
+      return res.status(404).send(
+        'Publication introuvable.'
+      );
+    }
+
+
+    // --------------------------------------------------------
+    // Récupération de l'utilisateur connecté
+    // --------------------------------------------------------
 
     let currentUser = null;
+
     let token = req.cookies?.token;
-    if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-      token = req.headers.authorization.split(' ')[1];
+
+
+    if (
+      !token &&
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer ')
+    ) {
+      token =
+        req.headers.authorization.split(' ')[1];
     }
+
+
     if (token) {
       try {
-        currentUser = jwt.verify(token, process.env.JWT_SECRET || 'pixora_secret_key');
-      } catch (e) {
+
+        currentUser = jwt.verify(
+          token,
+          process.env.JWT_SECRET ||
+          'secret_de_secours_temporaire'
+        );
+
+      } catch (error) {
+
         currentUser = null;
+
       }
     }
 
-    const rawComments = commentModel.getCommentsByPostId(idPubli);
-    const comments = attachReactionsRecursively(rawComments, currentUser?.idUser);
-    const reactions = reactionModel.getPostReactions(idPubli, currentUser?.idUser);
 
-    res.render('post', { post, comments, reactions, currentUser });
+    // --------------------------------------------------------
+    // Commentaires parents + enfants
+    // --------------------------------------------------------
+
+    const rawComments =
+      commentModel.getCommentsByPostId(
+        idPubli,
+        currentUser?.idUser
+      );
+
+
+    const comments =
+      attachReactionsRecursively(
+        rawComments,
+        currentUser?.idUser
+      );
+
+
+    // --------------------------------------------------------
+    // Réactions de la publication
+    // --------------------------------------------------------
+
+    const reactions =
+      reactionModel.getPostReactions(
+        idPubli,
+        currentUser?.idUser
+      );
+
+
+    // --------------------------------------------------------
+    // Affichage
+    // --------------------------------------------------------
+
+    res.render('post', {
+      post,
+      comments,
+      reactions,
+      currentUser
+    });
+
   } catch (error) {
-    console.error('Erreur renderPostPage :', error);
-    res.status(500).send('Erreur affichage publication.');
+
+    console.error(
+      'Erreur renderPostPage :',
+      error
+    );
+
+    res.status(500).send(
+      'Erreur affichage publication.'
+    );
   }
 }
+
+
+// ============================================================
+// AJOUTER UN COMMENTAIRE OU UNE RÉPONSE
+// ============================================================
 
 async function addComment(req, res) {
   try {
-    const idUser = req.user.idUser;
-    const targetPostId = parseInt(req.body?.idPubli, 10);
-    const idParent = req.body?.idParent ? parseInt(req.body.idParent, 10) : null;
-    const contenuCom = req.body?.contenuCom ? req.body.contenuCom.trim() : '';
 
-    if (isNaN(targetPostId)) return res.status(400).json({ error: 'ID publication invalide.' });
-    if (!contenuCom) return res.status(400).json({ error: 'Le commentaire ne peut pas être vide.' });
-    if (contenuCom.length > 500) return res.status(400).json({ error: 'Limite de 500 caractères dépassée.' });
+    const idUser =
+      req.user.idUser;
 
-    const newComment = commentModel.createComment(idUser, targetPostId, contenuCom, idParent);
-    res.status(201).json({ success: true, comment: newComment });
+
+    const idPubli =
+      parseInt(
+        req.body?.idPubli,
+        10
+      );
+
+
+    /*
+     * Si idParent est fourni :
+     * le commentaire devient une réponse.
+     *
+     * Sinon :
+     * c'est un commentaire parent.
+     */
+
+    let idParent = null;
+
+
+    if (
+      req.body?.idParent !== undefined &&
+      req.body?.idParent !== null &&
+      req.body?.idParent !== ''
+    ) {
+
+      idParent =
+        parseInt(
+          req.body.idParent,
+          10
+        );
+
+
+      if (isNaN(idParent)) {
+
+        return res.status(400).json({
+          error:
+            'ID du commentaire parent invalide.'
+        });
+
+      }
+
+    }
+
+
+    const contenuCom =
+      req.body?.contenuCom
+        ? String(
+            req.body.contenuCom
+          ).trim()
+        : '';
+
+
+    // --------------------------------------------------------
+    // Vérifications
+    // --------------------------------------------------------
+
+    if (isNaN(idPubli)) {
+
+      return res.status(400).json({
+        error:
+          'ID publication invalide.'
+      });
+
+    }
+
+
+    if (!contenuCom) {
+
+      return res.status(400).json({
+        error:
+          'Le commentaire ne peut pas être vide.'
+      });
+
+    }
+
+
+    if (contenuCom.length > 500) {
+
+      return res.status(400).json({
+        error:
+          'Limite de 500 caractères dépassée.'
+      });
+
+    }
+
+
+    let parentId = idParent || null;
+
+    if (parentId) {
+        const parentComment = commentModel.getCommentById(parentId);
+
+        if (!parentComment) {
+            return res.status(404).json({
+                error: 'Commentaire parent introuvable'
+            });
+        }
+
+        // Si on répond à une réponse,
+        // on rattache le nouveau commentaire au parent original.
+        if (parentComment.idParent) {
+            parentId = parentComment.idParent;
+        }
+    }
+
+    // --------------------------------------------------------
+    // Création
+    // --------------------------------------------------------
+
+    const newComment =
+      commentModel.createComment(
+        idUser,
+        idPubli,
+        contenuCom,
+        parentId
+      );
+
+
+    // --------------------------------------------------------
+    // Retourner également les informations utilisateur
+    // et les réactions
+    // --------------------------------------------------------
+
+    const createdComment =
+      db.prepare(`
+        SELECT
+          c.idComm,
+          c.idUser,
+          c.idPubli,
+          c.idParent,
+          c.contenuCom,
+          c.dateCommentaire,
+          c.dateModif,
+          u.pseudo AS pseudo
+        FROM Commentaire c
+        JOIN Utilisateur u
+          ON c.idUser = u.idUser
+        WHERE c.idComm = ?
+      `).get(newComment.idComm);
+
+
+    const reactions =
+      reactionModel.getCommentReactions(
+        newComment.idComm,
+        idUser
+      );
+
+
+    res.status(201).json({
+
+      success: true,
+
+      comment: {
+        ...createdComment,
+
+        replies: [],
+
+        reactions
+      }
+
+    });
+
+
   } catch (error) {
-    console.error('Erreur addComment :', error);
-    res.status(500).json({ error: 'Erreur lors de l’ajout.' });
+
+    console.error(
+      'Erreur addComment :',
+      error
+    );
+
+
+    res.status(500).json({
+
+      error:
+        error.message ||
+        'Erreur lors de l’ajout du commentaire.'
+
+    });
+
   }
 }
+
+
+// ============================================================
+// MODIFIER UN COMMENTAIRE
+// ============================================================
 
 async function editComment(req, res) {
   try {
-    const idUser = req.user.idUser;
-    const idComm = parseInt(req.params.idComm, 10);
-    const contenuCom = req.body?.contenuCom ? req.body.contenuCom.trim() : '';
 
-    if (!contenuCom || contenuCom.length > 500) {
-      return res.status(400).json({ error: 'Contenu invalide (1 à 500 caractères).' });
+    const idUser =
+      req.user.idUser;
+
+
+    const idComm =
+      parseInt(
+        req.params.idComm,
+        10
+      );
+
+
+    const contenuCom =
+      req.body?.contenuCom
+        ? String(
+            req.body.contenuCom
+          ).trim()
+        : '';
+
+
+    if (isNaN(idComm)) {
+
+      return res.status(400).json({
+        error:
+          'ID commentaire invalide.'
+      });
+
     }
 
-    const updated = commentModel.updateComment(idComm, idUser, contenuCom);
+
+    if (
+      !contenuCom ||
+      contenuCom.length > 500
+    ) {
+
+      return res.status(400).json({
+        error:
+          'Contenu invalide (1 à 500 caractères).'
+      });
+
+    }
+
+
+    const updated =
+      commentModel.updateComment(
+        idComm,
+        idUser,
+        contenuCom
+      );
+
+
     if (!updated) {
-      return res.status(403).json({ error: 'Action refusée : auteur différent.' });
+
+      return res.status(403).json({
+        error:
+          'Action refusée : auteur différent.'
+      });
+
     }
 
-    res.status(200).json({ success: true, message: 'Commentaire modifié.' });
+
+    res.status(200).json({
+
+      success: true,
+
+      message:
+        'Commentaire modifié.'
+
+    });
+
+
   } catch (error) {
-    res.status(500).json({ error: 'Erreur modification.' });
+
+    console.error(
+      'Erreur editComment :',
+      error
+    );
+
+
+    res.status(500).json({
+      error:
+        'Erreur modification.'
+    });
   }
 }
+
+
+// ============================================================
+// SUPPRIMER UN COMMENTAIRE
+// ============================================================
 
 async function removeCommentApi(req, res) {
   try {
-    const idUser = req.user.idUser;
-    const idComm = parseInt(req.params.idComm, 10);
 
-    const deleted = commentModel.deleteComment(idComm, idUser);
-    if (!deleted) {
-      return res.status(403).json({ error: 'Action refusée : droit insuffisant.' });
+    const idUser =
+      req.user.idUser;
+
+
+    const idComm =
+      parseInt(
+        req.params.idComm,
+        10
+      );
+
+
+    if (isNaN(idComm)) {
+
+      return res.status(400).json({
+        error:
+          'ID commentaire invalide.'
+      });
+
     }
 
-    res.status(200).json({ success: true, message: 'Commentaire supprimé.' });
+
+    const deleted =
+      commentModel.deleteComment(
+        idComm,
+        idUser
+      );
+
+
+    if (!deleted) {
+
+      return res.status(403).json({
+        error:
+          'Action refusée : droit insuffisant.'
+      });
+
+    }
+
+
+    res.status(200).json({
+
+      success: true,
+
+      message:
+        'Commentaire supprimé.'
+
+    });
+
+
   } catch (error) {
-    res.status(500).json({ error: 'Erreur suppression.' });
+
+    console.error(
+      'Erreur removeCommentApi :',
+      error
+    );
+
+
+    res.status(500).json({
+      error:
+        'Erreur suppression.'
+    });
   }
 }
+
+
+// ============================================================
+// RÉACTION SUR UNE PUBLICATION
+// ============================================================
 
 async function handleReaction(req, res) {
   try {
-    const idUser = req.user.idUser;
-    const idPubli = parseInt(req.body?.idPubli, 10);
-    const type = req.body?.type === 'DISLIKE' ? 'DISLIKE' : 'LIKE';
-    const result = reactionModel.toggleReaction(idUser, idPubli, type);
+
+    const idUser =
+      req.user.idUser;
+
+
+    const idPubli =
+      parseInt(
+        req.body?.idPubli,
+        10
+      );
+
+
+    const type =
+      req.body?.type === 'DISLIKE'
+        ? 'DISLIKE'
+        : 'LIKE';
+
+
+    if (isNaN(idPubli)) {
+
+      return res.status(400).json({
+        error:
+          'ID publication invalide.'
+      });
+
+    }
+
+
+    console.log(
+      'REACTION PUBLICATION:',
+      {
+        idUser,
+        idPubli,
+        type
+      }
+    );
+
+
+    const result =
+      reactionModel.toggleReaction(
+        idUser,
+        idPubli,
+        type
+      );
+
+
     res.status(200).json(result);
+
+
   } catch (error) {
-    res.status(500).json({ error: 'Erreur réaction.' });
+
+    console.error(
+      'Erreur handleReaction :',
+      error
+    );
+
+
+    res.status(500).json({
+      error:
+        'Erreur réaction publication.'
+    });
   }
 }
+
+
+// ============================================================
+// RÉACTION SUR UN COMMENTAIRE
+// ============================================================
 
 async function handleCommentReaction(req, res) {
-  try {
-    const idUser = req.user.idUser;
-    const idComm = parseInt(req.params.idComm, 10);
-    const type = req.body?.type === 'DISLIKE' ? 'DISLIKE' : 'LIKE';
-    const result = reactionModel.toggleCommentReaction(idUser, idComm, type);
-    res.status(200).json(result);
-  } catch (error) {
-    res.status(500).json({ error: 'Erreur réaction commentaire.' });
-  }
+    try {
+
+      const idUser =
+        req.user.idUser;
+
+
+      const idComm =
+        parseInt(
+          req.params.idComm,
+          10
+        );
+
+
+      const type =
+        req.body?.type === 'DISLIKE'
+          ? 'DISLIKE'
+          : 'LIKE';
+
+
+      if (isNaN(idComm)) {
+
+        return res.status(400).json({
+          error:
+            'ID commentaire invalide.'
+        });
+
+      }
+
+
+      console.log(
+        'REACTION COMMENTAIRE:',
+        {
+          idUser,
+          idComm,
+          type
+        }
+      );
+
+
+      const result =
+        reactionModel.toggleCommentReaction(
+          idUser,
+          idComm,
+          type
+        );
+
+
+      res.status(200).json(result);
+
+
+    } catch (error) {
+
+      console.error(
+        'Erreur handleCommentReaction :',
+        error
+      );
+
+
+      res.status(500).json({
+        error:
+          'Erreur réaction commentaire.'
+      });
+    }
 }
+
+
+// ============================================================
+// RÉCUPÉRER LES COMMENTAIRES D'UNE PUBLICATION
+// ============================================================
 
 async function getComments(req, res) {
-  try {
-    const idPubli = parseInt(req.params.idPubli, 10);
-    res.json(commentModel.getCommentsByPostId(idPubli));
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+    try {
+
+      const idPubli =
+        parseInt(
+          req.params.idPubli,
+          10
+        );
+
+
+      if (isNaN(idPubli)) {
+
+        return res.status(400).json({
+          error:
+            'ID publication invalide.'
+        });
+
+      }
+
+
+      const comments =
+        commentModel.getCommentsByPostId(
+          idPubli,
+          req.user.idUser
+        );
+
+
+      res.status(200).json(
+        comments
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        'Erreur getComments :',
+        error
+      );
+
+
+      res.status(500).json({
+        error:
+          'Erreur lors du chargement des commentaires.'
+      });
+    }
 }
 
+
+// ============================================================
+// EXPORTS
+// ============================================================
+
 module.exports = {
+
   renderPostPage,
+
   addComment,
+
   editComment,
+
   removeCommentApi,
+
   getComments,
+
   handleReaction,
+
   handleCommentReaction
+
 };

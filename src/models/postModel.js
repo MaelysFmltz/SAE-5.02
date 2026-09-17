@@ -193,6 +193,54 @@ function findRemixChain(idPubli) {
     return chain;
 }
 
+// Récupérer les publications d'un utilisateur
+function findByUserId(idUser) {
+    return db.prepare(`
+        SELECT
+            p.idPubli,
+            p.idUser,
+
+            (
+                SELECT COUNT(*)
+                FROM Commentaire c
+                WHERE c.idPubli = p.idPubli
+            ) AS nombreCommentaires,
+
+            p.contenuPub,
+            p.visibilite,
+            p.idPubliPartagee,
+            p.typePublication,
+            p.datePubli,
+            p.dateModif,
+
+            u.pseudo AS auteurPseudo,
+
+            original.idPubli AS originalIdPubli,
+            original.idUser AS originalIdUser,
+            original.contenuPub AS originalContenuPub,
+            original.visibilite AS originalVisibilite,
+            original.typePublication AS originalTypePublication,
+
+            originalUser.pseudo AS auteurOriginalPseudo
+
+        FROM Publication p
+
+        JOIN Utilisateur u
+            ON p.idUser = u.idUser
+
+        LEFT JOIN Publication original
+            ON p.idPubliPartagee = original.idPubli
+
+        LEFT JOIN Utilisateur originalUser
+            ON original.idUser = originalUser.idUser
+
+        WHERE p.idUser = ?
+        ORDER BY p.datePubli DESC
+    `).all(idUser);
+}
+
+
+
 module.exports = {
     createPublication,
     createRepost,
@@ -201,5 +249,6 @@ module.exports = {
     findById,
     findAuthor,
     findWithOriginal,
-    findRemixChain
+    findRemixChain,
+    findByUserId
 };

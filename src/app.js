@@ -10,7 +10,7 @@ const publicationRoutes = require('./routes/publicationRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const friendshipRoutes = require('./routes/friendshipRoutes');
 const profileRoutes = require('./routes/profileRoutes');
-
+const commentController = require('./controllers/commentController');
 const authMiddleware = require('./middlewares/authMiddleware');
 const profileService = require('./services/profileService');
 const friendshipModel = require('./models/friendshipModel');
@@ -93,6 +93,11 @@ app.get('/profile', authMiddleware, async (req, res) => {
   }
 });
 
+app.get('/publication/create', authMiddleware, (req, res) => {
+    res.render('publication-create');
+});
+
+app.get('/publication/:idPubli', authMiddleware, commentController.renderPostPage);
 
 // Modification de profil
 app.get('/profile/edit', authMiddleware, async (req, res) => {
