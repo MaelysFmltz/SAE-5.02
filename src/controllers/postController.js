@@ -460,11 +460,14 @@ try {
     if (typeMedia === 'image') {
 
         let validImage = false;
+        let formatLabel = '';
 
 
         if (
             file.mimetype === 'image/jpeg'
         ) {
+
+            formatLabel = 'JPEG';
 
             validImage =
                 isRealJPEG(buffer);
@@ -473,12 +476,16 @@ try {
             file.mimetype === 'image/png'
         ) {
 
+            formatLabel = 'PNG';
+
             validImage =
                 isRealPNG(buffer);
 
         } else if (
             file.mimetype === 'image/webp'
         ) {
+
+            formatLabel = 'WebP';
 
             validImage =
                 isRealWebP(buffer);
@@ -494,7 +501,7 @@ try {
 
             return res.status(400).json({
                 error:
-                    'Le contenu réel du fichier ne correspond pas au type déclaré.'
+                    `Le fichier envoyé n'est pas un véritable ${formatLabel}.`
             });
         }
     }
@@ -554,7 +561,7 @@ try {
 
             return res.status(400).json({
                 error:
-                    'Le contenu réel du fichier ne correspond pas au type déclaré.'
+                    "Le fichier envoyé n'est pas une véritable vidéo."
             });
         }
     }
