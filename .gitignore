@@ -7,7 +7,7 @@ node_modules/
 !.env.example
 
 # Base de données locale
-database/database.db
+database/*.db
 database/*.sqlite
 database/*.sqlite3
 data/*.db

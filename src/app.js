@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs/promises');
 const cookieParser = require('cookie-parser');
 
 const authRoutes = require('./routes/authRoutes');
@@ -10,25 +11,48 @@ const profileService = require('./services/profileService');
 const friendshipModel = require('./models/friendshipModel');
 const db = require('./config/database');
 
+const postRoutes = require('./routes/postRoutes');
+const postService = require('./services/postService');
+const publicationRoutes = require('./routes/publicationRoutes');
+
 const app = express();
 
-// 1. Moteur de templates EJS
+
+// ============================================================
+// EJS
+// ============================================================
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../views'));
 
-// 2. Middlewares globaux
+
+// ============================================================
+// MIDDLEWARES
+// ============================================================
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../public')));
 
-// 3. Routes d'affichage des pages (Front)
+
+// ============================================================
+// LOGIN
+// ============================================================
+
 app.get('/', (req, res) => {
   res.render('login');
 });
 
-app.get('/home', authMiddleware, (req, res) => {
+
+// ============================================================
+// FEED
+// ============================================================
+
+app.get('/home', authMiddleware, async (req, res) => {
   try {
+    const posts = postService.getAllPosts(req.user.idUser);
+
     const suggestions = db.prepare(`
       SELECT u.idUser, u.pseudo, u.role, p.bio
       FROM Utilisateur u
@@ -37,20 +61,28 @@ app.get('/home', authMiddleware, (req, res) => {
       LIMIT 10
     `).all(req.user.idUser);
 
-    res.render('feed', { 
+    return res.render('feed', {
       user: req.user,
-      suggestions 
+      posts,
+      suggestions
     });
   } catch (err) {
     console.error('Erreur GET /home :', err);
-    res.render('feed', { user: req.user, suggestions: [] });
+    return res.render('feed', { user: req.user, posts: [], suggestions: [] });
   }
 });
+
+
+// ============================================================
+// MON PROFIL
+// ============================================================
 
 // Affichage de son propre profil
 app.get('/profile', authMiddleware, async (req, res) => {
   try {
     const profile = await profileService.getMyProfile(req.user.idUser);
+
+    const posts = postService.getUserPosts(req.user.idUser, req.user.idUser);
 
     const stats = {
       nbAbonnes: friendshipModel.listerAbonnes(db, req.user.idUser).length,
@@ -58,12 +90,13 @@ app.get('/profile', authMiddleware, async (req, res) => {
       nbAmis: friendshipModel.listerAmis(db, req.user.idUser).length
     };
 
-    res.render('profile', { 
-      profile, 
+    res.render('profile', {
+      profile,
+      posts,
       isOwner: true,
       estAbonne: false,
       sontAmis: false,
-      stats 
+      stats
     });
   } catch (err) {
     console.error('Erreur GET /profile :', err);
@@ -90,14 +123,18 @@ app.post('/profile/edit', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error('Erreur POST /profile/edit :', err);
     const profile = await profileService.getMyProfile(req.user.idUser);
-    res.render('editProfile', { 
-      profile: { ...profile, ...req.body }, 
-      error: err.message 
+    res.render('editProfile', {
+      profile: { ...profile, ...req.body },
+      error: err.message
     });
   }
 });
 
-// Affichage du profil public d'un autre utilisateur
+
+// ============================================================
+// PROFIL D'UN AUTRE UTILISATEUR
+// ============================================================
+
 app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
   try {
     const targetProfile = await profileService.getPublicProfile(req.params.pseudo);
@@ -115,6 +152,8 @@ app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
       sontAmis = friendshipModel.sontAmis(db, req.user.idUser, targetProfile.idUser);
     }
 
+    const posts = postService.getUserPosts(targetProfile.idUser, req.user.idUser);
+
     const stats = {
       nbAbonnes: friendshipModel.listerAbonnes(db, targetProfile.idUser).length,
       nbAbonnements: friendshipModel.listerAbonnements(db, targetProfile.idUser).length,
@@ -123,6 +162,7 @@ app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
 
     res.render('profile', {
       profile: targetProfile,
+      posts,
       isOwner,
       estAbonne,
       sontAmis,
@@ -134,9 +174,171 @@ app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
   }
 });
 
-// 4. Routes API (Back)
+
+// ============================================================
+// MÉDIAS UPLOADÉS
+// ============================================================
+
+/*
+ * IMPORTANT :
+ *
+ * On ne laisse plus express.static() déterminer
+ * automatiquement le Content-Type des fichiers utilisateurs.
+ *
+ * Le fichier doit avoir été enregistré avec une extension
+ * contrôlée par le serveur (.jpg, .png, .webp, .mp4, .webm,
+ * .ogg ou .mov).
+ *
+ * X-Content-Type-Options: nosniff empêche également le navigateur
+ * d'essayer de deviner un autre type MIME.
+ */
+
+app.get(
+    '/uploads/:filename',
+    async (req, res) => {
+
+        try {
+
+            const filename =
+                req.params.filename;
+
+
+            /*
+             * Protection contre les chemins comme :
+             *
+             * ../fichier.html
+             *
+             * ou toute tentative de traversée.
+             */
+            if (
+                filename !== path.basename(filename)
+            ) {
+
+                return res.status(400).send(
+                    'Nom de fichier invalide.'
+                );
+
+            }
+
+
+            /*
+             * Extensions autorisées.
+             */
+            const contentTypes = {
+
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.webp': 'image/webp',
+
+                '.mp4': 'video/mp4',
+                '.webm': 'video/webm',
+                '.ogg': 'video/ogg',
+                '.mov': 'video/quicktime'
+
+            };
+
+
+            const extension =
+                path.extname(
+                    filename
+                ).toLowerCase();
+
+
+            const contentType =
+                contentTypes[extension];
+
+
+            /*
+             * Une extension inconnue ne doit jamais
+             * être servie comme HTML, SVG, PHP, etc.
+             */
+            if (!contentType) {
+
+                return res.status(404).send(
+                    'Fichier non trouvé.'
+                );
+
+            }
+
+
+            const filePath =
+                path.join(
+                    __dirname,
+                    '../uploads',
+                    filename
+                );
+
+
+            /*
+             * Vérification que le fichier existe.
+             */
+            try {
+
+                await fs.access(
+                    filePath
+                );
+
+            } catch {
+
+                return res.status(404).send(
+                    'Fichier non trouvé.'
+                );
+
+            }
+
+
+            /*
+             * Empêche le navigateur de renifler
+             * un autre type MIME.
+             */
+            res.set(
+                'X-Content-Type-Options',
+                'nosniff'
+            );
+
+
+            /*
+             * Le navigateur peut afficher les images
+             * et vidéos normalement.
+             */
+            res.type(
+                contentType
+            );
+
+
+            return res.sendFile(
+                path.resolve(filePath)
+            );
+
+        }
+
+        catch (error) {
+
+            console.error(
+                'Erreur accès média :',
+                error
+            );
+
+            return res.status(500).send(
+                'Erreur lors de la récupération du fichier.'
+            );
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// ROUTES API (Back)
+// ============================================================
+
 app.use('/api/auth', authRoutes);
 app.use('/api/friendships', friendshipRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/post', postRoutes);
+app.use('/api/publications', publicationRoutes);
+
 
 module.exports = app;

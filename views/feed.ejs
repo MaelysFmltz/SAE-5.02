@@ -1,63 +1,249 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pixora — Accueil</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/feed.css">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    Pixora — Accueil
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="/css/style.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="/css/feed.css"
+  >
+
 </head>
+
+
 <body>
-  <div class="app-container">
-    <header class="navbar">
-      <div class="nav-brand">
-        <img src="/images/logo.jpg" alt="Pixora Logo" class="nav-logo">
-        <span class="nav-title">PIXORA</span>
+
+<div class="app-container">
+
+
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
+
+  <header class="navbar">
+
+    <div class="nav-brand">
+
+      <img
+        src="/images/logo.jpg"
+        alt="Pixora Logo"
+        class="nav-logo"
+      >
+
+      <span class="nav-title">
+        PIXORA
+      </span>
+
+    </div>
+
+
+    <div class="nav-user">
+
+      <span class="user-greeting">
+
+        Bonjour,
+        <strong>
+          <%= user.pseudo %>
+        </strong>
+
+      </span>
+
+
+      <form
+        action="/api/auth/logout"
+        method="POST"
+      >
+
+        <button
+          type="submit"
+          class="btn-logout"
+        >
+          Déconnexion
+        </button>
+
+      </form>
+
+    </div>
+
+  </header>
+
+
+  <!-- =====================================================
+       FEED
+  ====================================================== -->
+
+  <main class="feed-container">
+
+
+    <div class="feed-title">
+
+      <h1>
+        Fil d'actualité
+      </h1>
+
+    </div>
+
+
+    <!-- Section découverte des profils -->
+    <section class="discover-section">
+      <h4 class="section-title">Découvrir des membres</h4>
+      <div class="user-list">
+        <% if (typeof suggestions !== 'undefined' && suggestions.length > 0) { %>
+          <% suggestions.forEach(function(u) { %>
+            <a href="/profile/<%= u.pseudo %>" class="user-card-link">
+              <div class="user-mini-avatar">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+              </div>
+              <div class="user-info">
+                <span class="user-pseudo">@<%= u.pseudo %></span>
+                <% if (u.bio) { %>
+                  <span class="user-bio"><%= u.bio.slice(0, 45) %><%= u.bio.length > 45 ? '...' : '' %></span>
+                <% } %>
+              </div>
+              <span class="view-arrow">›</span>
+            </a>
+          <% }); %>
+        <% } else { %>
+          <p class="empty-users">Aucun autre membre inscrit pour le moment.</p>
+        <% } %>
+      </div>
+    </section>
+
+
+    <% if (!posts || posts.length === 0) { %>
+
+      <div class="card empty-feed">
+
+        <h3>
+          Aucun post pour le moment
+        </h3>
+
+        <p>
+          Soyez le premier à partager une photo !
+        </p>
+
       </div>
 
-      <div class="nav-user">
-        <span class="user-greeting">Bonjour, <strong><%= user.pseudo %></strong></span>
-        <form action="/api/auth/logout" method="POST">
-          <button type="submit" class="btn-logout">Déconnexion</button>
-        </form>
-      </div>
-    </header>
+    <% } else { %>
 
-    <main class="feed-container">
-      <div class="card">
-        <h3>Bienvenue sur Pixora</h3>
-        <p>Votre fil d'actualité est prêt. Partagez vos premières photos !</p>
-      </div>
+      <div class="feed-posts">
 
-      <!-- Section découverte des profils -->
-      <section class="discover-section">
-        <h4 class="section-title">Découvrir des membres</h4>
-        <div class="user-list">
-          <% if (typeof suggestions !== 'undefined' && suggestions.length > 0) { %>
-            <% suggestions.forEach(function(u) { %>
-              <a href="/profile/<%= u.pseudo %>" class="user-card-link">
-                <div class="user-mini-avatar">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                  </svg>
-                </div>
-                <div class="user-info">
-                  <span class="user-pseudo">@<%= u.pseudo %></span>
-                  <% if (u.bio) { %>
-                    <span class="user-bio"><%= u.bio.slice(0, 45) %><%= u.bio.length > 45 ? '...' : '' %></span>
-                  <% } %>
-                </div>
-                <span class="view-arrow">›</span>
+
+        <% posts.forEach(function(post) { %>
+
+          <article class="feed-post">
+
+
+            <!-- AUTEUR + DATE -->
+
+            <div class="feed-post-header">
+
+
+              <a
+                href="/profile/<%= encodeURIComponent(post.pseudo) %>"
+                class="post-author"
+              >
+                @<%= post.pseudo %>
               </a>
-            <% }); %>
-          <% } else { %>
-            <p class="empty-users">Aucun autre membre inscrit pour le moment.</p>
-          <% } %>
-        </div>
-      </section>
-    </main>
 
-    <%- include('navbar') %>
-  </div>
+
+              <span class="post-date">
+                <%= post.datePubli %>
+              </span>
+
+              <% if (user && user.idUser === post.idUser) { %>
+              <button
+                  type="button"
+                  class="delete-post"
+                  data-id="<%= post.idPubli %>">
+                  Supprimer
+              </button>
+            <% } %>
+
+            </div>
+
+
+            <% if (post.typeMedia === 'video') { %>
+
+                <video
+                    class="feed-post-video"
+                    controls
+                    preload="metadata"
+                >
+
+                    <source
+                        src="/uploads/<%= post.nomMedia %>"
+                    >
+
+                    Votre navigateur ne supporte pas la lecture vidéo.
+
+                </video>
+
+            <% } else { %>
+
+                <img
+                    src="/uploads/<%= post.nomMedia %>"
+                    alt="Photo publiée par <%= post.pseudo %>"
+                    class="feed-post-image"
+                >
+
+            <% } %>
+
+
+            <!-- DESCRIPTION -->
+
+            <% if (post.contenuPub) { %>
+
+              <div class="feed-post-content">
+
+                <%= post.contenuPub %>
+
+              </div>
+
+            <% } %>
+
+
+          </article>
+
+        <% }); %>
+
+
+      </div>
+
+
+    <% } %>
+
+
+  </main>
+
+
+  <!-- =====================================================
+       NAVIGATION
+  ====================================================== -->
+
+  <%- include('navbar') %>
+
+<script src="/js/deletePost.js"></script>
+</div>
+
 </body>
+
 </html>

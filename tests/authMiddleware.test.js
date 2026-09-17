@@ -13,9 +13,8 @@ function mockRes() {
   };
 }
 
-// req.accepts('html') détermine si le middleware répond en JSON (API) ou
-// redirige vers '/' (navigation EJS classique). Un client API envoie un
-// Accept: application/json et n'accepte donc pas 'html'.
+// Le middleware distingue une page (méthode GET, chemin sans /api/) d'un
+// appel API pour répondre soit par une redirection vers '/', soit en JSON.
 function apiReq(overrides) {
   return {
     headers: {},
@@ -125,7 +124,7 @@ describe('authMiddleware', () => {
   });
 
   test('redirige vers / (au lieu de renvoyer un 401 JSON) pour une requête navigateur sans token', () => {
-    const req = { headers: {}, cookies: {}, accepts: () => true };
+    const req = { headers: {}, cookies: {}, method: 'GET', originalUrl: '/home' };
     const res = mockRes();
     const next = jest.fn();
 
@@ -140,7 +139,8 @@ describe('authMiddleware', () => {
     const req = {
       headers: {},
       cookies: { token: 'token.invalide' },
-      accepts: () => true
+      method: 'GET',
+      originalUrl: '/home'
     };
     const res = mockRes();
     const next = jest.fn();
