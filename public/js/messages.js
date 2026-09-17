@@ -32,6 +32,25 @@
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
+  // Icônes SVG statiques (jamais de contenu utilisateur ici, donc innerHTML
+  // est sans risque) pour les actions sur les bulles de message, dans le
+  // même style "feather" que les icônes déjà utilisées dans le header.
+  const ICONES_SVG = {
+    edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+    cross: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>'
+  };
+
+  function creerBoutonIcone(nomIcone, titre) {
+    const bouton = document.createElement('button');
+    bouton.type = 'button';
+    bouton.className = 'bubble-action';
+    bouton.title = titre;
+    bouton.innerHTML = ICONES_SVG[nomIcone];
+    return bouton;
+  }
+
   function bullesAffichees() {
     const map = new Map();
     chatMessages.querySelectorAll('.bubble[data-id]').forEach((el) => {
@@ -86,21 +105,13 @@
       actions.className = 'bubble-actions';
 
       if (peutModifier) {
-        const btnEdit = document.createElement('button');
-        btnEdit.type = 'button';
-        btnEdit.className = 'bubble-action';
-        btnEdit.title = 'Modifier';
-        btnEdit.textContent = '✏️';
+        const btnEdit = creerBoutonIcone('edit', 'Modifier');
         btnEdit.addEventListener('click', () => activerEditionMessage(bulle, message));
         actions.appendChild(btnEdit);
       }
 
       if (peutSupprimer) {
-        const btnDelete = document.createElement('button');
-        btnDelete.type = 'button';
-        btnDelete.className = 'bubble-action';
-        btnDelete.title = 'Supprimer';
-        btnDelete.textContent = '🗑️';
+        const btnDelete = creerBoutonIcone('trash', 'Supprimer');
         btnDelete.addEventListener('click', () => supprimerMessage(message, bulle));
         actions.appendChild(btnDelete);
       }
@@ -133,16 +144,10 @@
     const controles = document.createElement('div');
     controles.className = 'bubble-edit-controls';
 
-    const btnAnnuler = document.createElement('button');
-    btnAnnuler.type = 'button';
-    btnAnnuler.className = 'bubble-action';
-    btnAnnuler.textContent = '✕';
+    const btnAnnuler = creerBoutonIcone('cross', 'Annuler');
     btnAnnuler.addEventListener('click', () => bulle.replaceWith(creerBulle(message)));
 
-    const btnValider = document.createElement('button');
-    btnValider.type = 'button';
-    btnValider.className = 'bubble-action';
-    btnValider.textContent = '✓';
+    const btnValider = creerBoutonIcone('check', 'Valider');
     btnValider.addEventListener('click', () => validerEditionMessage(bulle, message, input, btnValider));
 
     controles.appendChild(btnAnnuler);
