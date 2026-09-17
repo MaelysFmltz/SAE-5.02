@@ -36,7 +36,10 @@ function findDirectConversationBetween(idUserA, idUserB) {
 }
 
 /**
- * Liste les conversations d'un utilisateur, avec un aperçu du dernier message
+ * Liste les conversations d'un utilisateur, avec un aperçu du dernier message.
+ * Pour une conversation à 2 (sans titre de groupe), inclut le pseudo de
+ * l'autre membre (autrePseudo) pour l'affichage. Inclut aussi un flag
+ * nonLu (message(s) reçus pas encore marqués comme lus).
  */
 function getConversationsForUser(idUser) {
   const query = `
@@ -45,7 +48,21 @@ function getConversationsForUser(idUser) {
       c.titreGroupe,
       c.dateCreation,
       m.contenu   AS dernierMessage,
-      m.dateEnvoi AS dateDernierMessage
+      m.dateEnvoi AS dateDernierMessage,
+      (
+        SELECT u2.pseudo
+        FROM ConversationMembre cm2
+        JOIN Utilisateur u2 ON u2.idUser = cm2.idUser
+        WHERE cm2.idConversation = c.idConversation
+          AND cm2.idUser != ?
+        LIMIT 1
+      ) AS autrePseudo,
+      EXISTS (
+        SELECT 1 FROM Message m2
+        WHERE m2.idConversation = c.idConversation
+          AND m2.idUser != ?
+          AND m2.lu = 0
+      ) AS nonLu
     FROM Conversation c
     JOIN ConversationMembre cm ON cm.idConversation = c.idConversation
     LEFT JOIN Message m ON m.idMessage = (
@@ -57,7 +74,16 @@ function getConversationsForUser(idUser) {
     WHERE cm.idUser = ?
     ORDER BY dateDernierMessage DESC, c.dateCreation DESC
   `;
-  return db.prepare(query).all(idUser);
+  return db.prepare(query).all(idUser, idUser, idUser);
+}
+
+/**
+ * Récupère une conversation par son id (sans les membres)
+ */
+function getConversationById(idConversation) {
+  return db.prepare(
+    'SELECT idConversation, titreGroupe, dateCreation FROM Conversation WHERE idConversation = ?'
+  ).get(idConversation);
 }
 
 /**
@@ -87,6 +113,7 @@ module.exports = {
   createConversation,
   findDirectConversationBetween,
   getConversationsForUser,
+  getConversationById,
   getMembers,
   isMember
 };

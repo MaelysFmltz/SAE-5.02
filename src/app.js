@@ -105,7 +105,17 @@ app.get('/messages', authMiddleware, async (req, res) => {
 app.get('/messages/:idConversation', authMiddleware, async (req, res) => {
   try {
     const idConversation = Number(req.params.idConversation);
+
+    if (!Number.isInteger(idConversation) || idConversation <= 0) {
+      return res.redirect('/messages');
+    }
+
     const messages = await messageService.getMessages(idConversation, req.user.idUser);
+
+    // Ouvrir la conversation marque les messages reçus comme lus
+    await messageService.markAsRead(idConversation, req.user.idUser);
+
+    const membres = await conversationService.getConversationMembers(idConversation, req.user.idUser);
 
     // Récupération des informations de la conversation pour le titre
     const conversations = await conversationService.getMyConversations(req.user.idUser);
@@ -114,6 +124,8 @@ app.get('/messages/:idConversation', authMiddleware, async (req, res) => {
     res.render('conversation', {
       idConversation,
       titreConversation: conv ? (conv.titreGroupe || conv.autrePseudo || 'Discussion') : 'Discussion',
+      estGroupe: !!(conv && conv.titreGroupe),
+      membres: membres || [],
       messages: messages || [],
       idUserCourant: req.user.idUser,
       user: req.user,

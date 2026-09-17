@@ -13,11 +13,18 @@ const CONTENU_MAX_LENGTH = 2000;
 async function sendMessage(idConversation, idUser, contenu) {
   conversationService.ensureIsMember(idConversation, idUser);
 
-  if (typeof contenu !== 'string' || contenu.trim().length === 0) {
+  if (typeof contenu !== 'string') {
     throw new Error('Le message ne peut pas être vide');
   }
 
-  const contenuNettoye = sanitizeText(contenu.trim());
+  // Nettoyage AVANT le contrôle de vide : un message composé uniquement
+  // de balises ("<b></b>") ne doit pas être enregistré comme un message
+  // valide juste parce qu'il n'est pas vide avant nettoyage.
+  const contenuNettoye = sanitizeText(contenu);
+
+  if (contenuNettoye.length === 0) {
+    throw new Error('Le message ne peut pas être vide');
+  }
 
   if (contenuNettoye.length > CONTENU_MAX_LENGTH) {
     throw new Error(`Le message ne peut pas dépasser ${CONTENU_MAX_LENGTH} caractères`);

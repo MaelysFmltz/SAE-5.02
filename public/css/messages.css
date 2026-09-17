@@ -190,3 +190,122 @@
     cursor: pointer;
     color: #ffffff;
   }
+
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-primary);
+  }
+
+  .icon-btn:hover {
+    background-color: var(--bg-surface);
+  }
+
+  .group-members-preview {
+    width: 100%;
+    max-width: 430px;
+    margin: 0 auto;
+    padding: 8px 20px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+    box-sizing: border-box;
+  }
+
+  /* Panneau d'ajout de participants */
+  .add-participant-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+
+  .add-participant-panel {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    width: 100%;
+    max-width: 360px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .add-participant-panel h2 {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+
+  .group-title-input {
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    outline: none;
+  }
+
+  .group-title-input:focus {
+    border-color: var(--border-focus);
+  }
+
+  .add-participant-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+  }
+
+  .add-participant-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .add-participant-item:hover {
+    background-color: var(--bg-input);
+  }
+
+  .add-participant-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .add-participant-actions .btn-primary,
+  .add-participant-actions .btn-secondary {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+  }
+
+  .add-participant-actions .btn-primary {
+    background: var(--gradient-pixora);
+    color: #ffffff;
+    border: none;
+  }
+
+  .add-participant-actions .btn-secondary {
+    background-color: transparent;
+    color: var(--text-primary);
+  }
