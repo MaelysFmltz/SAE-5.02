@@ -1084,3 +1084,207 @@ describe(
     }
 );
 
+const Database = require('better-sqlite3');
+
+const {
+    sontAmis,
+    peutVoirPublication,
+    modifierVisibilite
+} = require('../src/services/postService');
+
+const VISIBILITE = require('../src/utils/visibilite');
+
+describe('Vérification des permissions des publications', () => {
+
+    let db;
+
+    beforeEach(() => {
+        db = new Database(':memory:');
+
+        db.exec(`
+            CREATE TABLE Utilisateur (
+                idUser INTEGER PRIMARY KEY
+            );
+
+            CREATE TABLE Publication (
+                idPubli INTEGER PRIMARY KEY,
+                idUser INTEGER NOT NULL,
+                visibilite INTEGER NOT NULL
+            );
+
+            CREATE TABLE Abonnement (
+                idUserAbonne INTEGER NOT NULL,
+                idUserSuivi INTEGER NOT NULL,
+                PRIMARY KEY (idUserAbonne, idUserSuivi)
+            );
+
+            INSERT INTO Utilisateur (idUser) VALUES (1), (2), (3);
+
+            INSERT INTO Publication (idPubli, idUser, visibilite)
+            VALUES
+                (1, 1, 1),
+                (2, 1, 0);
+
+            INSERT INTO Abonnement (idUserAbonne, idUserSuivi)
+            VALUES
+                (2, 1),
+                (1, 2);
+        `);
+    });
+
+    afterEach(() => {
+        db.close();
+    });
+
+    test('Une publication publique est visible par tout le monde', () => {
+        expect(peutVoirPublication(db, 1, 3)).toBe(true);
+    });
+
+    test("L'auteur peut voir sa publication privée", () => {
+        expect(peutVoirPublication(db, 2, 1)).toBe(true);
+    });
+
+    test("Un ami peut voir une publication privée", () => {
+        expect(peutVoirPublication(db, 2, 2)).toBe(true);
+    });
+
+    test("Une personne qui n'est pas amie ne peut pas voir une publication privée", () => {
+        expect(peutVoirPublication(db, 2, 3)).toBe(false);
+    });
+
+    test("Une publication inexistante n'est pas accessible", () => {
+        expect(peutVoirPublication(db, 999, 3)).toBe(false);
+    });
+
+    test("L'auteur peut rendre sa publication privée", () => {
+        expect(modifierVisibilite(db, 1, 1, 0)).toBe(true);
+
+        const publication = db.prepare(`
+            SELECT visibilite
+            FROM Publication
+            WHERE idPubli = ?
+        `).get(1);
+
+        expect(publication.visibilite).toBe(0);
+    });
+
+    test("L'auteur peut rendre sa publication publique", () => {
+        expect(modifierVisibilite(db, 2, 1, 1)).toBe(true);
+
+        const publication = db.prepare(`
+            SELECT visibilite
+            FROM Publication
+            WHERE idPubli = ?
+        `).get(2);
+
+        expect(publication.visibilite).toBe(1);
+    });
+
+    test("Un autre utilisateur ne peut pas modifier la publication", () => {
+        expect(modifierVisibilite(db, 2, 2, 1)).toBe(false);
+
+        const publication = db.prepare(`
+            SELECT visibilite
+            FROM Publication
+            WHERE idPubli = ?
+        `).get(2);
+
+        expect(publication.visibilite).toBe(0);
+    });
+
+    test("Une visibilité différente de 0 ou 1 est refusée", () => {
+        expect(modifierVisibilite(db, 1, 1, 5)).toBe(false);
+    });
+
+    test('Une publication publique possède la visibilité 1', () => {
+        expect(VISIBILITE.PUBLIC).toBe(1);
+    });
+
+    test('Une publication privée/amis possède la visibilité 0', () => {
+        expect(VISIBILITE.PRIVE_AMIS).toBe(0);
+    });
+
+});
+
+describe('Cas limites complémentaires (amitié et visibilité)', () => {
+
+    let db;
+
+    beforeEach(() => {
+        db = new Database(':memory:');
+
+        db.exec(`
+            CREATE TABLE Utilisateur (
+                idUser INTEGER PRIMARY KEY
+            );
+
+            CREATE TABLE Publication (
+                idPubli INTEGER PRIMARY KEY,
+                idUser INTEGER NOT NULL,
+                visibilite INTEGER NOT NULL
+            );
+
+            CREATE TABLE Abonnement (
+                idUserAbonne INTEGER NOT NULL,
+                idUserSuivi INTEGER NOT NULL,
+                PRIMARY KEY (idUserAbonne, idUserSuivi)
+            );
+
+            INSERT INTO Utilisateur (idUser) VALUES (1), (2), (3);
+
+            INSERT INTO Publication (idPubli, idUser, visibilite)
+            VALUES
+                (1, 1, 0);
+
+            INSERT INTO Abonnement (idUserAbonne, idUserSuivi)
+            VALUES
+                (1, 2);
+        `);
+    });
+
+    afterEach(() => {
+        db.close();
+    });
+
+    test("Un abonnement à sens unique (1 suit 2) ne suffit pas à être amis", () => {
+        expect(sontAmis(db, 1, 2)).toBe(false);
+        expect(sontAmis(db, 2, 1)).toBe(false);
+    });
+
+    test("sontAmis est symétrique lorsque l'abonnement est réciproque", () => {
+        db.prepare(`
+            INSERT INTO Abonnement (idUserAbonne, idUserSuivi)
+            VALUES (2, 1)
+        `).run();
+
+        expect(sontAmis(db, 1, 2)).toBe(true);
+        expect(sontAmis(db, 2, 1)).toBe(true);
+    });
+
+    test("Un visiteur non authentifié peut voir une publication publique", () => {
+        db.prepare(`
+            UPDATE Publication SET visibilite = 1 WHERE idPubli = 1
+        `).run();
+
+        expect(peutVoirPublication(db, 1, undefined)).toBe(true);
+    });
+
+    test("Un visiteur non authentifié ne peut pas voir une publication privée", () => {
+        expect(peutVoirPublication(db, 1, undefined)).toBe(false);
+    });
+
+    test("modifierVisibilite sur une publication inexistante renvoie false", () => {
+        expect(modifierVisibilite(db, 999, 1, 1)).toBe(false);
+    });
+
+    test("modifierVisibilite refuse une visibilité envoyée sous forme de chaîne ('1')", () => {
+        expect(modifierVisibilite(db, 1, 1, '1')).toBe(false);
+
+        const publication = db.prepare(`
+            SELECT visibilite FROM Publication WHERE idPubli = ?
+        `).get(1);
+
+        expect(publication.visibilite).toBe(0);
+    });
+
+});

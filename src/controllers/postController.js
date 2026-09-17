@@ -830,7 +830,9 @@ async function getImages(req, res) {
 try {
 
     const posts =
-        await postService.getAllPosts();
+        await postService.getAllPosts(
+            req.user?.idUser
+        );
 
 
     return res.render(
@@ -870,7 +872,9 @@ async function getImagesApi(req, res) {
 try {
 
     const posts =
-        await postService.getAllPosts();
+        await postService.getAllPosts(
+            req.user?.idUser
+        );
 
 
     return res.status(200).json(
@@ -926,7 +930,8 @@ try {
 
     const posts =
         await postService.getUserPosts(
-            idUser
+            idUser,
+            req.user?.idUser
         );
 
 

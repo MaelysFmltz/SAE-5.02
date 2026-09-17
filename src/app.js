@@ -21,6 +21,8 @@ const profileService =
 const postService =
     require('./services/postService');
 
+const publicationRoutes =
+    require('./routes/publicationRoutes');
 
 const app = express();
 
@@ -88,7 +90,9 @@ app.get(
         try {
 
             const posts =
-                postService.getAllPosts();
+                postService.getAllPosts(
+                    req.user.idUser
+                );
 
             return res.render(
                 'feed',
@@ -128,6 +132,7 @@ app.get(
 
             const posts =
                 postService.getUserPosts(
+                    req.user.idUser,
                     req.user.idUser
                 );
 
@@ -174,7 +179,8 @@ app.get(
 
             const posts =
                 postService.getUserPosts(
-                    profile.idUser
+                    profile.idUser,
+                    req.user.idUser
                 );
 
             const isOwner =
@@ -452,6 +458,11 @@ app.use(
 app.use(
     '/post',
     postRoutes
+);
+
+app.use(
+    '/api/publications',
+    publicationRoutes
 );
 
 
