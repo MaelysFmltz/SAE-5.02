@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explorer & Rechercher — Pixora</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/search.css?v=6">
+</head>
+<body>
+  <div class="app-container search-layout">
+
+    <header class="search-header">
+      <form action="/search" method="GET" class="search-form" onsubmit="return false;">
+        <div class="search-input-wrapper">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input 
+            type="text" 
+            name="q" 
+            id="search-input" 
+            placeholder="Rechercher un tag (#paris) ou un membre..." 
+            value="<%= query || '' %>" 
+            autocomplete="off"
+            maxlength="100"
+            autofocus>
+          <button 
+            type="button" 
+            id="clear-search-btn" 
+            class="clear-search-btn" 
+            aria-label="Effacer la recherche" 
+            <%= query ? '' : 'hidden' %>>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </form>
+    </header>
+
+    <main class="search-content" id="search-content">
+
+      <!-- 1. Vue Tendances (Hashtags publics uniquement) -->
+      <section class="trends-section" id="trends-section" <%= query ? 'hidden' : '' %>>
+        <h2 class="section-title">Hashtags populaires</h2>
+        
+        <% if (tendances && tendances.length > 0) { %>
+          <div class="trends-list">
+            <% tendances.forEach((item, index) => { %>
+              <a href="/search?q=%23<%= encodeURIComponent(item.nom) %>" class="trend-card">
+                <span class="trend-rank">#<%= index + 1 %></span>
+                <div class="trend-info">
+                  <span class="trend-name">#<%= item.nom %></span>
+                  <span class="trend-count"><%= item.nbPosts %> publication<%= item.nbPosts > 1 ? 's' : '' %></span>
+                </div>
+                <span class="trend-arrow">›</span>
+              </a>
+            <% }); %>
+          </div>
+        <% } else { %>
+          <p class="empty-state">Aucun hashtag populaire pour le moment.</p>
+        <% } %>
+      </section>
+
+      <!-- 2. Conteneur des Résultats en direct -->
+      <div id="dynamic-results" <%= query ? '' : 'hidden' %>>
+        
+        <!-- Section Hashtags -->
+        <section class="results-section" id="section-hashtags" <%= (resultats.hashtags && resultats.hashtags.length > 0) ? '' : 'hidden' %>>
+          <h3 class="results-subtitle">Hashtags</h3>
+          <div class="tags-chips-wrapper" id="list-hashtags">
+            <% if (resultats.hashtags) { %>
+              <% resultats.hashtags.forEach(tag => { %>
+                <a href="/search?q=%23<%= encodeURIComponent(tag.nom) %>" class="tag-chip">
+                  <span class="chip-name">#<%= tag.nom %></span>
+                  <span class="chip-count"><%= tag.nbPosts %></span>
+                </a>
+              <% }); %>
+            <% } %>
+          </div>
+        </section>
+
+        <!-- Section Utilisateurs -->
+        <section class="results-section" id="section-users" <%= (resultats.utilisateurs && resultats.utilisateurs.length > 0) ? '' : 'hidden' %>>
+          <h3 class="results-subtitle">Comptes</h3>
+          <div class="users-results-list" id="list-users">
+            <% if (resultats.utilisateurs) { %>
+              <% resultats.utilisateurs.forEach(u => { %>
+                <a href="/profile/<%= encodeURIComponent(u.pseudo) %>" class="user-item">
+                  <div class="user-avatar-placeholder">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                  </div>
+                  <div class="user-item-info">
+                    <span class="user-pseudo">@<%= u.pseudo %></span>
+                    <% if (u.prenom || u.nom) { %>
+                      <span class="user-realname"><%= [u.prenom, u.nom].filter(Boolean).join(' ') %></span>
+                    <% } %>
+                  </div>
+                </a>
+              <% }); %>
+            <% } %>
+          </div>
+        </section>
+
+        <!-- Section Mosaïque Publications -->
+        <section class="results-section" id="section-posts">
+          <h3 class="results-subtitle">Publications</h3>
+          <div class="posts-grid-mosaic" id="list-posts">
+            <% if (resultats.publications && resultats.publications.length > 0) { %>
+              <% resultats.publications.forEach(post => { %>
+                <article class="mosaic-post-card">
+                  <div class="post-media-preview">
+                    <% if (post.nomMedia) { %>
+                      <img src="/uploads/<%= encodeURIComponent(post.nomMedia) %>" alt="Publication" class="post-img">
+                    <% } else { %>
+                      <div class="media-placeholder">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                          <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                      </div>
+                    <% } %>
+                  </div>
+                  <div class="post-card-body">
+                    <div class="post-card-author">
+                      <a href="/profile/<%= encodeURIComponent(post.pseudo) %>" class="post-author-link">@<%= post.pseudo %></a>
+                    </div>
+                    <p class="post-text-desc"><%- linkifyHashtags(post.contenuPub) %></p>
+                  </div>
+                </article>
+              <% }); %>
+            <% } %>
+          </div>
+          <p class="empty-state" id="posts-empty-message" <%= (!resultats.publications || resultats.publications.length === 0) ? '' : 'hidden' %>>
+            Aucune publication trouvée.
+          </p>
+        </section>
+
+      </div>
+
+    </main>
+
+    <%- include('navbar') %>
+  </div>
+
+  <script>
+    const searchInput = document.getElementById('search-input');
+    const clearBtn = document.getElementById('clear-search-btn');
+    const trendsSection = document.getElementById('trends-section');
+    const dynamicResults = document.getElementById('dynamic-results');
+
+    const sectionHashtags = document.getElementById('section-hashtags');
+    const listHashtags = document.getElementById('list-hashtags');
+
+    const sectionUsers = document.getElementById('section-users');
+    const listUsers = document.getElementById('list-users');
+
+    const sectionPosts = document.getElementById('section-posts');
+    const listPosts = document.getElementById('list-posts');
+    const postsEmptyMsg = document.getElementById('posts-empty-message');
+
+    let debounceTimer = null;
+
+    function escapeHtml(text) {
+      if (typeof text !== 'string') return '';
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function linkify(text) {
+      const safeText = escapeHtml(text);
+      const regex = /#([a-zA-Z0-9_\u00C0-\u017F]{1,30})/g;
+      return safeText.replace(regex, (match, tag) => {
+        return `<a href="/search?q=%23${encodeURIComponent(tag.toLowerCase())}" class="hashtag-link">#${escapeHtml(tag)}</a>`;
+      });
+    }
+
+    function resetToHome() {
+      trendsSection.hidden = false;
+      dynamicResults.hidden = true;
+      clearBtn.hidden = true;
+      window.history.replaceState({}, '', '/search');
+    }
+
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(debounceTimer);
+      const val = e.target.value.trim();
+
+      if (!val) {
+        resetToHome();
+        return;
+      }
+
+      clearBtn.hidden = false;
+      window.history.replaceState({}, '', `/search?q=${encodeURIComponent(val)}`);
+
+      debounceTimer = setTimeout(async () => {
+        try {
+          const res = await fetch(`/search/api?q=${encodeURIComponent(val)}`);
+          if (!res.ok) return;
+
+          const data = await res.json();
+          renderResults(data, val);
+        } catch (err) {
+          console.error('Erreur recherche dynamique :', err);
+        }
+      }, 250);
+    });
+
+    clearBtn.addEventListener('click', () => {
+      clearTimeout(debounceTimer);
+      searchInput.value = '';
+      resetToHome();
+      searchInput.focus();
+    });
+
+    function renderResults(data, query) {
+      trendsSection.hidden = true;
+      dynamicResults.hidden = false;
+
+      // 1. Hashtags
+      if (data.hashtags && data.hashtags.length > 0) {
+        sectionHashtags.hidden = false;
+        listHashtags.innerHTML = data.hashtags.map(t => `
+          <a href="/search?q=%23${encodeURIComponent(t.nom)}" class="tag-chip">
+            <span class="chip-name">#${escapeHtml(t.nom)}</span>
+            <span class="chip-count">${parseInt(t.nbPosts, 10) || 0}</span>
+          </a>
+        `).join('');
+      } else {
+        sectionHashtags.hidden = true;
+        listHashtags.innerHTML = '';
+      }
+
+      // 2. Utilisateurs
+      if (data.utilisateurs && data.utilisateurs.length > 0) {
+        sectionUsers.hidden = false;
+        listUsers.innerHTML = data.utilisateurs.map(u => {
+          const realName = [u.prenom, u.nom].filter(Boolean).join(' ');
+          return `
+            <a href="/profile/${encodeURIComponent(u.pseudo)}" class="user-item">
+              <div class="user-avatar-placeholder">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+              </div>
+              <div class="user-item-info">
+                <span class="user-pseudo">@${escapeHtml(u.pseudo)}</span>
+                ${realName ? `<span class="user-realname">${escapeHtml(realName)}</span>` : ''}
+              </div>
+            </a>
+          `;
+        }).join('');
+      } else {
+        sectionUsers.hidden = true;
+        listUsers.innerHTML = '';
+      }
+
+      // 3. Publications
+      if (data.publications && data.publications.length > 0) {
+        listPosts.style.display = 'grid';
+        postsEmptyMsg.hidden = true;
+        listPosts.innerHTML = data.publications.map(p => `
+          <article class="mosaic-post-card">
+            <div class="post-media-preview">
+              ${p.nomMedia 
+                ? `<img src="/uploads/${encodeURIComponent(p.nomMedia)}" alt="Publication" class="post-img">`
+                : `<div class="media-placeholder">
+                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                       <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                       <polyline points="21 15 16 10 5 21"></polyline>
+                     </svg>
+                   </div>`
+              }
+            </div>
+            <div class="post-card-body">
+              <div class="post-card-author">
+                <a href="/profile/${encodeURIComponent(p.pseudo)}" class="post-author-link">@${escapeHtml(p.pseudo)}</a>
+              </div>
+              <p class="post-text-desc">${linkify(p.contenuPub)}</p>
+            </div>
+          </article>
+        `).join('');
+      } else {
+        listPosts.style.display = 'none';
+        listPosts.innerHTML = '';
+        postsEmptyMsg.textContent = `Aucune publication trouvée pour « ${escapeHtml(query)} ».`;
+        postsEmptyMsg.hidden = false;
+      }
+    }
+  </script>
+</body>
+</html>

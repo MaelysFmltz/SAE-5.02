@@ -12,6 +12,7 @@ const friendshipRoutes = require('./routes/friendshipRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const commentController = require('./controllers/commentController');
 const authMiddleware = require('./middlewares/authMiddleware');
+const searchRoutes = require('./routes/searchRoutes');
 const profileService = require('./services/profileService');
 const friendshipModel = require('./models/friendshipModel');
 const postService = require('./services/postService');
@@ -197,6 +198,9 @@ app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
     res.redirect('/home');
   }
 });
+
+// Page et API de recherche & hashtags
+app.use('/search', searchRoutes);
 
 // 4. Routes API (Back)
 

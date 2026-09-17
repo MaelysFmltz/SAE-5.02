@@ -1,0 +1,346 @@
+/* Centrage global du conteneur de recherche */
+.search-layout {
+  max-width: 935px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* En-tête et champ de recherche */
+.search-header {
+  padding: 16px 20px;
+  background-color: var(--profile-bg, #0f111a);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid var(--profile-border, #282c3c);
+}
+
+.search-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: var(--profile-box-bg, #1b1e2a);
+  border: 1px solid var(--profile-border, #282c3c);
+  border-radius: 12px;
+  padding: 10px 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input-wrapper:focus-within {
+  border-color: var(--profile-accent, #9046eb);
+  box-shadow: 0 0 0 2px rgba(144, 70, 235, 0.2);
+}
+
+.search-icon {
+  color: var(--profile-text-dimmed, #8b92a5);
+  flex-shrink: 0;
+}
+
+.search-input-wrapper input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.search-input-wrapper input::placeholder {
+  color: var(--profile-text-dimmed, #8b92a5);
+}
+
+/* Bouton croix pour vider la recherche */
+.clear-search-btn {
+  background: transparent;
+  border: none;
+  color: var(--profile-text-dimmed, #8b92a5);
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.15s, background-color 0.15s;
+  flex-shrink: 0;
+}
+
+.clear-search-btn:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Conteneur principal */
+.search-content {
+  padding: 24px 20px 90px;
+  flex: 1;
+}
+
+.section-title,
+.results-subtitle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--profile-text-dimmed, #8b92a5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 16px;
+}
+
+/* Liste des tendances */
+.trends-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trend-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  background-color: var(--profile-box-bg, #1b1e2a);
+  border: 1px solid var(--profile-border, #282c3c);
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.trend-card:hover {
+  border-color: var(--profile-accent, #9046eb);
+  background-color: #202433;
+}
+
+.trend-rank {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--profile-accent, #9046eb);
+  width: 28px;
+}
+
+.trend-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.trend-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #ffffff;
+}
+
+.trend-count {
+  font-size: 0.75rem;
+  color: var(--profile-text-dimmed, #8b92a5);
+  margin-top: 2px;
+}
+
+.trend-arrow {
+  font-size: 1.3rem;
+  color: #686e82;
+}
+
+/* Chips / Filtres de Hashtags */
+.tags-chips-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(144, 70, 235, 0.12);
+  border: 1px solid rgba(144, 70, 235, 0.3);
+  padding: 6px 14px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.tag-chip:hover {
+  background-color: rgba(144, 70, 235, 0.25);
+  border-color: var(--profile-accent, #9046eb);
+}
+
+.chip-name {
+  color: #b78cfc;
+  font-weight: 700;
+}
+
+.chip-count {
+  background: rgba(255, 255, 255, 0.12);
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  color: #ffffff;
+}
+
+/* Résultats utilisateurs */
+.users-results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.user-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background-color: var(--profile-box-bg, #1b1e2a);
+  border: 1px solid var(--profile-border, #282c3c);
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s;
+}
+
+.user-item:hover {
+  border-color: var(--profile-accent, #9046eb);
+}
+
+.user-avatar-placeholder {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #2b3042;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b92a5;
+  flex-shrink: 0;
+}
+
+.user-item-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-pseudo {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #ffffff;
+}
+
+.user-realname {
+  font-size: 0.75rem;
+  color: var(--profile-text-dimmed, #8b92a5);
+}
+
+/* Mosaïque des publications (3 colonnes) */
+.posts-grid-mosaic {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .posts-grid-mosaic {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .posts-grid-mosaic {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mosaic-post-card {
+  background-color: var(--profile-box-bg, #1b1e2a);
+  border: 1px solid var(--profile-border, #282c3c);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.mosaic-post-card:hover {
+  border-color: var(--profile-accent, #9046eb);
+  transform: translateY(-2px);
+}
+
+/* Zone média preview (format carré) */
+.post-media-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background-color: #12141d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.post-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media-placeholder {
+  color: #3b4258;
+}
+
+/* Corps de carte sous l'image */
+.post-card-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.post-card-author {
+  display: flex;
+  align-items: center;
+}
+
+.post-author-link {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.post-author-link:hover {
+  text-decoration: underline;
+}
+
+.post-text-desc {
+  font-size: 0.85rem;
+  color: #c9d1d9;
+  line-height: 1.45;
+  word-break: break-word;
+  margin: 0;
+}
+
+/* Style des hashtags : gras, colorés et cliquables */
+.hashtag-link {
+  color: #a76bf5;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.15s, text-decoration 0.15s;
+}
+
+.hashtag-link:hover {
+  color: #c49eff;
+  text-decoration: underline;
+}
+
+/* État vide */
+.empty-state {
+  color: var(--profile-text-dimmed, #8b92a5);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 40px 0;
+}
