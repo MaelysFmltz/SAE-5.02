@@ -79,10 +79,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     function showEditor() {
         if (!selectedFile || mediaType(selectedFile) !== 'image') return;
+
         editorFileName.textContent = selectedFile.name;
-        editorModal.hidden = false; setEditorMessage('');
+        editorModal.hidden = false;
+        document.body.classList.add('editor-open');
+        setEditorMessage('');
     }
-    function hideEditor() { editorModal.hidden = true; editor.cancelCrop(); setEditorMessage(''); }
+
+    function hideEditor() {
+        editorModal.hidden = true;
+        editor.cancelCrop();
+        document.body.classList.remove('editor-open');
+        setEditorMessage('');
+    }
 
     mediaInput.addEventListener('change', async () => {
         setMessage(''); editedFile = null; selectedFile = mediaInput.files[0] || null;
@@ -150,12 +159,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!validation.valid) return setMessage(validation.error, true);
         const submitButton = form.querySelector('button[type="submit"]');
         submitButton.disabled = true; submitButton.textContent = 'Publication...';
-        const token = localStorage.getItem('token');
-        if (!token) { setMessage('Vous devez être connecté pour publier.', true); submitButton.disabled = false; submitButton.textContent = 'Publier'; return; }
-        const formData = new FormData(form); formData.delete('media'); formData.append('media', file);
+        // L'authentification actuelle du projet utilise un cookie JWT httpOnly.
+        // Il n'est donc ni nécessaire ni possible de le lire depuis JavaScript.
+        // credentials: 'include' permet au navigateur de transmettre le cookie.
+        const formData = new FormData(form);
+        formData.delete('media');
+        formData.append('media', file);
         if (editedFile) formData.append('editedMedia', 'true');
+
         try {
-            const response = await fetch('/post/upload', { method: 'POST', credentials: 'include', body: formData, headers: { Accept: 'application/json', Authorization: `Bearer ${token}` } });
+            const response = await fetch('/post/upload', {
+                method: 'POST',
+                credentials: 'include',
+                body: formData,
+                headers: {
+                    Accept: 'application/json'
+                }
+            });
             const data = response.headers.get('content-type')?.includes('application/json') ? await response.json() : {};
             if (!response.ok) throw new Error(data.error || 'Erreur lors de la publication.');
             setMessage('Publication réussie !');

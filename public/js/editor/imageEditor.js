@@ -76,9 +76,23 @@ export class ImageEditor {
     applyFilter(name, value) { if (!(name in this.filters)) return; this.filters[name] = Number(value); this.render(); }
 
     async commitCurrentToBase(targetWidth = null, targetHeight = null) {
-        const source = this.renderToCanvas(), output = document.createElement('canvas'); output.width = targetWidth || source.width; output.height = targetHeight || source.height;
+        // Les textes/éléments sont conservés dans cet état uniquement pour être
+        // dessinés par render(). Il faut donc rafraîchir le canvas avant de
+        // prendre sa copie destinée à l'export.
+        this.render();
+
+        const source = this.renderToCanvas();
+        const output = document.createElement('canvas');
+        output.width = targetWidth || source.width;
+        output.height = targetHeight || source.height;
         output.getContext('2d').drawImage(source, 0, 0, output.width, output.height);
-        this.baseDataURL = output.toDataURL('image/jpeg', .92); this.image = await dataURLToImage(this.baseDataURL); this.resetState(); this.history.push(this.snapshot()); this.render(); this.changed();
+
+        this.baseDataURL = output.toDataURL('image/jpeg', .92);
+        this.image = await dataURLToImage(this.baseDataURL);
+        this.resetState();
+        this.history.push(this.snapshot());
+        this.render();
+        this.changed();
     }
     async commitFilters() { await this.commitCurrentToBase(); }
     async resize(width, height) { width = Math.round(Number(width)); height = Math.round(Number(height)); if (!Number.isFinite(width) || !Number.isFinite(height) || width < 20 || height < 20 || width > 8000 || height > 8000) throw new Error('Dimensions invalides. Utilisez une valeur entre 20 et 8000 pixels.'); await this.commitCurrentToBase(width, height); }

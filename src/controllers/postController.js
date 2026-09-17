@@ -984,6 +984,7 @@ try {
     });
 }
 
+
 }
 
 /*
@@ -994,15 +995,27 @@ try {
   */
 
 module.exports = {
+
+
 uploadImage,
+
 getImages,
+
 getImagesApi,
+
 getUserImagesApi,
+
 isRealJPEG,
+
 isRealPNG,
+
 isRealWebP,
+
 isRealMP4,
+
 isRealWebM,
+
 isRealOGG,
+
 deletePost
 };
