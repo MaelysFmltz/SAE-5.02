@@ -4,6 +4,10 @@ const path = require('path');
 const postService =
 require('../services/postService');
 
+const {
+    validateEditedImage
+} = require('../services/mediaEditorService');
+
 /*
 
 * ============================================================
@@ -449,6 +453,33 @@ try {
         await fs.readFile(
             uploadedFilePath
         );
+
+
+    /*
+     * ====================================================
+     * VÉRIFICATION IMAGE ÉDITÉE
+     * ====================================================
+     */
+
+    if (
+        req.body.editedMedia === 'true'
+    ) {
+
+        const editedValidation =
+            validateEditedImage({
+                buffer,
+                mimetype: file.mimetype,
+                size: file.size
+            });
+
+        if (!editedValidation.valid) {
+            await fs.unlink(uploadedFilePath).catch(() => {});
+
+            return res.status(400).json({
+                error: editedValidation.error
+            });
+        }
+    }
 
 
     /*
@@ -953,7 +984,6 @@ try {
     });
 }
 
-
 }
 
 /*
@@ -964,27 +994,15 @@ try {
   */
 
 module.exports = {
-
-
 uploadImage,
-
 getImages,
-
 getImagesApi,
-
 getUserImagesApi,
-
 isRealJPEG,
-
 isRealPNG,
-
 isRealWebP,
-
 isRealMP4,
-
 isRealWebM,
-
 isRealOGG,
-
 deletePost
 };

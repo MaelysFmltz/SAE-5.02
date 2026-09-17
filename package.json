@@ -1,12 +1,6 @@
 {
   "name": "projet",
   "version": "1.0.0",
-<<<<<<< HEAD
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-=======
   "description": "Cycle de vie du projet",
   "main": "src/server.js",
   "type": "commonjs",
@@ -18,20 +12,11 @@
   "engines": {
     "node": ">=24.0.0 <25",
     "npm": ">=11.0.0"
->>>>>>> origin/main
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-<<<<<<< HEAD
-    "express": "^5.2.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.14"
-  }
-}
-=======
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^13.0.3",
     "cookie-parser": "^1.4.7",
@@ -63,4 +48,3 @@
   }
 }
 
->>>>>>> origin/main

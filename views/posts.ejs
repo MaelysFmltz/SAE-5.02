@@ -24,6 +24,11 @@
         href="/css/post.css"
     >
 
+    <link
+        rel="stylesheet"
+        href="/css/editor.css"
+    >
+
 </head>
 
 
@@ -129,6 +134,15 @@
 
                     <!-- PREVIEW -->
 
+                    <button
+                        type="button"
+                        id="open-editor"
+                        class="editor-open-button"
+                        disabled
+                    >
+                        ✨ Modifier la photo
+                    </button>
+
                     <div
                         id="preview-container"
                         class="preview-container"
@@ -232,6 +246,101 @@
     </main>
 
 
+    <!-- ÉDITEUR PHOTO -->
+    <div id="editor-modal" class="editor-modal" hidden>
+        <div class="editor-window" role="dialog" aria-modal="true" aria-labelledby="editor-title">
+            <header class="editor-header">
+                <div>
+                    <h2 id="editor-title">Éditeur photo</h2>
+                    <span id="editor-file-name" class="editor-status"></span>
+                </div>
+                <button type="button" id="close-editor" aria-label="Fermer">✕</button>
+            </header>
+
+            <div class="editor-toolbar">
+                <button type="button" id="editor-undo" disabled>↩ Annuler</button>
+                <button type="button" id="editor-redo" disabled>↪ Rétablir</button>
+                <button type="button" id="editor-reset">⟳ Réinitialiser</button>
+                <button type="button" id="rotate-left">↶ Rotation gauche</button>
+                <button type="button" id="rotate-right">↷ Rotation droite</button>
+                <button type="button" id="flip-horizontal">↔ Miroir H</button>
+                <button type="button" id="flip-vertical">↕ Miroir V</button>
+            </div>
+
+            <div class="editor-main">
+                <section class="editor-stage">
+                    <div class="editor-canvas-wrap">
+                        <canvas id="editor-canvas"></canvas>
+                        <div id="editor-crop-overlay" class="editor-crop-overlay" hidden></div>
+                    </div>
+                </section>
+
+                <aside class="editor-panel">
+                    <div class="editor-tool-group">
+                        <h3>Recadrage</h3>
+                        <button type="button" id="crop-start">✂ Commencer</button>
+                        <button type="button" id="crop-apply" class="editor-primary">Valider</button>
+                        <button type="button" id="crop-cancel">Annuler</button>
+                        <p id="crop-hint" class="editor-hint">Cliquez sur « Commencer », puis tracez une zone sur l’image.</p>
+                    </div>
+
+                    <div class="editor-tool-group">
+                        <h3>Redimensionnement</h3>
+                        <div class="editor-size-row">
+                            <label>Largeur<input id="resize-width" type="number" min="20" max="8000" value="800"></label>
+                            <label>Hauteur<input id="resize-height" type="number" min="20" max="8000" value="600"></label>
+                        </div>
+                        <button type="button" id="resize-apply">Redimensionner</button>
+                        <p id="editor-dimensions" class="editor-hint"></p>
+                    </div>
+
+                    <div class="editor-tool-group">
+                        <h3>Effets</h3>
+                        <label>Luminosité <input id="filter-brightness" data-filter="brightness" type="range" min="0" max="200" value="100"></label>
+                        <label>Contraste <input id="filter-contrast" data-filter="contrast" type="range" min="0" max="200" value="100"></label>
+                        <label>Saturation <input id="filter-saturation" data-filter="saturation" type="range" min="0" max="200" value="100"></label>
+                        <label>N&B <input id="filter-grayscale" data-filter="grayscale" type="range" min="0" max="100" value="0"></label>
+                        <label>Sépia <input id="filter-sepia" data-filter="sepia" type="range" min="0" max="100" value="0"></label>
+                        <label>Flou <input id="filter-blur" data-filter="blur" type="range" min="0" max="12" value="0"></label>
+                        <button type="button" id="filters-apply">Appliquer les effets</button>
+                    </div>
+
+                    <div class="editor-tool-group">
+                        <h3>Texte</h3>
+                        <input id="text-value" type="text" maxlength="120" placeholder="Votre texte...">
+                        <label>Couleur <input id="text-color" type="color" value="#ffffff"></label>
+                        <button type="button" id="add-text">🔤 Ajouter le texte</button>
+                        <p class="editor-hint">Le texte est ajouté au centre de l’image.</p>
+                    </div>
+
+                    <div class="editor-tool-group">
+                        <h3>Éléments</h3>
+                        <select id="element-type">
+                            <option value="heart">♥ Cœur</option>
+                            <option value="star">★ Étoile</option>
+                            <option value="circle">● Cercle</option>
+                            <option value="rectangle">■ Carré</option>
+                            <option value="emoji">✨ Emoji</option>
+                        </select>
+                        <input id="element-emoji" type="text" maxlength="4" value="✨" placeholder="Emoji">
+                        <button type="button" id="add-element">➕ Ajouter l’élément</button>
+                        <p class="editor-hint">L’élément est ajouté au centre de l’image.</p>
+                    </div>
+
+                    <p id="editor-message" class="editor-hint" role="status"></p>
+                </aside>
+            </div>
+
+            <footer class="editor-footer">
+                <span class="editor-status">Les retouches sont réalisées dans votre navigateur.</span>
+                <div class="editor-footer-actions">
+                    <button type="button" id="cancel-editor">Annuler</button>
+                    <button type="button" id="apply-editor" class="editor-primary">✓ Utiliser cette photo</button>
+                </div>
+            </footer>
+        </div>
+    </div>
+
     <!-- NAVIGATION -->
 
     <%- include('navbar') %>
@@ -240,7 +349,7 @@
 </div>
 
 
-<script src="/js/post.js"></script>
+<script type="module" src="/js/post.js"></script>
 
 </body>
 
