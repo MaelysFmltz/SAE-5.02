@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paramètres — Pixora</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/settings.css">
+</head>
+<body>
+  <div 
+    class="settings-container" 
+    data-current-user-id="<%= user.idUser %>" 
+    data-current-user-role="<%= user.role || 'user' %>"
+  >
+    <header class="settings-header">
+      <div class="header-left">
+        <a href="/profile" class="icon-btn" title="Retour au profil">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </a>
+        <h1 class="header-title">Paramètres</h1>
+      </div>
+      <div class="user-badge-info">
+        <span class="badge-pseudo">@<%= user.pseudo %></span>
+        <% if (user.role === 'superadmin') { %>
+          <span class="badge badge-admin" style="background: #3e2e1b; color: #f0883e; border: 1px solid #73431b;">Superadmin</span>
+        <% } else if (user.role === 'admin') { %>
+          <span class="badge badge-admin">Admin</span>
+        <% } else if (user.role === 'moderateur' || user.role === 'modo') { %>
+          <span class="badge badge-modo">Modo</span>
+        <% } %>
+      </div>
+    </header>
+
+    <div class="settings-layout">
+      <!-- Navigation latérale -->
+      <aside class="settings-sidebar">
+        <nav class="settings-nav">
+          <p class="nav-section-title">Général</p>
+          <button type="button" class="nav-btn active" data-tab="tab-account">
+            Mon compte
+          </button>
+          <button type="button" class="nav-btn" data-tab="tab-privacy">
+            Confidentialité
+          </button>
+          <button type="button" class="nav-btn" data-tab="tab-help">
+            Aide
+          </button>
+
+          <% if (user.role === 'moderateur' || user.role === 'modo' || user.role === 'admin' || user.role === 'superadmin') { %>
+            <p class="nav-section-title">Modération</p>
+            <button type="button" class="nav-btn" data-tab="tab-moderation">
+              Signalements
+            </button>
+          <% } %>
+
+          <% if (user.role === 'admin' || user.role === 'superadmin') { %>
+            <p class="nav-section-title">Administration</p>
+            <button type="button" class="nav-btn" data-tab="tab-admin">
+              Centre d'administration
+            </button>
+          <% } %>
+        </nav>
+      </aside>
+
+      <!-- Panneau principal -->
+      <main class="settings-content">
+        <div id="settings-alert" class="alert-box" style="display: none;"></div>
+
+        <!-- 1. MON COMPTE -->
+        <section id="tab-account" class="tab-pane active">
+          <h2 class="section-heading">Mon compte</h2>
+
+          <!-- Pseudo -->
+          <div class="settings-card">
+            <h3>Nom d'utilisateur</h3>
+            <p class="card-desc">Identifiant unique utilisé pour votre profil et vos publications.</p>
+            <form id="form-pseudo" class="form-row">
+              <input 
+                type="text" 
+                id="input-pseudo" 
+                name="pseudo" 
+                value="<%= user.pseudo %>" 
+                required 
+                minlength="3" 
+                maxlength="30"
+                pattern="^[a-zA-Z0-9_-]{3,30}$"
+              >
+              <button type="submit" class="btn-primary-action">Enregistrer</button>
+            </form>
+          </div>
+
+          <!-- Email -->
+          <div class="settings-card">
+            <h3>Adresse email</h3>
+            <p class="card-desc">Adresse associée : <strong class="current-value"><%= user.email %></strong></p>
+            <form id="form-email" class="form-row">
+              <input 
+                type="email" 
+                id="input-email" 
+                name="email" 
+                value="<%= user.email %>" 
+                required
+                pattern="^[a-zA-Z0-9_%+-]+(?:\.[a-zA-Z0-9_%+-]+)*@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$"
+              >
+              <button type="submit" class="btn-primary-action">Enregistrer</button>
+            </form>
+          </div>
+
+          <!-- Date de naissance -->
+          <div class="settings-card">
+            <h3>Date de naissance</h3>
+            <p class="card-desc">Non modifiable après l'inscription.</p>
+            <div class="form-row">
+              <input 
+                type="text" 
+                value="<%= user.dateNaissance ? user.dateNaissance : 'Non renseignée' %>" 
+                disabled 
+                class="input-disabled"
+              >
+            </div>
+          </div>
+
+          <!-- Mot de passe -->
+          <div class="settings-card">
+            <h3>Mot de passe</h3>
+            <p class="card-desc">Huit caractères minimum avec majuscule, minuscule, chiffre et symbole.</p>
+            <form id="form-password" class="form-column">
+              <div class="form-group">
+                <label for="old-password">Mot de passe actuel</label>
+                <input type="password" id="old-password" required placeholder="••••••••">
+              </div>
+              <div class="form-group">
+                <label for="new-password">Nouveau mot de passe</label>
+                <input type="password" id="new-password" required minlength="8" placeholder="••••••••">
+              </div>
+              <div class="form-group">
+                <label for="confirm-password">Confirmer le nouveau mot de passe</label>
+                <input type="password" id="confirm-password" required minlength="8" placeholder="••••••••">
+              </div>
+              <button type="submit" class="btn-primary-action">Mettre à jour le mot de passe</button>
+            </form>
+          </div>
+
+          <!-- Actions de compte -->
+          <div class="settings-card">
+            <div class="action-item-row">
+              <div>
+                <strong>Déconnexion</strong>
+                <p class="card-desc">Fermer la session sur cet appareil.</p>
+              </div>
+              <button type="button" id="btn-logout" class="btn-secondary-action">Se déconnecter</button>
+            </div>
+            <hr class="card-divider">
+            <div class="action-item-row">
+              <div>
+                <strong class="text-danger">Supprimer le compte</strong>
+                <p class="card-desc">Suppression irréversible du profil et de ses données.</p>
+              </div>
+              <button type="button" id="btn-open-delete" class="btn-danger-action">Supprimer</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. CONFIDENTIALITÉ -->
+        <section id="tab-privacy" class="tab-pane">
+          <h2 class="section-heading">Confidentialité</h2>
+          <div class="settings-card">
+            <h3>Comptes bloqués</h3>
+            <p class="card-desc">Membres avec lesquels toute interaction est interrompue.</p>
+            <div class="empty-placeholder">
+              <p>Aucun utilisateur bloqué.</p>
+            </div>
+          </div>
+          <div class="settings-card">
+            <h3>Historique des signalements</h3>
+            <p class="card-desc">Statut des signalements transmis à l'équipe de modération.</p>
+            <div class="empty-placeholder">
+              <p>Aucun signalement déposé.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. AIDE -->
+        <section id="tab-help" class="tab-pane">
+          <h2 class="section-heading">Aide</h2>
+          <div class="settings-card">
+            <h3>Documentation et guides</h3>
+            <p class="card-desc">Ressources d'utilisation et spécifications de l'application.</p>
+            <div class="help-links-stack">
+              <a href="http://localhost:3000/docs/intro" target="_blank" rel="noopener noreferrer" class="link-card">
+                <span>Guide d'utilisation Pixora</span>
+                <span class="link-ext">Consulter</span>
+              </a>
+              <a href="http://localhost:3000/docs/api/" target="_blank" rel="noopener noreferrer" class="link-card">
+                <span>Spécifications de l'API</span>
+                <span class="link-ext">Consulter</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. MODÉRATION -->
+        <% if (user.role === 'moderateur' || user.role === 'modo' || user.role === 'admin' || user.role === 'superadmin') { %>
+          <section id="tab-moderation" class="tab-pane">
+            <h2 class="section-heading">Modération</h2>
+            <div class="settings-card">
+              <div class="card-header-flex">
+                <div>
+                  <h3>Tickets de signalement</h3>
+                  <p class="card-desc">File des signalements soumis par la communauté.</p>
+                </div>
+                <div class="filter-group">
+                  <button type="button" class="filter-btn active" data-filter="pending">En attente</button>
+                  <button type="button" class="filter-btn" data-filter="resolved">Traités</button>
+                  <button type="button" class="filter-btn" data-filter="all">Tous</button>
+                </div>
+              </div>
+              <div id="tickets-container" class="empty-placeholder">
+                <p>Aucun signalement en attente de révision.</p>
+              </div>
+            </div>
+          </section>
+        <% } %>
+
+        <!-- 5. ADMINISTRATION -->
+        <% if (user.role === 'admin' || user.role === 'superadmin') { %>
+          <section id="tab-admin" class="tab-pane">
+            <h2 class="section-heading">Administration</h2>
+            <div class="settings-card">
+              <h3>Gestion des membres</h3>
+              <p class="card-desc">Attribution des privilèges et modération globale.</p>
+              <form id="form-admin-search" class="form-row">
+                <input type="text" id="admin-search-input" placeholder="Rechercher par pseudonyme ou email..." required>
+                <button type="submit" class="btn-primary-action">Rechercher</button>
+              </form>
+              <div id="admin-search-results" class="empty-placeholder" style="margin-top: 16px;">
+                <p>Effectuez une recherche pour afficher et administrer les comptes.</p>
+              </div>
+            </div>
+          </section>
+        <% } %>
+      </main>
+    </div>
+  </div>
+
+  <!-- Fenêtre modale de suppression -->
+  <div id="modal-delete" class="modal-backdrop" style="display: none;">
+    <div class="modal-box">
+      <h3>Confirmer la suppression</h3>
+      <p class="modal-subtext">
+        Cette action est irréversible. L'ensemble de vos données sera définitivement purgé.
+        Saisissez votre mot de passe pour valider.
+      </p>
+      <form id="form-delete-account">
+        <div class="form-group">
+          <input type="password" id="delete-password" required placeholder="Mot de passe actuel">
+        </div>
+        <div class="modal-buttons">
+          <button type="button" id="btn-cancel-delete" class="btn-secondary-action">Annuler</button>
+          <button type="submit" class="btn-danger-action">Supprimer définitivement</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <%- include('navbar') %>
+
+  <script>
+    const settingsContainer = document.querySelector('.settings-container');
+    const callerId = Number(settingsContainer.dataset.currentUserId);
+    const callerRole = settingsContainer.dataset.currentUserRole;
+
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    const alertBox = document.getElementById('settings-alert');
+
+    function notify(message, isSuccess = true) {
+      alertBox.textContent = message;
+      alertBox.className = isSuccess ? 'alert-box alert-success' : 'alert-box alert-error';
+      alertBox.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    navButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        navButtons.forEach(b => b.classList.remove('active'));
+        tabPanes.forEach(pane => pane.classList.remove('active'));
+
+        btn.classList.add('active');
+        const targetPane = document.getElementById(btn.dataset.tab);
+        if (targetPane) targetPane.classList.add('active');
+        alertBox.style.display = 'none';
+      });
+    });
+
+    // 1. Modification du nom d'utilisateur
+    document.getElementById('form-pseudo').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.style.display = 'none';
+      const pseudo = document.getElementById('input-pseudo').value.trim();
+
+      try {
+        const res = await fetch('/api/user/settings/pseudo', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pseudo })
+        });
+        const data = await res.json();
+        if (!res.ok) return notify(data.error || 'Erreur lors de la modification', false);
+
+        notify('Nom d’utilisateur mis à jour.');
+        const badge = document.querySelector('.badge-pseudo');
+        if (badge) badge.textContent = '@' + data.pseudo;
+      } catch {
+        notify('Erreur réseau ou serveur inaccessible.', false);
+      }
+    });
+
+    // 2. Modification de l'email
+    document.getElementById('form-email').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.style.display = 'none';
+      const email = document.getElementById('input-email').value.trim();
+
+      try {
+        const res = await fetch('/api/user/settings/email', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (!res.ok) return notify(data.error || 'Erreur lors de la modification', false);
+
+        notify('Adresse email mise à jour.');
+        const currentEmailEl = document.querySelector('.current-value');
+        if (currentEmailEl) currentEmailEl.textContent = data.email;
+      } catch {
+        notify('Erreur réseau ou serveur inaccessible.', false);
+      }
+    });
+
+    // 3. Modification du mot de passe
+    document.getElementById('form-password').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.style.display = 'none';
+
+      const oldPassword = document.getElementById('old-password').value;
+      const newPassword = document.getElementById('new-password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+
+      if (newPassword !== confirmPassword) {
+        return notify('Le nouveau mot de passe et sa confirmation ne correspondent pas.', false);
+      }
+
+      try {
+        const res = await fetch('/api/user/settings/password', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ oldPassword, newPassword, confirmPassword })
+        });
+        const data = await res.json();
+        if (!res.ok) return notify(data.error || 'Erreur lors du changement de mot de passe', false);
+
+        notify('Mot de passe mis à jour avec succès.');
+        document.getElementById('form-password').reset();
+      } catch {
+        notify('Erreur réseau ou serveur inaccessible.', false);
+      }
+    });
+
+    // 4. Déconnexion
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        window.location.href = '/';
+      } catch {
+        window.location.href = '/';
+      }
+    });
+
+    // 5. Suppression du compte (Modale)
+    const modalDelete = document.getElementById('modal-delete');
+    document.getElementById('btn-open-delete').addEventListener('click', () => {
+      modalDelete.style.display = 'flex';
+      document.getElementById('delete-password').value = '';
+    });
+
+    document.getElementById('btn-cancel-delete').addEventListener('click', () => {
+      modalDelete.style.display = 'none';
+    });
+
+    document.getElementById('form-delete-account').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('delete-password').value;
+
+      try {
+        const res = await fetch('/api/user/settings/account', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          notify(data.error || 'Erreur lors de la suppression', false);
+          modalDelete.style.display = 'none';
+          return;
+        }
+
+        window.location.href = data.redirect || '/';
+      } catch {
+        notify('Erreur réseau ou serveur inaccessible.', false);
+        modalDelete.style.display = 'none';
+      }
+    });
+
+    // Filtres signalements
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // Recherche d'utilisateurs et changement de rôle côté admin
+    const adminSearchForm = document.getElementById('form-admin-search');
+    const adminSearchInput = document.getElementById('admin-search-input');
+    const resultsContainer = document.getElementById('admin-search-results');
+
+    if (adminSearchForm) {
+      adminSearchForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const query = adminSearchInput.value.trim();
+        if (!query) return;
+
+        resultsContainer.innerHTML = '<p>Recherche en cours...</p>';
+
+        try {
+          const res = await fetch(`/api/user/settings/admin/search?q=${encodeURIComponent(query)}`);
+          const data = await res.json();
+
+          if (!res.ok) {
+            resultsContainer.innerHTML = `<p>${data.error || 'Erreur lors de la recherche.'}</p>`;
+            return;
+          }
+
+          if (!data.users || data.users.length === 0) {
+            resultsContainer.innerHTML = `<p>Aucun utilisateur trouvé pour « ${query} ».</p>`;
+            return;
+          }
+
+          let html = '<div class="admin-users-list">';
+          data.users.forEach(u => {
+            const isTargetSuperAdmin = u.role === 'superadmin';
+            const isTargetAdmin = u.role === 'admin';
+            const isSelf = u.idUser === callerId;
+
+            // Un admin standard ne peut pas modifier un superadmin, un autre admin, ni lui-même
+            const isDisabled = isSelf || isTargetSuperAdmin || (callerRole === 'admin' && isTargetAdmin);
+
+            html += `
+              <div class="action-item-row" style="padding: 10px 0; border-bottom: 1px solid #24272c;">
+                <div>
+                  <strong>@${u.pseudo}</strong> <span style="color: #8b949e; font-size: 0.85rem;">(${u.email})</span>
+                  <div style="font-size: 0.8rem; color: #636b76;">
+                    Rôle actuel : <strong style="color: ${u.role === 'superadmin' ? '#f0883e' : 'inherit'}">${(u.role || 'user').toUpperCase()}</strong>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  ${isDisabled ? `
+                    <span style="font-size: 0.8rem; color: #636b76; font-style: italic;">Non modifiable</span>
+                  ` : `
+                    <select class="admin-role-select" data-user-id="${u.idUser}" style="background: #0b0e11; border: 1px solid #2d333b; color: #e6edf3; padding: 6px 10px; border-radius: 4px;">
+                      <option value="user" ${u.role === 'user' || !u.role ? 'selected' : ''}>Membre</option>
+                      <option value="moderateur" ${u.role === 'moderateur' || u.role === 'modo' ? 'selected' : ''}>Modérateur</option>
+                      ${callerRole === 'superadmin' ? `
+                        <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+                      ` : ''}
+                    </select>
+                    <button type="button" class="btn-primary-action btn-save-role" data-user-id="${u.idUser}">Appliquer</button>
+                  `}
+                </div>
+              </div>
+            `;
+          });
+          html += '</div>';
+
+          resultsContainer.innerHTML = html;
+
+          document.querySelectorAll('.btn-save-role').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              const idUser = btn.dataset.userId;
+              const select = document.querySelector(`.admin-role-select[data-user-id="${idUser}"]`);
+              const role = select.value;
+
+              try {
+                const patchRes = await fetch('/api/user/settings/admin/role', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ idUser, role })
+                });
+                const patchData = await patchRes.json();
+
+                if (!patchRes.ok) {
+                  notify(patchData.error || 'Erreur modification rôle', false);
+                } else {
+                  notify('Rôle mis à jour avec succès.');
+                  adminSearchForm.dispatchEvent(new Event('submit'));
+                }
+              } catch {
+                notify('Erreur réseau.', false);
+              }
+            });
+          });
+
+        } catch {
+          resultsContainer.innerHTML = '<p>Erreur réseau ou serveur inaccessible.</p>';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

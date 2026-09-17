@@ -4,8 +4,9 @@ const cookieParser = require('cookie-parser');
 
 const authRoutes = require('./routes/authRoutes');
 const friendshipRoutes = require('./routes/friendshipRoutes');
-const authMiddleware = require('./middlewares/authMiddleware');
 const profileRoutes = require('./routes/profileRoutes');
+const userRoutes = require('./routes/userRoutes');
+const authMiddleware = require('./middlewares/authMiddleware');
 const profileService = require('./services/profileService');
 const friendshipModel = require('./models/friendshipModel');
 const db = require('./config/database');
@@ -71,7 +72,7 @@ app.get('/profile', authMiddleware, async (req, res) => {
   }
 });
 
-// Modification de profil (DOIT être avant /profile/:pseudo pour éviter le conflit de route)
+// Modification de profil
 app.get('/profile/edit', authMiddleware, async (req, res) => {
   try {
     const profile = await profileService.getMyProfile(req.user.idUser);
@@ -94,6 +95,29 @@ app.post('/profile/edit', authMiddleware, async (req, res) => {
       profile: { ...profile, ...req.body }, 
       error: err.message 
     });
+  }
+});
+
+// Page des Paramètres (chargement des données fraîches depuis SQLite)
+app.get('/settings', authMiddleware, (req, res) => {
+  try {
+    const user = db.prepare(`
+      SELECT idUser, pseudo, email, dateNaissance, role
+      FROM Utilisateur
+      WHERE idUser = ?
+    `).get(req.user.idUser);
+
+    if (!user) {
+      return res.redirect('/');
+    }
+
+    res.render('settings', {
+      user,
+      title: 'Paramètres'
+    });
+  } catch (err) {
+    console.error('Erreur GET /settings :', err);
+    res.redirect('/profile');
   }
 });
 
@@ -138,5 +162,6 @@ app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/friendships', friendshipRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/user', userRoutes);
 
 module.exports = app;
