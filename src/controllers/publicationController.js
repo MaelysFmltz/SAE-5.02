@@ -1,6 +1,7 @@
 const db = require('../config/database');
-
 const postModel = require('../models/postModel');
+const hashtagModel = require('../models/hashtagModel');
+const { extractHashtags } = require('../utils/hashtagUtils');
 
 function creerPublication(req, res) {
     const idUser = req.user.idUser;
@@ -23,6 +24,12 @@ function creerPublication(req, res) {
             Number(visibilite)
         );
 
+        // Détection et enregistrement des hashtags dans PubliHashtag
+        const hashtags = extractHashtags(contenuPub);
+        if (hashtags.length > 0) {
+            hashtagModel.associerHashtagsPubli(db, publication.idPubli, hashtags);
+        }
+
         return res.status(201).json(publication);
 
     } catch (error) {
@@ -33,8 +40,6 @@ function creerPublication(req, res) {
         });
     }
 }
-
-
 
 function obtenirPublication(req, res) {
     const idPubli = Number(req.params.idPubli);

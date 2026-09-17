@@ -10,13 +10,16 @@ const publicationRoutes = require('./routes/publicationRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const friendshipRoutes = require('./routes/friendshipRoutes');
 const profileRoutes = require('./routes/profileRoutes');
+const userRoutes = require('./routes/userRoutes');
+const searchRoutes = require('./routes/searchRoutes');
+
 const commentController = require('./controllers/commentController');
 const authMiddleware = require('./middlewares/authMiddleware');
-const searchRoutes = require('./routes/searchRoutes');
 const profileService = require('./services/profileService');
 const friendshipModel = require('./models/friendshipModel');
 const postService = require('./services/postService');
 const db = require('./config/database');
+const { linkifyHashtags } = require('./utils/hashtagUtils');
 
 const app = express();
 
@@ -36,12 +39,11 @@ app.get('/', (req, res) => {
   res.render('login');
 });
 
-// Fil d'actualité
 app.get('/login', (req, res) => {
   res.render('login');
 });
 
-// ROUTE /home (Fil d'actualité avec suggestions)
+// ROUTE /home (Fil d'actualité avec suggestions et hashtags cliquables)
 app.get('/home', authMiddleware, (req, res) => {
   try {
     const publications = postService.getFeedForUser(req.user.idUser);
@@ -57,7 +59,8 @@ app.get('/home', authMiddleware, (req, res) => {
     res.render('feed', {
       user: req.user,
       publications,
-      suggestions
+      suggestions,
+      linkifyHashtags
     });
   } catch (err) {
     console.error('Erreur GET /home :', err);
@@ -65,7 +68,8 @@ app.get('/home', authMiddleware, (req, res) => {
     res.render('feed', {
       user: req.user,
       publications: [],
-      suggestions: []
+      suggestions: [],
+      linkifyHashtags
     });
   }
 });
@@ -94,8 +98,31 @@ app.get('/profile', authMiddleware, async (req, res) => {
   }
 });
 
+// Page des Paramètres
+app.get('/settings', authMiddleware, (req, res) => {
+  try {
+    const user = db.prepare(`
+      SELECT idUser, pseudo, email, dateNaissance, role
+      FROM Utilisateur
+      WHERE idUser = ?
+    `).get(req.user.idUser);
+
+    if (!user) {
+      return res.redirect('/login');
+    }
+
+    res.render('settings', {
+      user,
+      title: 'Paramètres'
+    });
+  } catch (err) {
+    console.error('Erreur GET /settings :', err);
+    res.redirect('/profile');
+  }
+});
+
 app.get('/publication/create', authMiddleware, (req, res) => {
-    res.render('publication-create');
+  res.render('publication-create');
 });
 
 app.get('/publication/:idPubli', authMiddleware, commentController.renderPostPage);
@@ -203,12 +230,12 @@ app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
 app.use('/search', searchRoutes);
 
 // 4. Routes API (Back)
-
 app.use('/api/auth', authRoutes);
 app.use('/api/publications', postRoutes);
 app.use('/api/publications', publicationRoutes);
 app.use('/api/friendships', friendshipRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/user', userRoutes);
 
 module.exports = app;

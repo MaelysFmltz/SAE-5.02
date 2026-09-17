@@ -1,4 +1,7 @@
 const postService = require('../services/postService');
+const hashtagModel = require('../models/hashtagModel');
+const { extractHashtags } = require('../utils/hashtagUtils');
+const db = require('../config/database');
 
 function createPublication(req, res) {
     try {
@@ -11,6 +14,14 @@ function createPublication(req, res) {
             visibilite,
             idPubliPartagee || null
         );
+
+        // Liaison automatique des hashtags
+        if (contenuPub) {
+            const hashtags = extractHashtags(contenuPub);
+            if (hashtags.length > 0) {
+                hashtagModel.associerHashtagsPubli(db, publication.idPubli, hashtags);
+            }
+        }
 
         return res.status(201).json({
             message: 'Publication créée avec succès',
@@ -48,7 +59,8 @@ function createRepost(req, res) {
 // Créer un Duo
 function createDuo(req, res) {
     try {
-        const { contenuPub, visibilite } = req.body;
+        const { contenuPub } = req.body;
+        const visibilite = Number(req.body.visibilite);
 
         const publication = postService.createDuo(
             req.user.idUser,
@@ -56,6 +68,13 @@ function createDuo(req, res) {
             contenuPub,
             visibilite
         );
+
+        if (contenuPub) {
+            const hashtags = extractHashtags(contenuPub);
+            if (hashtags.length > 0) {
+                hashtagModel.associerHashtagsPubli(db, publication.idPubli, hashtags);
+            }
+        }
 
         return res.status(201).json({
             message: 'Duo créé avec succès',
@@ -71,7 +90,8 @@ function createDuo(req, res) {
 // Créer un collage
 function createCollage(req, res) {
     try {
-        const { contenuPub, visibilite } = req.body;
+        const { contenuPub } = req.body;
+        const visibilite = Number(req.body.visibilite);
 
         const publication = postService.createCollage(
             req.user.idUser,
@@ -79,6 +99,13 @@ function createCollage(req, res) {
             contenuPub,
             visibilite
         );
+
+        if (contenuPub) {
+            const hashtags = extractHashtags(contenuPub);
+            if (hashtags.length > 0) {
+                hashtagModel.associerHashtagsPubli(db, publication.idPubli, hashtags);
+            }
+        }
 
         return res.status(201).json({
             message: 'Collage créé avec succès',
