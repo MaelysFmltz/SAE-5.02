@@ -18,5 +18,7 @@ router.get('/:idConversation/members', conversationController.getMembers);
 router.post('/:idConversation/members', conversationController.addParticipants);
 router.delete('/:idConversation/members/:idUser', conversationController.removeParticipant);
 router.put('/:idConversation', conversationController.renameGroup);
+router.post('/:idConversation/leave', conversationController.leaveGroup);
+router.delete('/:idConversation', conversationController.deleteConversation);
 
 module.exports = router;

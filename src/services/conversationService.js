@@ -268,13 +268,55 @@ async function renameGroup(idConversation, idUserCourant, nouveauTitre) {
   return titreNettoye;
 }
 
+/**
+ * Supprime une conversation pour de bon.
+ * - Conversation de groupe : réservé au créateur/chef (supprime le groupe
+ *   pour tout le monde) ; les autres membres doivent utiliser leaveGroup.
+ * - Conversation directe : n'importe lequel des deux membres peut la
+ *   supprimer, pour de vrai, pour les deux (pas de masquage "pour soi").
+ */
+async function deleteConversation(idConversation, idUserCourant) {
+  ensureIsMember(idConversation, idUserCourant);
+
+  const conversation = conversationModel.getConversationById(idConversation);
+
+  if (!conversation) {
+    throw httpError('Conversation introuvable', 404);
+  }
+
+  if (conversation.titreGroupe) {
+    ensureEstCreateur(idConversation, idUserCourant);
+  }
+
+  conversationModel.deleteConversation(idConversation);
+}
+
+/**
+ * Un membre (non-chef) quitte un groupe : il est simplement retiré de la
+ * conversation, qui continue d'exister pour les autres membres. Le chef ne
+ * peut pas quitter par cette action (il doit supprimer le groupe).
+ */
+async function leaveGroup(idConversation, idUserCourant) {
+  ensureIsMember(idConversation, idUserCourant);
+  ensureConversationDeGroupe(idConversation);
+
+  if (conversationModel.isCreateur(idConversation, idUserCourant)) {
+    throw httpError('Le créateur du groupe doit le supprimer plutôt que le quitter', 400);
+  }
+
+  conversationMemberModel.removeMember(idConversation, idUserCourant);
+}
+
 module.exports = {
   createDirectConversation,
   createGroupConversation,
   getMyConversations,
   ensureIsMember,
+  isCreateur: conversationModel.isCreateur,
   getConversationMembers,
   addParticipants,
   removeParticipant,
-  renameGroup
+  renameGroup,
+  deleteConversation,
+  leaveGroup
 };

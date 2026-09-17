@@ -118,6 +118,26 @@ async function renameGroup(req, res) {
   }
 }
 
+async function deleteConversation(req, res) {
+  try {
+    const idConversation = parseIdConversation(req.params.idConversation);
+    await conversationService.deleteConversation(idConversation, req.user.idUser);
+    return res.status(200).json({ message: 'Conversation supprimée' });
+  } catch (err) {
+    return res.status(err.status || 400).json({ error: err.message });
+  }
+}
+
+async function leaveGroup(req, res) {
+  try {
+    const idConversation = parseIdConversation(req.params.idConversation);
+    await conversationService.leaveGroup(idConversation, req.user.idUser);
+    return res.status(200).json({ message: 'Vous avez quitté le groupe' });
+  } catch (err) {
+    return res.status(err.status || 400).json({ error: err.message });
+  }
+}
+
 module.exports = {
   getMyConversations,
   createDirect,
@@ -125,5 +145,7 @@ module.exports = {
   getMembers,
   addParticipants,
   removeParticipant,
-  renameGroup
+  renameGroup,
+  deleteConversation,
+  leaveGroup
 };

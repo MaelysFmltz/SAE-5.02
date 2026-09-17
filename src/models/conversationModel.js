@@ -110,6 +110,16 @@ function getMembers(idConversation) {
 }
 
 /**
+ * Supprime définitivement une conversation (cascade sur ConversationMembre
+ * et Message via ON DELETE CASCADE)
+ */
+function deleteConversation(idConversation) {
+  return db.prepare(
+    'DELETE FROM Conversation WHERE idConversation = ?'
+  ).run(idConversation);
+}
+
+/**
  * Vérifie qu'un utilisateur fait bien partie d'une conversation
  */
 function isMember(idConversation, idUser) {
@@ -135,6 +145,7 @@ module.exports = {
   getConversationsForUser,
   getConversationById,
   updateTitre,
+  deleteConversation,
   getMembers,
   isMember,
   isCreateur

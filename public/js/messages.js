@@ -10,11 +10,13 @@
   const idConversation = Number(scriptTag.dataset.conversationId);
   const estGroupe = scriptTag.dataset.isGroup === 'true';
   const idUserCourant = Number(scriptTag.dataset.userId);
+  const estCreateurCourant = scriptTag.dataset.estCreateur === 'true';
 
   const chatMessages = document.getElementById('chat-messages');
   const chatForm = document.getElementById('chat-form');
   const chatInput = document.getElementById('chat-input');
   const btnGroupMembers = document.getElementById('btn-group-members');
+  const btnDeleteConversation = document.getElementById('btn-delete-conversation');
   const headerTitle = document.querySelector('.header-title');
 
   const POLL_INTERVAL_MS = 3000;
@@ -30,33 +32,192 @@
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  function idsDejaAffiches() {
-    const ids = new Set();
+  function bullesAffichees() {
+    const map = new Map();
     chatMessages.querySelectorAll('.bubble[data-id]').forEach((el) => {
-      ids.add(Number(el.dataset.id));
+      map.set(Number(el.dataset.id), el);
     });
-    return ids;
+    return map;
   }
 
   /**
    * Construit une bulle de message en DOM pur (textContent), jamais via
    * innerHTML, pour ne jamais interpréter le contenu d'un message comme
-   * du HTML.
+   * du HTML. Affiche "modifié" si le message a été édité, ou un texte de
+   * substitution s'il a été supprimé (trace, comme WhatsApp).
    */
   function creerBulle(message) {
     const bulle = document.createElement('div');
-    bulle.className = 'bubble ' + (message.idUser === idUserCourant ? 'mine' : 'theirs');
+    const estAMoi = message.idUser === idUserCourant;
+    bulle.className = 'bubble ' + (estAMoi ? 'mine' : 'theirs') + (message.supprime ? ' deleted' : '');
     bulle.dataset.id = String(message.idMessage);
 
-    const texte = document.createTextNode(message.contenu);
+    if (message.supprime) {
+      const texteSupprime = document.createElement('span');
+      texteSupprime.className = 'bubble-deleted-text';
+      texteSupprime.textContent = 'Ce message a été supprimé';
+      bulle.appendChild(texteSupprime);
+
+      const meta = document.createElement('div');
+      meta.className = 'bubble-meta';
+      meta.textContent = formatHeure(message.dateEnvoi);
+      bulle.appendChild(meta);
+
+      return bulle;
+    }
+
+    const texte = document.createElement('span');
+    texte.className = 'bubble-text';
+    texte.textContent = message.contenu;
     bulle.appendChild(texte);
 
     const meta = document.createElement('div');
     meta.className = 'bubble-meta';
-    meta.textContent = formatHeure(message.dateEnvoi);
+    meta.textContent = formatHeure(message.dateEnvoi) + (message.dateModification ? ' · modifié' : '');
     bulle.appendChild(meta);
 
+    // Chacun peut modifier/supprimer ses propres messages ; le chef d'un
+    // groupe peut en plus supprimer (modération) les messages des autres.
+    const peutModifier = estAMoi;
+    const peutSupprimer = estAMoi || (estGroupe && estCreateurCourant);
+
+    if (peutModifier || peutSupprimer) {
+      const actions = document.createElement('div');
+      actions.className = 'bubble-actions';
+
+      if (peutModifier) {
+        const btnEdit = document.createElement('button');
+        btnEdit.type = 'button';
+        btnEdit.className = 'bubble-action';
+        btnEdit.title = 'Modifier';
+        btnEdit.textContent = '✏️';
+        btnEdit.addEventListener('click', () => activerEditionMessage(bulle, message));
+        actions.appendChild(btnEdit);
+      }
+
+      if (peutSupprimer) {
+        const btnDelete = document.createElement('button');
+        btnDelete.type = 'button';
+        btnDelete.className = 'bubble-action';
+        btnDelete.title = 'Supprimer';
+        btnDelete.textContent = '🗑️';
+        btnDelete.addEventListener('click', () => supprimerMessage(message, bulle));
+        actions.appendChild(btnDelete);
+      }
+
+      bulle.appendChild(actions);
+    }
+
     return bulle;
+  }
+
+  /**
+   * Remplace le texte d'une bulle par un champ d'édition. La bulle est
+   * marquée "editing" pour que le polling ne l'écrase pas pendant la saisie.
+   */
+  function activerEditionMessage(bulle, message) {
+    if (bulle.classList.contains('editing')) {
+      return;
+    }
+
+    bulle.classList.add('editing');
+    bulle.innerHTML = '';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'bubble-edit-input';
+    input.maxLength = 2000;
+    input.value = message.contenu;
+    bulle.appendChild(input);
+
+    const controles = document.createElement('div');
+    controles.className = 'bubble-edit-controls';
+
+    const btnAnnuler = document.createElement('button');
+    btnAnnuler.type = 'button';
+    btnAnnuler.className = 'bubble-action';
+    btnAnnuler.textContent = '✕';
+    btnAnnuler.addEventListener('click', () => bulle.replaceWith(creerBulle(message)));
+
+    const btnValider = document.createElement('button');
+    btnValider.type = 'button';
+    btnValider.className = 'bubble-action';
+    btnValider.textContent = '✓';
+    btnValider.addEventListener('click', () => validerEditionMessage(bulle, message, input, btnValider));
+
+    controles.appendChild(btnAnnuler);
+    controles.appendChild(btnValider);
+    bulle.appendChild(controles);
+
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+
+    input.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        btnValider.click();
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        btnAnnuler.click();
+      }
+    });
+  }
+
+  async function validerEditionMessage(bulle, message, input, btnValider) {
+    const nouveauContenu = input.value.trim();
+
+    if (nouveauContenu.length === 0) {
+      alert('Le message ne peut pas être vide.');
+      return;
+    }
+
+    btnValider.disabled = true;
+
+    try {
+      const res = await fetch(`/api/conversations/${idConversation}/messages/${message.idMessage}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contenu: nouveauContenu })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Impossible de modifier le message.');
+        btnValider.disabled = false;
+        return;
+      }
+
+      bulle.replaceWith(creerBulle(data));
+    } catch (err) {
+      console.error('Erreur modification message :', err);
+      alert('Erreur réseau lors de la modification du message.');
+      btnValider.disabled = false;
+    }
+  }
+
+  async function supprimerMessage(message, bulle) {
+    if (!confirm('Supprimer ce message ?')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/conversations/${idConversation}/messages/${message.idMessage}`, {
+        method: 'DELETE'
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Impossible de supprimer ce message.');
+        return;
+      }
+
+      bulle.replaceWith(creerBulle(data));
+    } catch (err) {
+      console.error('Erreur suppression message :', err);
+      alert('Erreur réseau lors de la suppression du message.');
+    }
   }
 
   async function chargerNouveauxMessages() {
@@ -79,11 +240,17 @@
       return;
     }
 
-    const dejaAffiches = idsDejaAffiches();
+    const affichees = bullesAffichees();
     let aRecuNouveauxMessages = false;
 
     messages.forEach((message) => {
-      if (dejaAffiches.has(message.idMessage)) {
+      const existante = affichees.get(message.idMessage);
+
+      if (existante) {
+        // Ne pas écraser une bulle en cours d'édition par l'utilisateur
+        if (!existante.classList.contains('editing')) {
+          existante.replaceWith(creerBulle(message));
+        }
         return;
       }
 
@@ -139,7 +306,41 @@
   });
 
   scrollToBottom();
+  // Enrichit immédiatement les bulles rendues côté serveur (boutons
+  // modifier/supprimer) au lieu d'attendre le premier polling.
+  chargerNouveauxMessages();
   setInterval(chargerNouveauxMessages, POLL_INTERVAL_MS);
+
+  // ============================================================
+  // SUPPRESSION D'UNE CONVERSATION DIRECTE
+  // ============================================================
+
+  if (!estGroupe && btnDeleteConversation) {
+    btnDeleteConversation.addEventListener('click', async () => {
+      if (!confirm('Supprimer cette conversation ? Elle sera supprimée pour vous et pour l’autre personne.')) {
+        return;
+      }
+
+      btnDeleteConversation.disabled = true;
+
+      try {
+        const res = await fetch(`/api/conversations/${idConversation}`, { method: 'DELETE' });
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || 'Impossible de supprimer la conversation.');
+          btnDeleteConversation.disabled = false;
+          return;
+        }
+
+        window.location.href = '/messages';
+      } catch (err) {
+        console.error('Erreur suppression conversation :', err);
+        alert('Erreur réseau lors de la suppression de la conversation.');
+        btnDeleteConversation.disabled = false;
+      }
+    });
+  }
 
   // ============================================================
   // GESTION DU GROUPE (membres, ajout/retrait, renommage)
@@ -257,6 +458,70 @@
 
     const actions = document.createElement('div');
     actions.className = 'add-participant-actions';
+
+    if (estCreateurCourant) {
+      const btnSupprimerGroupe = document.createElement('button');
+      btnSupprimerGroupe.type = 'button';
+      btnSupprimerGroupe.className = 'btn-remove-member';
+      btnSupprimerGroupe.textContent = 'Supprimer le groupe';
+      btnSupprimerGroupe.addEventListener('click', async () => {
+        if (!confirm('Supprimer ce groupe pour tout le monde ? Cette action est irréversible.')) {
+          return;
+        }
+
+        btnSupprimerGroupe.disabled = true;
+
+        try {
+          const res = await fetch(`/api/conversations/${idConversation}`, { method: 'DELETE' });
+          const data = await res.json();
+
+          if (!res.ok) {
+            alert(data.error || 'Impossible de supprimer le groupe.');
+            btnSupprimerGroupe.disabled = false;
+            return;
+          }
+
+          window.location.href = '/messages';
+        } catch (err) {
+          console.error('Erreur suppression groupe :', err);
+          alert('Erreur réseau lors de la suppression du groupe.');
+          btnSupprimerGroupe.disabled = false;
+        }
+      });
+
+      actions.appendChild(btnSupprimerGroupe);
+    } else {
+      const btnQuitter = document.createElement('button');
+      btnQuitter.type = 'button';
+      btnQuitter.className = 'btn-remove-member';
+      btnQuitter.textContent = 'Quitter le groupe';
+      btnQuitter.addEventListener('click', async () => {
+        if (!confirm('Quitter ce groupe ?')) {
+          return;
+        }
+
+        btnQuitter.disabled = true;
+
+        try {
+          const res = await fetch(`/api/conversations/${idConversation}/leave`, { method: 'POST' });
+          const data = await res.json();
+
+          if (!res.ok) {
+            alert(data.error || 'Impossible de quitter le groupe.');
+            btnQuitter.disabled = false;
+            return;
+          }
+
+          window.location.href = '/messages';
+        } catch (err) {
+          console.error('Erreur pour quitter le groupe :', err);
+          alert('Erreur réseau lors de la sortie du groupe.');
+          btnQuitter.disabled = false;
+        }
+      });
+
+      actions.appendChild(btnQuitter);
+    }
 
     const btnFermer = document.createElement('button');
     btnFermer.type = 'button';

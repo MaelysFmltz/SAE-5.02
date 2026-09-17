@@ -27,7 +27,15 @@
           </svg>
         </button>
       <% } else { %>
-        <div class="header-spacer"></div>
+        <button type="button" id="btn-delete-conversation" class="icon-btn" title="Supprimer la conversation">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+          </svg>
+        </button>
       <% } %>
     </header>
 
@@ -40,9 +48,13 @@
     <div class="chat-container">
       <div class="chat-messages" id="chat-messages">
         <% messages.forEach(msg => { %>
-          <div class="bubble <%= msg.idUser === idUserCourant ? 'mine' : 'theirs' %>" data-id="<%= msg.idMessage %>">
-            <%= msg.contenu %>
-            <div class="bubble-meta"><%= new Date(msg.dateEnvoi).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) %></div>
+          <div class="bubble <%= msg.idUser === idUserCourant ? 'mine' : 'theirs' %><%= msg.supprime ? ' deleted' : '' %>" data-id="<%= msg.idMessage %>">
+            <% if (msg.supprime) { %>
+              <span class="bubble-deleted-text">Ce message a été supprimé</span>
+            <% } else { %>
+              <span class="bubble-text"><%= msg.contenu %></span>
+            <% } %>
+            <div class="bubble-meta"><%= new Date(msg.dateEnvoi).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) %><%= (!msg.supprime && msg.dateModification) ? ' · modifié' : '' %></div>
           </div>
         <% }) %>
       </div>
@@ -58,6 +70,6 @@
     </div>
   </div>
 
-  <script src="/js/messages.js" data-conversation-id="<%= idConversation %>" data-is-group="<%= estGroupe ? 'true' : 'false' %>" data-user-id="<%= idUserCourant %>" data-titre-groupe="<%= estGroupe ? titreConversation : '' %>"></script>
+  <script src="/js/messages.js" data-conversation-id="<%= idConversation %>" data-is-group="<%= estGroupe ? 'true' : 'false' %>" data-user-id="<%= idUserCourant %>" data-titre-groupe="<%= estGroupe ? titreConversation : '' %>" data-est-createur="<%= estCreateurCourant ? 'true' : 'false' %>"></script>
 </body>
 </html>

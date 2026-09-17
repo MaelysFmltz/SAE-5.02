@@ -52,8 +52,50 @@ async function markAsRead(req, res) {
   }
 }
 
+/**
+ * Parse un idMessage de route en entier valide, ou lève une erreur 400.
+ */
+function parseIdMessage(raw) {
+  const idMessage = Number(raw);
+
+  if (!Number.isInteger(idMessage) || idMessage <= 0) {
+    const err = new Error('Identifiant de message invalide');
+    err.status = 400;
+    throw err;
+  }
+
+  return idMessage;
+}
+
+async function editMessage(req, res) {
+  try {
+    const idConversation = parseIdConversation(req.params.idConversation);
+    const idMessage = parseIdMessage(req.params.idMessage);
+    const { contenu } = req.body;
+
+    const message = await messageService.editMessage(idConversation, req.user.idUser, idMessage, contenu);
+    return res.status(200).json(message);
+  } catch (err) {
+    return res.status(err.status || 400).json({ error: err.message });
+  }
+}
+
+async function deleteMessage(req, res) {
+  try {
+    const idConversation = parseIdConversation(req.params.idConversation);
+    const idMessage = parseIdMessage(req.params.idMessage);
+
+    const message = await messageService.deleteMessage(idConversation, req.user.idUser, idMessage);
+    return res.status(200).json(message);
+  } catch (err) {
+    return res.status(err.status || 400).json({ error: err.message });
+  }
+}
+
 module.exports = {
   getMessages,
   sendMessage,
-  markAsRead
+  markAsRead,
+  editMessage,
+  deleteMessage
 };

@@ -160,6 +160,8 @@ CREATE TABLE IF NOT EXISTS Message (
     dateEnvoi DATETIME DEFAULT CURRENT_TIMESTAMP,
     lu INTEGER DEFAULT 0,
     dateLecture DATETIME,
+    dateModification DATETIME,
+    supprime INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (idConversation) REFERENCES Conversation(idConversation) ON DELETE CASCADE,
     FOREIGN KEY (idUser) REFERENCES Utilisateur(idUser) ON DELETE CASCADE
 );

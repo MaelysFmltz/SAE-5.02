@@ -52,4 +52,23 @@ if (conversationMembreExiste) {
   }
 }
 
+const messageExiste = db
+  .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='Message'")
+  .get();
+
+if (messageExiste) {
+  const colonnesMessage = db.prepare('PRAGMA table_info(Message)').all();
+  const noms = colonnesMessage.map((col) => col.name);
+
+  if (!noms.includes('dateModification')) {
+    db.exec('ALTER TABLE Message ADD COLUMN dateModification DATETIME');
+    console.log('Migration : colonne dateModification ajoutée à Message.');
+  }
+
+  if (!noms.includes('supprime')) {
+    db.exec('ALTER TABLE Message ADD COLUMN supprime INTEGER NOT NULL DEFAULT 0');
+    console.log('Migration : colonne supprime ajoutée à Message.');
+  }
+}
+
 module.exports = db;

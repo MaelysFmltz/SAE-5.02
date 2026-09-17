@@ -121,10 +121,15 @@ app.get('/messages/:idConversation', authMiddleware, async (req, res) => {
     const conversations = await conversationService.getMyConversations(req.user.idUser);
     const conv = conversations ? conversations.find(c => c.idConversation === idConversation) : null;
 
+    const estCreateurCourant = (membres || []).some(
+      (m) => m.idUser === req.user.idUser && !!m.estCreateur
+    );
+
     res.render('conversation', {
       idConversation,
       titreConversation: conv ? (conv.titreGroupe || conv.autrePseudo || 'Discussion') : 'Discussion',
       estGroupe: !!(conv && conv.titreGroupe),
+      estCreateurCourant,
       membres: membres || [],
       messages: messages || [],
       idUserCourant: req.user.idUser,

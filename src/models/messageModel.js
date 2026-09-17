@@ -18,11 +18,7 @@ function createMessage(idConversation, idUser, contenu) {
     'INSERT INTO Message (idConversation, idUser, contenu) VALUES (?, ?, ?)'
   ).run(idConversation, idUser, contenu);
 
-  return db.prepare(
-    `SELECT idMessage, idConversation, idUser, contenu, dateEnvoi, lu, dateLecture
-     FROM Message
-     WHERE idMessage = ?`
-  ).get(info.lastInsertRowid);
+  return getMessageById(info.lastInsertRowid);
 }
 
 /**
@@ -30,11 +26,45 @@ function createMessage(idConversation, idUser, contenu) {
  */
 function getMessagesByConversation(idConversation) {
   return db.prepare(
-    `SELECT idMessage, idConversation, idUser, contenu, dateEnvoi, lu, dateLecture
+    `SELECT idMessage, idConversation, idUser, contenu, dateEnvoi, lu, dateLecture, dateModification, supprime
      FROM Message
      WHERE idConversation = ?
      ORDER BY dateEnvoi ASC`
   ).all(idConversation);
+}
+
+/**
+ * Récupère un message par son id
+ */
+function getMessageById(idMessage) {
+  return db.prepare(
+    `SELECT idMessage, idConversation, idUser, contenu, dateEnvoi, lu, dateLecture, dateModification, supprime
+     FROM Message
+     WHERE idMessage = ?`
+  ).get(idMessage);
+}
+
+/**
+ * Remplace le contenu d'un message et marque sa date de modification
+ * (affichée côté front comme badge "modifié")
+ */
+function updateContenu(idMessage, contenu) {
+  db.prepare(
+    `UPDATE Message SET contenu = ?, dateModification = CURRENT_TIMESTAMP WHERE idMessage = ?`
+  ).run(contenu, idMessage);
+  return getMessageById(idMessage);
+}
+
+/**
+ * Supprime "en douceur" un message : le contenu est effacé et le flag
+ * supprime posé, mais la ligne reste en base (trace "message supprimé"
+ * affichée côté front, à la place du contenu)
+ */
+function softDeleteMessage(idMessage) {
+  db.prepare(
+    `UPDATE Message SET contenu = '', supprime = 1 WHERE idMessage = ?`
+  ).run(idMessage);
+  return getMessageById(idMessage);
 }
 
 /**
@@ -52,5 +82,8 @@ function markConversationAsRead(idConversation, idUser) {
 module.exports = {
   createMessage,
   getMessagesByConversation,
+  getMessageById,
+  updateContenu,
+  softDeleteMessage,
   markConversationAsRead
 };
