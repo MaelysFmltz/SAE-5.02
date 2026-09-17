@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
@@ -185,7 +187,7 @@ app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/friendships', friendshipRoutes);
 app.use('/api/profile', profileRoutes);
-app.use('/conversations', conversationRoutes);
-app.use('/conversations', messageRoutes);
+app.use('/api/conversations', conversationRoutes);
+app.use('/api/conversations', messageRoutes);
 
 module.exports = app;

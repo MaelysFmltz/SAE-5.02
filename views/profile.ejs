@@ -162,7 +162,7 @@
         btnMessage.disabled = true;
 
         try {
-          const res = await fetch('/conversations/direct', {
+          const res = await fetch('/api/conversations/direct', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ idUserDestinataire })

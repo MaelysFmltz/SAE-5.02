@@ -10,14 +10,28 @@ const request = require('supertest');
 const app = require('../src/app'); // ou le fichier qui exporte ton app Express (pas server.js s'il fait juste .listen())
 
 describe('Messagerie', () => {
-  let tokenA, tokenB, conversationId;
+  let tokenA, tokenB, conversationId, idUserB;
 
   beforeAll(async () => {
+    await request(app).post('/api/auth/register').send({
+      pseudo: 'userA',
+      email: 'userA@test.com',
+      motDePasse: 'T0T0t@t@',
+      dateNaissance: '2000-01-01'
+    });
+    await request(app).post('/api/auth/register').send({
+      pseudo: 'userB',
+      email: 'userB@test.com',
+      motDePasse: 'T0T0t@t@',
+      dateNaissance: '2000-01-01'
+    });
+    idUserB = registerB.body.user.idUser;
+
     // Se connecter avec 2 comptes de test déjà créés en base (ou les créer ici via POST /register)
-    const resA = await request(app).post('/api/login').send({ email: 'userA@test.com', password: 'motdepasse' });
+    const resA = await request(app).post('/api/auth/login').send({ email: 'userA@test.com', motDePasse: 'T0T0t@t@' });
     tokenA = resA.body.token;
 
-    const resB = await request(app).post('/api/login').send({ email: 'userB@test.com', password: 'motdepasse' });
+    const resB = await request(app).post('/api/auth/login').send({ email: 'userB@test.com', motDePasse: 'T0T0t@t@' });
     tokenB = resB.body.token;
   });
 
@@ -25,7 +39,7 @@ describe('Messagerie', () => {
     const res = await request(app)
       .post('/api/conversations/direct')
       .set('Authorization', `Bearer ${tokenA}`)
-      .send({ userId: 'idDeB' });
+      .send({ userId: 'idUserB' });
 
     expect(res.status).toBe(201);
     conversationId = res.body.id;
