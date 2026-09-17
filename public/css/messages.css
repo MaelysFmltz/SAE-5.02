@@ -99,14 +99,18 @@
     margin-top: 40px;
   }
   
-  /* Vue d'une conversation (chat) */
+  /* Vue d'une conversation (chat) : remplit tout l'espace restant sous le
+     header (et le bandeau membres pour un groupe) dans .app-container.no-bottom-nav,
+     qui fait déjà exactement 100vh. Pas de calcul de hauteur en dur ici :
+     ça évite de dépendre d'une bottom-nav qui n'existe pas sur cette page. */
   .chat-container {
     width: 100%;
     max-width: 430px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 60px); /* 60px = hauteur de bottom-nav */
+    flex: 1;
+    min-height: 0;
   }
   
   .chat-messages {
