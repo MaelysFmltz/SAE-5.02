@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Nouvelle publication - Pixora
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="/css/style.css"
+    >
+
+    <link
+        rel="stylesheet"
+        href="/css/post.css"
+    >
+
+</head>
+
+
+<body>
+
+<div class="app-container">
+
+
+    <!-- HEADER -->
+
+    <header class="post-page-header">
+
+        <div class="post-page-logo">
+
+            <img
+                src="/images/logo.jpg"
+                alt="Pixora"
+            >
+
+            <span>
+                PIXORA
+            </span>
+
+        </div>
+
+
+        <div class="post-page-user">
+
+            Bonjour,
+            <strong>
+                <%= user.pseudo %>
+            </strong>
+
+
+            <form
+                action="/api/auth/logout"
+                method="POST"
+            >
+
+                <button
+                    type="submit"
+                    class="logout"
+                >
+                    Déconnexion
+                </button>
+
+            </form>
+
+        </div>
+
+    </header>
+
+
+    <!-- CONTENU -->
+
+    <main class="post-page-main">
+
+        <h1>
+            Nouvelle publication
+        </h1>
+
+
+        <section class="upload-box">
+
+            <h2>
+                Partager une photo ou une vidéo
+            </h2>
+
+
+            <form
+                id="upload-form"
+            >
+
+
+                <!-- MEDIA -->
+
+                <div class="form-group">
+
+                    <label for="media">
+
+                        Photo ou vidéo
+
+                    </label>
+
+
+                    <input
+                        type="file"
+                        id="media"
+                        name="media"
+                        accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/ogg,video/quicktime"
+                        required
+                    >
+
+
+                    <p class="file-help">
+
+                        Images : JPEG, PNG, WEBP — 20 Mo maximum<br>
+
+                        Vidéos : MP4, WEBM, OGG, MOV — 100 Mo maximum
+
+                    </p>
+
+
+                    <!-- PREVIEW -->
+
+                    <div
+                        id="preview-container"
+                        class="preview-container"
+                        style="display: none;"
+                    >
+
+                        <p class="preview-title">
+                            Prévisualisation :
+                        </p>
+
+                        <img
+                            id="image-preview"
+                            src=""
+                            alt="Aperçu de l'image"
+                            style="display: none;"
+                        >
+
+                        <video
+                            id="video-preview"
+                            controls
+                            preload="metadata"
+                            style="display: none;"
+                        ></video>
+
+                    </div>
+
+                </div>
+
+
+                <!-- DESCRIPTION -->
+
+                <div class="form-group">
+
+                    <label for="contenuPub">
+
+                        Description
+
+                    </label>
+
+
+                    <textarea
+                        id="contenuPub"
+                        name="contenuPub"
+                        placeholder="Écrivez quelque chose..."
+                    ></textarea>
+
+                </div>
+
+
+                <!-- VISIBILITÉ -->
+
+                <div class="form-group">
+
+                    <label for="visibilite">
+
+                        Visibilité
+
+                    </label>
+
+
+                    <select
+                        id="visibilite"
+                        name="visibilite"
+                    >
+
+                        <option value="1">
+                            Public
+                        </option>
+
+                        <option value="0">
+                            Privé
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- BOUTON -->
+
+                <button
+                    type="submit"
+                    class="publish-button"
+                >
+
+                    Publier
+
+                </button>
+
+
+                <div
+                    id="message"
+                    role="status"
+                ></div>
+
+
+            </form>
+
+        </section>
+
+    </main>
+
+
+    <!-- NAVIGATION -->
+
+    <%- include('navbar') %>
+
+
+</div>
+
+
+<script src="/js/post.js"></script>
+
+</body>
+
+</html>

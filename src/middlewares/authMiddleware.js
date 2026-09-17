@@ -1,47 +1,237 @@
 const jwt = require('jsonwebtoken');
 
-function authMiddleware(req, res, next) {
+/**
+
+* Détermine si la requête correspond à une page HTML.
+*
+* Les pages HTML peuvent être redirigées vers la page
+* de connexion lorsqu'il n'y a pas de token.
+*
+* Les routes API doivent recevoir une réponse JSON 401.
+  */
+  function isHtmlRequest(req) {
+
+  const originalUrl =
+  (req.originalUrl || '').split('?')[0];
+
+  /*
+
+  * Toutes les routes contenant /api/ ou se terminant
+  * par /api sont considérées comme des API.
+  *
+  * Exemples :
+  *
+  * /api/profile/me
+  * /post/api
+  * /post/api/user/5
+  * /post/api/12
+    */
+    const isApi =
+    originalUrl === '/api' ||
+    originalUrl.startsWith('/api/') ||
+    originalUrl.includes('/api/');
+
+  if (isApi) {
+  return false;
+  }
+
+  /*
+
+  * Une requête GET vers une page normale
+  * est considérée comme HTML.
+    */
+    return req.method === 'GET';
+    }
+
+/**
+
+* Redirige une page HTML vers la connexion.
+  */
+  function redirectToLogin(res) {
+
+  return res.redirect('/');
+  }
+
+/**
+
+* Middleware d'authentification JWT.
+*
+* Le token est recherché :
+*
+* 1. dans le cookie httpOnly "token" ;
+* 2. dans Authorization: Bearer <token>.
+     */
+     function authMiddleware(req, res, next) {
+
   let token = null;
 
-  // 1. Vérification dans les cookies (pour la navigation EJS)
-  if (req.cookies && req.cookies.token) {
-    token = req.cookies.token;
-  } 
-  // 2. Vérification dans les headers HTTP (compatibilité API de ton collègue)
-  else if (req.headers.authorization) {
-    const parts = req.headers.authorization.split(' ');
-    if (parts.length === 2 && parts[0] === 'Bearer') {
-      token = parts[1];
-    }
+  /*
+
+  * =====================================================
+  * 1. COOKIE
+  * =====================================================
+    */
+
+  if (
+  req.cookies &&
+  req.cookies.token
+  ) {
+
+  
+   token =
+       req.cookies.token;
+  
+
   }
 
-  // Aucun token trouvé
-  if (!token) {
-    // Si c'est une requête de page HTML classique, on redirige vers le login
-    if (req.accepts('html')) {
-      return res.redirect('/');
-    }
-    return res.status(401).json({ error: 'Token manquant' });
+  /*
+
+  * =====================================================
+  * 2. HEADER AUTHORIZATION
+  * =====================================================
+    */
+
+  else if (
+  req.headers.authorization
+  ) {
+
+  
+   const authorization =
+       req.headers.authorization.trim();
+
+   const parts =
+       authorization.split(/\s+/);
+
+
+   if (
+       parts.length === 2 &&
+       parts[0].toLowerCase() === 'bearer' &&
+       parts[1]
+   ) {
+
+       token =
+           parts[1];
+   }
+  
+
   }
+
+  /*
+
+  * =====================================================
+  * 3. TOKEN ABSENT
+  * =====================================================
+    */
+
+  if (!token) {
+
+  
+   if (isHtmlRequest(req)) {
+
+       return redirectToLogin(res);
+   }
+
+   return res.status(401).json({
+       error: 'Token manquant'
+   });
+  
+
+  }
+
+  /*
+
+  * =====================================================
+  * 4. VALIDATION JWT
+  * =====================================================
+    */
 
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || 'secret_de_secours_temporaire'
-    );
 
-    req.user = decoded; // Injecte { idUser, pseudo, role } dans la requête
-    next();
+  
+   const secret =
+       process.env.JWT_SECRET ||
+       'secret_de_secours_temporaire';
+
+
+   const decoded =
+       jwt.verify(
+           token,
+           secret
+       );
+
+
+   /*
+    * Le token doit contenir un identifiant
+    * utilisateur valide.
+    */
+   if (
+       !decoded ||
+       !decoded.idUser
+   ) {
+
+       if (
+           req.cookies &&
+           req.cookies.token
+       ) {
+
+           res.clearCookie('token');
+       }
+
+
+       if (isHtmlRequest(req)) {
+
+           return redirectToLogin(res);
+       }
+
+
+       return res.status(401).json({
+           error: 'Token invalide'
+       });
+   }
+
+
+   /*
+    * Identité authentifiée.
+    */
+   req.user = decoded;
+
+
+   return next();
+  
+
   } catch (err) {
-    // Token invalide ou expiré
-    if (req.cookies && req.cookies.token) {
-      res.clearCookie('token');
-    }
-    if (req.accepts('html')) {
-      return res.redirect('/');
-    }
-    return res.status(401).json({ error: 'Token invalide ou expiré' });
+
+  
+   console.error(
+       'Erreur authentification :',
+       err.message
+   );
+
+
+   /*
+    * Suppression du cookie invalide ou expiré.
+    */
+   if (
+       req.cookies &&
+       req.cookies.token
+   ) {
+
+       res.clearCookie('token');
+   }
+
+
+   if (isHtmlRequest(req)) {
+
+       return redirectToLogin(res);
+   }
+
+
+   return res.status(401).json({
+       error: 'Token invalide ou expiré'
+   });
+  
+
   }
-}
+  }
 
 module.exports = authMiddleware;

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= profile.pseudo %> — Pixora</title>
   <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/profile.css?v=8">
+  <link rel="stylesheet" href="/css/profile.css?v=9">
   <style>
     .profile-actions-group {
       display: flex;
@@ -56,7 +56,7 @@
     </header>
 
     <main class="profile-container">
-      
+
       <!-- 1. Identité (Avatar + Noms + Rôles) -->
       <section class="profile-identity-row">
         <div class="avatar-circle">
@@ -74,7 +74,7 @@
             <span class="profile-pseudo"><%= profile.pseudo %></span>
             <% if (profile.role === 'admin') { %>
               <span class="badge badge-admin">Admin</span>
-            <% } else if (profile.role === 'moderateur' || profile.role === 'modo') { %>
+            <% } else if (profile.role === 'moderator' || profile.role === 'moderateur' || profile.role === 'modo') { %>
               <span class="badge badge-modo">Modo</span>
             <% } %>
 
@@ -116,18 +116,18 @@
         <a href="/profile/edit" class="btn-edit">Modifier le profil</a>
       <% } else { %>
         <div class="profile-actions-group">
-          <button 
-            id="btn-follow" 
+          <button
+            id="btn-follow"
             class="btn-follow <%= estAbonne ? 'following' : '' %>"
             data-target-id="<%= profile.idUser %>"
             data-following="<%= estAbonne ? 'true' : 'false' %>">
             <%= estAbonne ? 'Ne plus suivre' : 'Suivre' %>
           </button>
 
-          <button 
-            type="button" 
-            id="btn-message" 
-            class="btn-direct-message" 
+          <button
+            type="button"
+            id="btn-message"
+            class="btn-direct-message"
             data-target-id="<%= profile.idUser %>">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -139,13 +139,75 @@
 
       <!-- 5. Publications -->
       <section class="posts-section">
-        <p class="empty-posts">Aucune publication pour l'instant</p>
+
+        <h2 class="posts-title">Publications</h2>
+
+        <% if (!posts || posts.length === 0) { %>
+
+          <p class="empty-posts">Aucune publication pour l'instant</p>
+
+        <% } else { %>
+
+          <div class="profile-posts">
+
+            <% posts.forEach(function(post) { %>
+
+              <article class="profile-post" data-id="<%= post.idPubli %>">
+
+                <!-- EN-TÊTE DE LA PUBLICATION -->
+                <div class="profile-post-header">
+
+                  <span class="profile-post-date"><%= post.datePubli %></span>
+
+                  <% if (isOwner) { %>
+                    <button type="button" class="delete-post" data-id="<%= post.idPubli %>">
+                      Supprimer
+                    </button>
+                  <% } %>
+
+                </div>
+
+                <!-- MÉDIA -->
+                <% if (post.typeMedia === 'video') { %>
+
+                  <video class="profile-post-video" controls preload="metadata">
+                    <source src="/uploads/<%= post.nomMedia %>">
+                    Votre navigateur ne supporte pas la lecture vidéo.
+                  </video>
+
+                <% } else { %>
+
+                  <img
+                    src="/uploads/<%= post.nomMedia %>"
+                    alt="Publication de <%= profile.pseudo %>"
+                    class="profile-post-image"
+                  >
+
+                <% } %>
+
+                <!-- DESCRIPTION -->
+                <% if (post.contenuPub) { %>
+                  <div class="profile-post-content">
+                    <%= post.contenuPub %>
+                  </div>
+                <% } %>
+
+              </article>
+
+            <% }); %>
+
+          </div>
+
+        <% } %>
+
       </section>
 
     </main>
 
     <%- include('navbar') %>
   </div>
+
+  <script src="/js/deletePost.js"></script>
 
   <% if (!isOwner) { %>
   <script>

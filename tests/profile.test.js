@@ -147,20 +147,32 @@ describe('PUT /api/profile/me', () => {
   // l'affiche sans échappement (views/profile.ejs est vide pour l'instant),
   // mais toute future vue ou script front qui insère bio en innerHTML serait
   // vulnérable au XSS stocké.
-  test("stocke du HTML/script brut dans la bio sans le nettoyer (XSS stocké latent)", async () => {
-    const { token } = await creerCompteEtConnecter('xssuser', 'xssuser@test.com');
-    const payload = '<script>alert(1)</script>';
+  test('nettoie les balises HTML dangereuses avant stockage dans SQLite', async () => {
+  const { token, idUser } = await creerCompteEtConnecter(
+    'xssdatabase',
+    'xssdatabase@test.com'
+  );
 
-    const res = await request(app)
-      .put('/api/profile/me')
-      .set('Authorization', `Bearer ${token}`)
-      .set('Accept', 'application/json')
-      .send({ bio: payload });
+  const payload = '<script>alert(1)</script>';
 
-    expect(res.status).toBe(200);
-    expect(res.body.bio).toBe(payload);
+  const res = await request(app)
+    .put('/api/profile/me')
+    .set('Authorization', `Bearer ${token}`)
+    .set('Accept', 'application/json')
+    .send({ bio: payload });
+
+  expect(res.status).toBe(200);
+  expect(res.body.bio).toBe('alert(1)');
+  expect(res.body.bio).not.toContain('<script>');
+
+  const profile = db
+    .prepare('SELECT bio FROM Profil WHERE idUser = ?')
+    .get(idUser);
+
+  expect(profile).toBeDefined();
+  expect(profile.bio).toBe('alert(1)');
+  expect(profile.bio).not.toContain('<script>');
   });
-
 });
 
 describe('GET /api/profile/:pseudo', () => {

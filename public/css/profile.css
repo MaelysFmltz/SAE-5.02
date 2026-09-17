@@ -341,4 +341,95 @@
   border-color: #ef4444;
   color: #ef4444;
   background-color: rgba(239, 68, 68, 0.1);
+/* ============================================================
+   PUBLICATIONS DU PROFIL
+============================================================ */
+
+.posts-title {
+    margin: 0 0 18px;
+
+    color: var(--profile-text-bright);
+
+    font-size: 1.1rem;
+
+    font-weight: 700;
+}
+
+
+.profile-posts {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 20px;
+}
+
+
+.profile-post {
+    width: 100%;
+
+    background-color: var(--profile-card-bg);
+
+    border: 1px solid var(--profile-border);
+
+    border-radius: 12px;
+
+    overflow: hidden;
+}
+
+
+.profile-post-header {
+    display: flex;
+
+    justify-content: flex-end;
+
+    padding: 10px 14px;
+
+    border-bottom: 1px solid var(--profile-border);
+}
+
+
+.profile-post-date {
+    color: var(--profile-text-dimmed);
+
+    font-size: 0.75rem;
+}
+
+
+.profile-post-image {
+    display: block;
+
+    width: 100%;
+
+    max-height: 500px;
+
+    object-fit: contain;
+
+    background-color: #08080d;
+}
+
+
+.profile-post-content {
+    padding: 14px 16px;
+
+    color: #e2e4ec;
+
+    font-size: 0.92rem;
+
+    line-height: 1.5;
+
+    white-space: pre-wrap;
+
+    overflow-wrap: break-word;
+}
+.profile-post-video {
+    display: block;
+
+    width: 100%;
+
+    max-height: 500px;
+
+    background: #08080d;
+
+    object-fit: contain;
 }
