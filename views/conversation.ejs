@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= titreConversation %> — Pixora</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/messages.css">
+</head>
+<body>
+  <div class="app-container no-bottom-nav">
+
+    <header class="messages-header">
+      <a href="/messages" class="icon-btn" title="Retour aux messages">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </a>
+      <h1 class="header-title"><%= titreConversation %></h1>
+      <% if (estGroupe) { %>
+        <button type="button" id="btn-group-members" class="icon-btn" title="Membres du groupe">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </button>
+      <% } else { %>
+        <button type="button" id="btn-delete-conversation" class="icon-btn" title="Supprimer la conversation">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+          </svg>
+        </button>
+      <% } %>
+    </header>
+
+    <% if (estGroupe && membres) { %>
+      <p class="group-members-preview">
+        <%= membres.length %> membre<%= membres.length > 1 ? 's' : '' %>
+      </p>
+    <% } %>
+
+    <div class="chat-container">
+      <div class="chat-messages" id="chat-messages">
+        <% messages.forEach(msg => { %>
+          <div class="bubble <%= msg.idUser === idUserCourant ? 'mine' : 'theirs' %><%= msg.supprime ? ' deleted' : '' %>" data-id="<%= msg.idMessage %>">
+            <% if (msg.supprime) { %>
+              <span class="bubble-deleted-text">Ce message a été supprimé</span>
+            <% } else { %>
+              <span class="bubble-text"><%= msg.contenu %></span>
+            <% } %>
+            <div class="bubble-meta"><%= new Date(msg.dateEnvoi).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) %><%= (!msg.supprime && msg.dateModification) ? ' · modifié' : '' %></div>
+          </div>
+        <% }) %>
+      </div>
+
+      <form class="chat-input-bar" id="chat-form">
+        <input type="text" id="chat-input" placeholder="Écrire un message..." autocomplete="off" maxlength="2000">
+        <button type="submit" class="chat-send-btn" title="Envoyer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2 21l21-9L2 3v7l15 2-15 2z"></path>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/messages.js" data-conversation-id="<%= idConversation %>" data-is-group="<%= estGroupe ? 'true' : 'false' %>" data-user-id="<%= idUserCourant %>" data-titre-groupe="<%= estGroupe ? titreConversation : '' %>" data-est-createur="<%= estCreateurCourant ? 'true' : 'false' %>"></script>
+</body>
+</html>
