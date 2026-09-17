@@ -87,14 +87,24 @@ function getConversationById(idConversation) {
 }
 
 /**
- * Récupère les membres (pseudo inclus) d'une conversation
+ * Met à jour le titre d'une conversation de groupe
+ */
+function updateTitre(idConversation, titreGroupe) {
+  return db.prepare(
+    'UPDATE Conversation SET titreGroupe = ? WHERE idConversation = ?'
+  ).run(titreGroupe, idConversation);
+}
+
+/**
+ * Récupère les membres (pseudo + statut de créateur/chef inclus) d'une conversation
  */
 function getMembers(idConversation) {
   const query = `
-    SELECT u.idUser, u.pseudo
+    SELECT u.idUser, u.pseudo, cm.estCreateur
     FROM ConversationMembre cm
     JOIN Utilisateur u ON u.idUser = cm.idUser
     WHERE cm.idConversation = ?
+    ORDER BY cm.estCreateur DESC, u.pseudo ASC
   `;
   return db.prepare(query).all(idConversation);
 }
@@ -109,11 +119,23 @@ function isMember(idConversation, idUser) {
   return !!row;
 }
 
+/**
+ * Vérifie qu'un utilisateur est le créateur/chef d'une conversation de groupe
+ */
+function isCreateur(idConversation, idUser) {
+  const row = db.prepare(
+    'SELECT 1 FROM ConversationMembre WHERE idConversation = ? AND idUser = ? AND estCreateur = 1'
+  ).get(idConversation, idUser);
+  return !!row;
+}
+
 module.exports = {
   createConversation,
   findDirectConversationBetween,
   getConversationsForUser,
   getConversationById,
+  updateTitre,
   getMembers,
-  isMember
+  isMember,
+  isCreateur
 };

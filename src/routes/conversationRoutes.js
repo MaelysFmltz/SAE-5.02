@@ -14,6 +14,9 @@ router.use(authMiddleware);
 router.get('/', conversationController.getMyConversations);
 router.post('/direct', conversationController.createDirect);
 router.post('/group', conversationController.createGroup);
+router.get('/:idConversation/members', conversationController.getMembers);
 router.post('/:idConversation/members', conversationController.addParticipants);
+router.delete('/:idConversation/members/:idUser', conversationController.removeParticipant);
+router.put('/:idConversation', conversationController.renameGroup);
 
 module.exports = router;

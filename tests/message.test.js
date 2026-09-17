@@ -140,6 +140,10 @@ describe('Messagerie - envoi et lecture des messages', () => {
 
     expect(envoiRes.status).toBe(201);
     expect(envoiRes.body.contenu).toBe('Salut B !');
+    // Régression : la réponse doit inclure dateEnvoi pour que le front
+    // puisse afficher l'heure sans recharger la page (sinon "Invalid Date").
+    expect(envoiRes.body.dateEnvoi).toEqual(expect.any(String));
+    expect(new Date(envoiRes.body.dateEnvoi).toString()).not.toBe('Invalid Date');
 
     const historiqueRes = await request(app)
       .get(`/api/conversations/${idConversation}/messages`)
@@ -292,7 +296,48 @@ describe('Messagerie - conversations de groupe', () => {
     expect(res.status).toBe(400);
   });
 
-  test('un membre peut ajouter un participant à un groupe', async () => {
+  test('crée un groupe sans titre : le titre par défaut est "Nouveau groupe"', async () => {
+    const a = await creerCompteEtConnecter('msguserA', 'msguserA@test.com');
+    const b = await creerCompteEtConnecter('msguserB', 'msguserB@test.com');
+    const c = await creerCompteEtConnecter('msguserC', 'msguserC@test.com');
+
+    const createRes = await request(app)
+      .post('/api/conversations/group')
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ membres: [b.idUser, c.idUser] });
+
+    expect(createRes.status).toBe(201);
+
+    const listeRes = await request(app)
+      .get('/api/conversations')
+      .set('Authorization', `Bearer ${a.token}`);
+
+    const conv = listeRes.body.find((c2) => c2.idConversation === createRes.body.idConversation);
+    expect(conv.titreGroupe).toBe('Nouveau groupe');
+  });
+
+  test('le créateur du groupe est identifié dans la liste des membres', async () => {
+    const a = await creerCompteEtConnecter('msguserA', 'msguserA@test.com');
+    const b = await creerCompteEtConnecter('msguserB', 'msguserB@test.com');
+    const c = await creerCompteEtConnecter('msguserC', 'msguserC@test.com');
+
+    const createRes = await request(app)
+      .post('/api/conversations/group')
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ membres: [b.idUser, c.idUser], titreGroupe: 'Groupe' });
+
+    const res = await request(app)
+      .get(`/api/conversations/${createRes.body.idConversation}/members`)
+      .set('Authorization', `Bearer ${b.token}`);
+
+    expect(res.status).toBe(200);
+    const createur = res.body.membres.find((m) => m.idUser === a.idUser);
+    const autre = res.body.membres.find((m) => m.idUser === b.idUser);
+    expect(createur.estCreateur).toBeTruthy();
+    expect(autre.estCreateur).toBeFalsy();
+  });
+
+  test('le créateur peut ajouter un participant à un groupe', async () => {
     const a = await creerCompteEtConnecter('msguserA', 'msguserA@test.com');
     const b = await creerCompteEtConnecter('msguserB', 'msguserB@test.com');
     const c = await creerCompteEtConnecter('msguserC', 'msguserC@test.com');
@@ -319,6 +364,25 @@ describe('Messagerie - conversations de groupe', () => {
       .send({ contenu: 'Je viens d’être ajouté' });
 
     expect(dEnvoiRes.status).toBe(201);
+  });
+
+  test('refuse l’ajout d’un participant par un membre qui n’est pas le créateur', async () => {
+    const a = await creerCompteEtConnecter('msguserA', 'msguserA@test.com');
+    const b = await creerCompteEtConnecter('msguserB', 'msguserB@test.com');
+    const c = await creerCompteEtConnecter('msguserC', 'msguserC@test.com');
+    const d = await creerCompteEtConnecter('msguserD', 'msguserD@test.com');
+
+    const createRes = await request(app)
+      .post('/api/conversations/group')
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ membres: [b.idUser, c.idUser], titreGroupe: 'Groupe' });
+
+    const res = await request(app)
+      .post(`/api/conversations/${createRes.body.idConversation}/members`)
+      .set('Authorization', `Bearer ${b.token}`)
+      .send({ idUsers: [d.idUser] });
+
+    expect(res.status).toBe(403);
   });
 
   test('refuse l’ajout d’un participant par un non-membre du groupe', async () => {
@@ -374,5 +438,127 @@ describe('Messagerie - conversations de groupe', () => {
       .send({ idUsers: [999999] });
 
     expect(res.status).toBe(404);
+  });
+
+  test('le créateur peut retirer un participant du groupe', async () => {
+    const a = await creerCompteEtConnecter('msguserA', 'msguserA@test.com');
+    const b = await creerCompteEtConnecter('msguserB', 'msguserB@test.com');
+    const c = await creerCompteEtConnecter('msguserC', 'msguserC@test.com');
+
+    const createRes = await request(app)
+      .post('/api/conversations/group')
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ membres: [b.idUser, c.idUser], titreGroupe: 'Groupe' });
+
+    const idConversation = createRes.body.idConversation;
+
+    const removeRes = await request(app)
+      .delete(`/api/conversations/${idConversation}/members/${c.idUser}`)
+      .set('Authorization', `Bearer ${a.token}`);
+
+    expect(removeRes.status).toBe(200);
+    expect(removeRes.body.membres.some((m) => m.idUser === c.idUser)).toBe(false);
+
+    const cEnvoiRes = await request(app)
+      .post(`/api/conversations/${idConversation}/messages`)
+      .set('Authorization', `Bearer ${c.token}`)
+      .send({ contenu: 'Je ne devrais plus pouvoir écrire ici' });
+
+    expect(cEnvoiRes.status).toBe(403);
+  });
+
+  test('refuse le retrait d’un participant par un membre qui n’est pas le créateur', async () => {
+    const a = await creerCompteEtConnecter('msguserA', 'msguserA@test.com');
+    const b = await creerCompteEtConnecter('msguserB', 'msguserB@test.com');
+    const c = await creerCompteEtConnecter('msguserC', 'msguserC@test.com');
+
+    const createRes = await request(app)
+      .post('/api/conversations/group')
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ membres: [b.idUser, c.idUser], titreGroupe: 'Groupe' });
+
+    const res = await request(app)
+      .delete(`/api/conversations/${createRes.body.idConversation}/members/${c.idUser}`)
+      .set('Authorization', `Bearer ${b.token}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  test('refuse que le créateur se retire lui-même du groupe', async () => {
+    const a = await creerCompteEtConnecter('msguserA', 'msguserA@test.com');
+    const b = await creerCompteEtConnecter('msguserB', 'msguserB@test.com');
+    const c = await creerCompteEtConnecter('msguserC', 'msguserC@test.com');
+
+    const createRes = await request(app)
+      .post('/api/conversations/group')
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ membres: [b.idUser, c.idUser], titreGroupe: 'Groupe' });
+
+    const res = await request(app)
+      .delete(`/api/conversations/${createRes.body.idConversation}/members/${a.idUser}`)
+      .set('Authorization', `Bearer ${a.token}`);
+
+    expect(res.status).toBe(400);
+  });
+
+  test('le créateur peut renommer le groupe', async () => {
+    const a = await creerCompteEtConnecter('msguserA', 'msguserA@test.com');
+    const b = await creerCompteEtConnecter('msguserB', 'msguserB@test.com');
+    const c = await creerCompteEtConnecter('msguserC', 'msguserC@test.com');
+
+    const createRes = await request(app)
+      .post('/api/conversations/group')
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ membres: [b.idUser, c.idUser], titreGroupe: 'Ancien nom' });
+
+    const renameRes = await request(app)
+      .put(`/api/conversations/${createRes.body.idConversation}`)
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ titreGroupe: 'Nouveau nom' });
+
+    expect(renameRes.status).toBe(200);
+    expect(renameRes.body.titreGroupe).toBe('Nouveau nom');
+
+    const listeRes = await request(app)
+      .get('/api/conversations')
+      .set('Authorization', `Bearer ${b.token}`);
+
+    const conv = listeRes.body.find((c2) => c2.idConversation === createRes.body.idConversation);
+    expect(conv.titreGroupe).toBe('Nouveau nom');
+  });
+
+  test('refuse le renommage par un membre qui n’est pas le créateur', async () => {
+    const a = await creerCompteEtConnecter('msguserA', 'msguserA@test.com');
+    const b = await creerCompteEtConnecter('msguserB', 'msguserB@test.com');
+    const c = await creerCompteEtConnecter('msguserC', 'msguserC@test.com');
+
+    const createRes = await request(app)
+      .post('/api/conversations/group')
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ membres: [b.idUser, c.idUser], titreGroupe: 'Ancien nom' });
+
+    const res = await request(app)
+      .put(`/api/conversations/${createRes.body.idConversation}`)
+      .set('Authorization', `Bearer ${b.token}`)
+      .send({ titreGroupe: 'Piraté' });
+
+    expect(res.status).toBe(403);
+  });
+
+  test('refuse le renommage d’une conversation directe', async () => {
+    const a = await creerCompteEtConnecter('msguserA', 'msguserA@test.com');
+    const b = await creerCompteEtConnecter('msguserB', 'msguserB@test.com');
+
+    const directRes = await request(app)
+      .post('/api/conversations/direct')
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ idUserDestinataire: b.idUser });
+
+    const res = await request(app)
+      .put(`/api/conversations/${directRes.body.idConversation}`)
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ titreGroupe: 'Impossible' });
+
+    expect(res.status).toBe(400);
   });
 });

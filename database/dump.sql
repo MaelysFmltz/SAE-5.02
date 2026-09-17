@@ -146,6 +146,7 @@ CREATE TABLE IF NOT EXISTS ConversationMembre (
     idConversation INTEGER NOT NULL,
     idUser INTEGER NOT NULL,
     dateRejoint DATETIME DEFAULT CURRENT_TIMESTAMP,
+    estCreateur INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (idConversation, idUser),
     FOREIGN KEY (idConversation) REFERENCES Conversation(idConversation) ON DELETE CASCADE,
     FOREIGN KEY (idUser) REFERENCES Utilisateur(idUser) ON DELETE CASCADE

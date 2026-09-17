@@ -30,8 +30,7 @@ async function sendMessage(idConversation, idUser, contenu) {
     throw new Error(`Le message ne peut pas dépasser ${CONTENU_MAX_LENGTH} caractères`);
   }
 
-  const idMessage = messageModel.createMessage(idConversation, idUser, contenuNettoye);
-  return { idMessage, idConversation, idUser, contenu: contenuNettoye };
+  return messageModel.createMessage(idConversation, idUser, contenuNettoye);
 }
 
 async function getMessages(idConversation, idUser) {

@@ -57,6 +57,16 @@ async function createGroup(req, res) {
   }
 }
 
+async function getMembers(req, res) {
+  try {
+    const idConversation = parseIdConversation(req.params.idConversation);
+    const membres = await conversationService.getConversationMembers(idConversation, req.user.idUser);
+    return res.status(200).json({ membres });
+  } catch (err) {
+    return res.status(err.status || 403).json({ error: err.message });
+  }
+}
+
 async function addParticipants(req, res) {
   try {
     const idConversation = parseIdConversation(req.params.idConversation);
@@ -74,9 +84,46 @@ async function addParticipants(req, res) {
   }
 }
 
+async function removeParticipant(req, res) {
+  try {
+    const idConversation = parseIdConversation(req.params.idConversation);
+    const idUser = Number(req.params.idUser);
+
+    const membres = await conversationService.removeParticipant(
+      idConversation,
+      req.user.idUser,
+      idUser
+    );
+
+    return res.status(200).json({ membres });
+  } catch (err) {
+    return res.status(err.status || 400).json({ error: err.message });
+  }
+}
+
+async function renameGroup(req, res) {
+  try {
+    const idConversation = parseIdConversation(req.params.idConversation);
+    const { titreGroupe } = req.body;
+
+    const nouveauTitre = await conversationService.renameGroup(
+      idConversation,
+      req.user.idUser,
+      titreGroupe
+    );
+
+    return res.status(200).json({ titreGroupe: nouveauTitre });
+  } catch (err) {
+    return res.status(err.status || 400).json({ error: err.message });
+  }
+}
+
 module.exports = {
   getMyConversations,
   createDirect,
   createGroup,
-  addParticipants
+  getMembers,
+  addParticipants,
+  removeParticipant,
+  renameGroup
 };

@@ -13,6 +13,7 @@ const { sanitizeText } = require('../utils/validationUtils');
 
 const TITRE_GROUPE_MAX_LENGTH = 100;
 const MAX_MEMBRES_GROUPE = 50;
+const TITRE_GROUPE_DEFAUT = 'Nouveau groupe';
 
 function httpError(message, status) {
   const err = new Error(message);
@@ -51,9 +52,10 @@ const executeCreateDirectTransaction = db.transaction((idUserA, idUserB) => {
   return idConversation;
 });
 
-const executeCreateGroupTransaction = db.transaction((titreGroupe, idUsers) => {
+const executeCreateGroupTransaction = db.transaction((titreGroupe, idUsers, idCreateur) => {
   const idConversation = conversationModel.createConversation(titreGroupe);
   conversationMemberModel.addMembers(idConversation, idUsers);
+  conversationMemberModel.setCreateur(idConversation, idCreateur);
   return idConversation;
 });
 
@@ -104,25 +106,29 @@ async function createGroupConversation(idUserCourant, membres, titreGroupe) {
 
   idsMembres.forEach(ensureUserExists);
 
-  let titreNettoye = null;
+  // Un groupe a toujours un titre affichable : "Nouveau groupe" par défaut
+  // si aucun n'est fourni (évite d'afficher le pseudo arbitraire d'un
+  // membre à la place, et permet de distinguer sans ambiguïté un groupe
+  // d'une conversation directe).
+  let titreNettoye = TITRE_GROUPE_DEFAUT;
 
   if (titreGroupe !== undefined && titreGroupe !== null) {
     if (typeof titreGroupe !== 'string') {
       throw httpError('Le titre du groupe doit être une chaîne de caractères', 400);
     }
 
-    titreNettoye = sanitizeText(titreGroupe);
+    const nettoye = sanitizeText(titreGroupe);
 
-    if (titreNettoye.length > TITRE_GROUPE_MAX_LENGTH) {
+    if (nettoye.length > TITRE_GROUPE_MAX_LENGTH) {
       throw httpError(`Le titre du groupe ne peut pas dépasser ${TITRE_GROUPE_MAX_LENGTH} caractères`, 400);
     }
 
-    if (titreNettoye.length === 0) {
-      titreNettoye = null;
+    if (nettoye.length > 0) {
+      titreNettoye = nettoye;
     }
   }
 
-  return executeCreateGroupTransaction(titreNettoye, idUsers);
+  return executeCreateGroupTransaction(titreNettoye, idUsers, idUserCourant);
 }
 
 async function getMyConversations(idUser) {
@@ -140,6 +146,36 @@ function ensureIsMember(idConversation, idUser) {
 }
 
 /**
+ * Vérifie qu'un utilisateur est bien le créateur/chef d'une conversation.
+ * À utiliser après ensureIsMember/ensureConversationDeGroupe, pour que
+ * l'erreur la plus précise (pas membre, pas un groupe) soit renvoyée en
+ * priorité sur celle-ci.
+ */
+function ensureEstCreateur(idConversation, idUser) {
+  if (!conversationModel.isCreateur(idConversation, idUser)) {
+    throw httpError('Seul le créateur du groupe peut effectuer cette action', 403);
+  }
+}
+
+/**
+ * Vérifie qu'une conversation existe et est bien une conversation de
+ * groupe (pas une conversation directe à 2), retourne la conversation.
+ */
+function ensureConversationDeGroupe(idConversation) {
+  const conversation = conversationModel.getConversationById(idConversation);
+
+  if (!conversation) {
+    throw httpError('Conversation introuvable', 404);
+  }
+
+  if (!conversation.titreGroupe) {
+    throw httpError('Cette action n’est possible que sur une conversation de groupe', 400);
+  }
+
+  return conversation;
+}
+
+/**
  * Récupère les membres d'une conversation, réservé aux membres de celle-ci.
  */
 function getConversationMembers(idConversation, idUserCourant) {
@@ -149,24 +185,12 @@ function getConversationMembers(idConversation, idUserCourant) {
 
 /**
  * Ajoute un ou plusieurs participants à une conversation de groupe existante.
- * Seul un membre actuel de la conversation peut ajouter quelqu'un, et
- * uniquement dans une conversation de groupe (pas une conversation à 2).
+ * Seul le créateur/chef du groupe peut ajouter quelqu'un.
  */
 async function addParticipants(idConversation, idUserCourant, idUsers) {
   ensureIsMember(idConversation, idUserCourant);
-
-  const conversation = conversationModel.getConversationById(idConversation);
-
-  if (!conversation) {
-    throw httpError('Conversation introuvable', 404);
-  }
-
-  if (!conversation.titreGroupe) {
-    throw httpError(
-      'Impossible d’ajouter des participants à une conversation directe',
-      400
-    );
-  }
+  ensureConversationDeGroupe(idConversation);
+  ensureEstCreateur(idConversation, idUserCourant);
 
   if (!Array.isArray(idUsers) || idUsers.length === 0) {
     throw httpError('Aucun participant à ajouter', 400);
@@ -191,11 +215,66 @@ async function addParticipants(idConversation, idUserCourant, idUsers) {
   return conversationModel.getMembers(idConversation);
 }
 
+/**
+ * Retire un participant d'une conversation de groupe.
+ * Seul le créateur/chef du groupe peut retirer quelqu'un, et il ne peut
+ * pas se retirer lui-même par cette action (pas de gestion de "groupe
+ * sans chef" dans cette version).
+ */
+async function removeParticipant(idConversation, idUserCourant, idUserARetirer) {
+  ensureIsMember(idConversation, idUserCourant);
+  ensureConversationDeGroupe(idConversation);
+  ensureEstCreateur(idConversation, idUserCourant);
+
+  const idCible = toValidUserId(idUserARetirer);
+
+  if (idCible === idUserCourant) {
+    throw httpError('Le créateur du groupe ne peut pas se retirer lui-même', 400);
+  }
+
+  if (!conversationModel.isMember(idConversation, idCible)) {
+    throw httpError('Cet utilisateur ne fait pas partie de la conversation', 400);
+  }
+
+  conversationMemberModel.removeMember(idConversation, idCible);
+
+  return conversationModel.getMembers(idConversation);
+}
+
+/**
+ * Renomme une conversation de groupe. Seul le créateur/chef peut le faire.
+ */
+async function renameGroup(idConversation, idUserCourant, nouveauTitre) {
+  ensureIsMember(idConversation, idUserCourant);
+  ensureConversationDeGroupe(idConversation);
+  ensureEstCreateur(idConversation, idUserCourant);
+
+  if (typeof nouveauTitre !== 'string') {
+    throw httpError('Le titre du groupe doit être une chaîne de caractères', 400);
+  }
+
+  const titreNettoye = sanitizeText(nouveauTitre);
+
+  if (titreNettoye.length === 0) {
+    throw httpError('Le titre du groupe ne peut pas être vide', 400);
+  }
+
+  if (titreNettoye.length > TITRE_GROUPE_MAX_LENGTH) {
+    throw httpError(`Le titre du groupe ne peut pas dépasser ${TITRE_GROUPE_MAX_LENGTH} caractères`, 400);
+  }
+
+  conversationModel.updateTitre(idConversation, titreNettoye);
+
+  return titreNettoye;
+}
+
 module.exports = {
   createDirectConversation,
   createGroupConversation,
   getMyConversations,
   ensureIsMember,
   getConversationMembers,
-  addParticipants
+  addParticipants,
+  removeParticipant,
+  renameGroup
 };

@@ -8,13 +8,21 @@
 const db = require('../config/database');
 
 /**
- * Enregistre un nouveau message dans une conversation
+ * Enregistre un nouveau message dans une conversation et retourne la ligne
+ * complète telle qu'enregistrée (dateEnvoi générée par SQLite incluse) :
+ * le simple lastInsertRowid ne suffit pas au front pour afficher l'heure
+ * d'envoi sans recharger la page.
  */
 function createMessage(idConversation, idUser, contenu) {
   const info = db.prepare(
     'INSERT INTO Message (idConversation, idUser, contenu) VALUES (?, ?, ?)'
   ).run(idConversation, idUser, contenu);
-  return info.lastInsertRowid;
+
+  return db.prepare(
+    `SELECT idMessage, idConversation, idUser, contenu, dateEnvoi, lu, dateLecture
+     FROM Message
+     WHERE idMessage = ?`
+  ).get(info.lastInsertRowid);
 }
 
 /**

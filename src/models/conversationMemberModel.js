@@ -27,7 +27,27 @@ function addMembers(idConversation, idUsers) {
   }
 }
 
+/**
+ * Marque un membre comme créateur/chef de la conversation de groupe
+ */
+function setCreateur(idConversation, idUser) {
+  return db.prepare(
+    'UPDATE ConversationMembre SET estCreateur = 1 WHERE idConversation = ? AND idUser = ?'
+  ).run(idConversation, idUser);
+}
+
+/**
+ * Retire un membre d'une conversation
+ */
+function removeMember(idConversation, idUser) {
+  return db.prepare(
+    'DELETE FROM ConversationMembre WHERE idConversation = ? AND idUser = ?'
+  ).run(idConversation, idUser);
+}
+
 module.exports = {
   addMember,
-  addMembers
+  addMembers,
+  setCreateur,
+  removeMember
 };

@@ -35,4 +35,21 @@ if (!tableExists) {
   }
 }
 
+// 4. Petites migrations à chaud pour les bases déjà existantes (créées avant
+// l'ajout d'une colonne) : pas de système de migration dans ce projet, donc
+// on complète le schéma au démarrage si besoin.
+const conversationMembreExiste = db
+  .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='ConversationMembre'")
+  .get();
+
+if (conversationMembreExiste) {
+  const colonnes = db.prepare('PRAGMA table_info(ConversationMembre)').all();
+  const aEstCreateur = colonnes.some((col) => col.name === 'estCreateur');
+
+  if (!aEstCreateur) {
+    db.exec('ALTER TABLE ConversationMembre ADD COLUMN estCreateur INTEGER NOT NULL DEFAULT 0');
+    console.log('Migration : colonne estCreateur ajoutée à ConversationMembre.');
+  }
+}
+
 module.exports = db;
