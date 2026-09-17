@@ -25,11 +25,9 @@
       </div>
       <div class="user-badge-info">
         <span class="badge-pseudo">@<%= user.pseudo %></span>
-        <% if (user.role === 'superadmin') { %>
-          <span class="badge badge-admin" style="background: #3e2e1b; color: #f0883e; border: 1px solid #73431b;">Superadmin</span>
-        <% } else if (user.role === 'admin') { %>
+        <% if (user.role === 'admin') { %>
           <span class="badge badge-admin">Admin</span>
-        <% } else if (user.role === 'moderateur' || user.role === 'modo') { %>
+        <% } else if (user.role === 'moderator' || user.role === 'moderateur' || user.role === 'modo') { %>
           <span class="badge badge-modo">Modo</span>
         <% } %>
       </div>
@@ -50,14 +48,14 @@
             Aide
           </button>
 
-          <% if (user.role === 'moderateur' || user.role === 'modo' || user.role === 'admin' || user.role === 'superadmin') { %>
+          <% if (user.role === 'moderator' || user.role === 'moderateur' || user.role === 'modo' || user.role === 'admin') { %>
             <p class="nav-section-title">Modération</p>
             <button type="button" class="nav-btn" data-tab="tab-moderation">
               Signalements
             </button>
           <% } %>
 
-          <% if (user.role === 'admin' || user.role === 'superadmin') { %>
+          <% if (user.role === 'admin') { %>
             <p class="nav-section-title">Administration</p>
             <button type="button" class="nav-btn" data-tab="tab-admin">
               Centre d'administration
@@ -204,7 +202,7 @@
         </section>
 
         <!-- 4. MODÉRATION -->
-        <% if (user.role === 'moderateur' || user.role === 'modo' || user.role === 'admin' || user.role === 'superadmin') { %>
+        <% if (user.role === 'moderator' || user.role === 'moderateur' || user.role === 'modo' || user.role === 'admin') { %>
           <section id="tab-moderation" class="tab-pane">
             <h2 class="section-heading">Modération</h2>
             <div class="settings-card">
@@ -227,12 +225,12 @@
         <% } %>
 
         <!-- 5. ADMINISTRATION -->
-        <% if (user.role === 'admin' || user.role === 'superadmin') { %>
+        <% if (user.role === 'admin') { %>
           <section id="tab-admin" class="tab-pane">
             <h2 class="section-heading">Administration</h2>
             <div class="settings-card">
               <h3>Gestion des membres</h3>
-              <p class="card-desc">Attribution des privilèges et modération globale.</p>
+              <p class="card-desc">Attribution du statut modérateur et supervision des comptes.</p>
               <form id="form-admin-search" class="form-row">
                 <input type="text" id="admin-search-input" placeholder="Rechercher par pseudonyme ou email..." required>
                 <button type="submit" class="btn-primary-action">Rechercher</button>
@@ -272,7 +270,6 @@
   <script>
     const settingsContainer = document.querySelector('.settings-container');
     const callerId = Number(settingsContainer.dataset.currentUserId);
-    const callerRole = settingsContainer.dataset.currentUserRole;
 
     const navButtons = document.querySelectorAll('.nav-btn');
     const tabPanes = document.querySelectorAll('.tab-pane');
@@ -455,31 +452,27 @@
 
           let html = '<div class="admin-users-list">';
           data.users.forEach(u => {
-            const isTargetSuperAdmin = u.role === 'superadmin';
             const isTargetAdmin = u.role === 'admin';
             const isSelf = u.idUser === callerId;
-
-            // Un admin standard ne peut pas modifier un superadmin, un autre admin, ni lui-même
-            const isDisabled = isSelf || isTargetSuperAdmin || (callerRole === 'admin' && isTargetAdmin);
+            const isDisabled = isSelf || isTargetAdmin;
 
             html += `
-              <div class="action-item-row" style="padding: 10px 0; border-bottom: 1px solid #24272c;">
+              <div class="action-item-row" id="user-row-${u.idUser}" style="padding: 10px 0; border-bottom: 1px solid #24272c;">
                 <div>
                   <strong>@${u.pseudo}</strong> <span style="color: #8b949e; font-size: 0.85rem;">(${u.email})</span>
                   <div style="font-size: 0.8rem; color: #636b76;">
-                    Rôle actuel : <strong style="color: ${u.role === 'superadmin' ? '#f0883e' : 'inherit'}">${(u.role || 'user').toUpperCase()}</strong>
+                    Rôle actuel : <strong class="user-role-label">${(u.role || 'user').toUpperCase()}</strong>
                   </div>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
                   ${isDisabled ? `
-                    <span style="font-size: 0.8rem; color: #636b76; font-style: italic;">Non modifiable</span>
+                    <span style="font-size: 0.8rem; color: #636b76; font-style: italic;">
+                      ${isSelf ? 'Votre compte' : 'Administrateur (verrouillé)'}
+                    </span>
                   ` : `
                     <select class="admin-role-select" data-user-id="${u.idUser}" style="background: #0b0e11; border: 1px solid #2d333b; color: #e6edf3; padding: 6px 10px; border-radius: 4px;">
                       <option value="user" ${u.role === 'user' || !u.role ? 'selected' : ''}>Membre</option>
-                      <option value="moderateur" ${u.role === 'moderateur' || u.role === 'modo' ? 'selected' : ''}>Modérateur</option>
-                      ${callerRole === 'superadmin' ? `
-                        <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
-                      ` : ''}
+                      <option value="moderator" ${u.role === 'moderator' || u.role === 'moderateur' ? 'selected' : ''}>Modérateur</option>
                     </select>
                     <button type="button" class="btn-primary-action btn-save-role" data-user-id="${u.idUser}">Appliquer</button>
                   `}
@@ -496,6 +489,10 @@
               const idUser = btn.dataset.userId;
               const select = document.querySelector(`.admin-role-select[data-user-id="${idUser}"]`);
               const role = select.value;
+              const originalText = btn.textContent;
+
+              btn.disabled = true;
+              btn.textContent = '...';
 
               try {
                 const patchRes = await fetch('/api/user/settings/admin/role', {
@@ -506,13 +503,23 @@
                 const patchData = await patchRes.json();
 
                 if (!patchRes.ok) {
-                  notify(patchData.error || 'Erreur modification rôle', false);
+                  alert(patchData.error || 'Erreur lors de la modification du rôle');
                 } else {
-                  notify('Rôle mis à jour avec succès.');
-                  adminSearchForm.dispatchEvent(new Event('submit'));
+                  const row = document.getElementById(`user-row-${idUser}`);
+                  if (row) {
+                    const label = row.querySelector('.user-role-label');
+                    if (label) label.textContent = role.toUpperCase();
+                  }
+                  btn.textContent = 'Enregistré !';
+                  setTimeout(() => {
+                    btn.textContent = originalText;
+                  }, 1500);
                 }
               } catch {
-                notify('Erreur réseau.', false);
+                alert('Erreur réseau ou serveur inaccessible.');
+                btn.textContent = originalText;
+              } finally {
+                btn.disabled = false;
               }
             });
           });

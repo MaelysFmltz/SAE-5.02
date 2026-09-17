@@ -71,8 +71,7 @@ async function deleteAccount(req, res) {
 
 async function searchUsersAdmin(req, res) {
   try {
-    const callerRole = req.user.role;
-    if (callerRole !== 'admin' && callerRole !== 'superadmin') {
+    if (req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Accès réservé aux administrateurs.' });
     }
 
@@ -90,18 +89,17 @@ async function searchUsersAdmin(req, res) {
 
 async function changeUserRoleAdmin(req, res) {
   try {
-    const callerRole = req.user.role;
-
-    if (callerRole !== 'admin' && callerRole !== 'superadmin') {
+    if (req.user.role !== 'admin') {
       return res.status(403).json({ error: 'Accès réservé aux administrateurs.' });
     }
 
     const { idUser, role } = req.body;
     const targetId = Number(idUser);
-    const allowedRoles = ['user', 'moderateur', 'admin'];
 
+    // Seuls les rôles user et moderator peuvent être assignés depuis l'admin panel
+    const allowedRoles = ['user', 'moderator'];
     if (!allowedRoles.includes(role)) {
-      return res.status(400).json({ error: 'Rôle invalide.' });
+      return res.status(400).json({ error: 'Rôle invalide ou non assignable depuis le panneau.' });
     }
 
     const targetUser = userModel.findById(targetId);
@@ -109,21 +107,14 @@ async function changeUserRoleAdmin(req, res) {
       return res.status(404).json({ error: 'Utilisateur introuvable.' });
     }
 
-    if (targetUser.role === 'superadmin') {
-      return res.status(403).json({ error: 'Impossible de modifier le rôle du super-administrateur.' });
-    }
-
+    // Interdiction de modifier son propre compte
     if (targetId === req.user.idUser) {
       return res.status(400).json({ error: 'Vous ne pouvez pas modifier votre propre rôle.' });
     }
 
-    if (callerRole === 'admin') {
-      if (role === 'admin') {
-        return res.status(403).json({ error: 'Seul le super-administrateur peut nommer des administrateurs.' });
-      }
-      if (targetUser.role === 'admin') {
-        return res.status(403).json({ error: 'Seul le super-administrateur peut modifier un compte administrateur.' });
-      }
+    // Interdiction de toucher à un autre administrateur
+    if (targetUser.role === 'admin') {
+      return res.status(403).json({ error: 'Impossible de modifier le rôle d’un administrateur.' });
     }
 
     userModel.updateRole(targetId, role);
