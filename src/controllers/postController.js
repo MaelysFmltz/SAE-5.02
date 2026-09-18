@@ -19,6 +19,11 @@ const {
 } = require('../utils/mediaValidation');
 const { deleteUploadedFile } = require('../utils/uploadedFiles');
 
+const {
+    validateEditedImage,
+    validateEditedVideo
+} = require('../services/mediaEditorService');
+
 /*
  * ============================================================
  * CRÉATION D'UNE PUBLICATION CLASSIQUE
@@ -405,6 +410,45 @@ async function uploadImage(req, res) {
             await fs.readFile(
                 uploadedFilePath
             );
+
+        /*
+         * VÉRIFICATION MÉDIA ÉDITÉ
+         *
+         * Si le fichier vient de l'éditeur navigateur
+         * (retouche photo/vidéo), on impose en plus le
+         * format exact produit par l'éditeur (JPEG / WebM).
+         */
+        if (req.body.editedMedia === 'true') {
+            const editedValidation = validateEditedImage({
+                buffer,
+                mimetype: file.mimetype,
+                size: file.size
+            });
+
+            if (!editedValidation.valid) {
+                await fs.unlink(uploadedFilePath).catch(() => {});
+
+                return res.status(400).json({
+                    error: editedValidation.error
+                });
+            }
+        }
+
+        if (req.body.editedVideo === 'true') {
+            const editedValidation = validateEditedVideo({
+                buffer,
+                mimetype: file.mimetype,
+                size: file.size
+            });
+
+            if (!editedValidation.valid) {
+                await fs.unlink(uploadedFilePath).catch(() => {});
+
+                return res.status(400).json({
+                    error: editedValidation.error
+                });
+            }
+        }
 
         let typeMedia;
 

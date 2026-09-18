@@ -24,6 +24,11 @@
         href="/css/post.css"
     >
 
+    <link
+        rel="stylesheet"
+        href="/css/editor.css"
+    >
+
 </head>
 
 
@@ -129,6 +134,15 @@
 
                     <!-- PREVIEW -->
 
+                    <button
+                        type="button"
+                        id="open-editor"
+                        class="editor-open-button"
+                        disabled
+                    >
+                        ✨ Modifier le média
+                    </button>
+
                     <div
                         id="preview-container"
                         class="preview-container"
@@ -232,6 +246,232 @@
     </main>
 
 
+    <!-- ÉDITEUR PHOTO / VIDÉO -->
+    <div id="editor-modal" class="editor-modal" hidden>
+        <div class="editor-window" role="dialog" aria-modal="true" aria-labelledby="editor-title">
+            <header class="editor-header">
+                <div>
+                    <h2 id="editor-title">Éditeur photo</h2>
+                    <span id="editor-file-name" class="editor-status"></span>
+                </div>
+                <button type="button" id="close-editor" aria-label="Fermer">✕</button>
+            </header>
+
+            <div class="editor-toolbar">
+                <button type="button" id="editor-undo" disabled>↩ Annuler</button>
+                <button type="button" id="editor-redo" disabled>↪ Rétablir</button>
+                <button type="button" id="editor-reset">⟳ Réinitialiser</button>
+                <button type="button" id="rotate-left">↶ Rotation gauche</button>
+                <button type="button" id="rotate-right">↷ Rotation droite</button>
+                <button type="button" id="flip-horizontal">↔ Miroir H</button>
+                <button type="button" id="flip-vertical">↕ Miroir V</button>
+            </div>
+
+            <div id="editor-video-controls" class="editor-video-controls editor-video-only" hidden aria-hidden="true">
+                <button type="button" id="editor-play">▶ Lire</button>
+                <input id="editor-timeline" type="range" min="0" max="0" step="0.01" value="0" aria-label="Position de la vidéo">
+                <span id="editor-time">00:00 / 00:00</span>
+            </div>
+
+            <div class="editor-main">
+                <section class="editor-stage">
+                    <div class="editor-canvas-wrap">
+                        <canvas id="editor-canvas"></canvas>
+                        <div id="editor-crop-overlay" class="editor-crop-overlay" hidden></div>
+                    </div>
+                </section>
+
+                <aside class="editor-panel">
+                            <div class="editor-tool-group">
+                        <h3>Recadrage</h3>
+                        <label>Format
+                            <select id="crop-aspect">
+                                <option value="free">Libre</option>
+                                <option value="1:1">1:1</option>
+                                <option value="4:5">4:5</option>
+                                <option value="16:9">16:9</option>
+                            </select>
+                        </label>
+                        <button type="button" id="crop-start">✂ Commencer</button>
+                        <button type="button" id="crop-apply" class="editor-primary">Valider</button>
+                        <button type="button" id="crop-cancel">Annuler</button>
+                        <p id="crop-hint" class="editor-hint">Cliquez sur « Commencer », puis tracez une zone sur le média. Le format choisi est respecté automatiquement.</p>
+                    </div>
+
+                    <div id="video-audio-group" class="editor-tool-group editor-video-only" hidden aria-hidden="true">
+                        <h3>Son</h3>
+                        <button type="button" id="editor-mute">🔇 Muet</button>
+                        <label class="editor-range-row">
+                            Volume
+                            <span class="editor-range-value"><output id="editor-volume-value">100</output> %</span>
+                            <input id="editor-volume" type="range" min="0" max="100" step="1" value="100">
+                        </label>
+                        <p class="editor-hint">Le niveau du son est appliqué à l’export de la vidéo.</p>
+                    </div>
+
+                    <div id="video-speed-group" class="editor-tool-group editor-video-only" hidden aria-hidden="true">
+                        <h3>Vitesse</h3>
+                        <label>Lecture
+                            <select id="editor-speed">
+                                <option value="0.5">0,5×</option>
+                                <option value="1" selected>1×</option>
+                                <option value="1.5">1,5×</option>
+                                <option value="2">2×</option>
+                            </select>
+                        </label>
+                        <p class="editor-hint">La vitesse choisie sera également appliquée à la vidéo publiée.</p>
+                    </div>
+
+                    <div id="video-trim-group" class="editor-tool-group editor-video-only" hidden aria-hidden="true">
+                        <h3>Durée de la vidéo</h3>
+                        <label class="editor-range-row">
+                            Début
+                            <span class="editor-range-value"><output id="editor-trim-start-value">00:00</output></span>
+                            <input id="editor-trim-start" type="range" min="0" max="0" step="0.1" value="0" aria-label="Début de la vidéo">
+                        </label>
+                        <label class="editor-range-row">
+                            Fin
+                            <span class="editor-range-value"><output id="editor-trim-end-value">00:00</output></span>
+                            <input id="editor-trim-end" type="range" min="0" max="0" step="0.1" value="0" aria-label="Fin de la vidéo">
+                        </label>
+                        <p class="editor-hint">Durée sélectionnée : <strong id="editor-trim-duration-value">00:00</strong></p>
+                        <p class="editor-hint">Déplacez les curseurs pour conserver uniquement la partie de la vidéo que vous souhaitez publier.</p>
+                    </div>
+
+                    <div class="editor-tool-group">
+                        <h3>Format de la publication</h3>
+                        <p id="editor-dimensions" class="editor-standard-size">1150 × 628 px</p>
+                        <p class="editor-hint">Photos et vidéos sont exportées dans ce format standard afin de garder la même taille d'affichage sur les publications.</p>
+                    </div>
+
+                    <div class="editor-tool-group">
+                        <h3>Effets</h3>
+                        <label>Luminosité <input id="filter-brightness" data-filter="brightness" type="range" min="0" max="200" value="100"></label>
+                        <label>Contraste <input id="filter-contrast" data-filter="contrast" type="range" min="0" max="200" value="100"></label>
+                        <label>Saturation <input id="filter-saturation" data-filter="saturation" type="range" min="0" max="200" value="100"></label>
+                        <label>N&B <input id="filter-grayscale" data-filter="grayscale" type="range" min="0" max="100" value="0"></label>
+                        <label>Sépia <input id="filter-sepia" data-filter="sepia" type="range" min="0" max="100" value="0"></label>
+                        <label>Flou <input id="filter-blur" data-filter="blur" type="range" min="0" max="12" value="0"></label>
+                        <button type="button" id="filters-apply">Appliquer les effets</button>
+                    </div>
+
+                    <div class="editor-tool-group">
+                        <h3>Texte</h3>
+                        <input id="text-value" type="text" maxlength="120" placeholder="Votre texte...">
+                        <label>Police
+                            <select id="text-font">
+                                <option value="Arial">Arial</option>
+                                <option value="Verdana">Verdana</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Impact">Impact</option>
+                                <option value="Courier New">Courier New</option>
+                                <option value="Trebuchet MS">Trebuchet MS</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                            </select>
+                        </label>
+                        <div class="editor-two-cols">
+                            <label>Épaisseur
+                                <select id="text-weight">
+                                    <option value="400">Normal</option>
+                                    <option value="700" selected>Gras</option>
+                                </select>
+                            </label>
+                            <label>Style
+                                <select id="text-style">
+                                    <option value="normal">Normal</option>
+                                    <option value="italic">Italique</option>
+                                </select>
+                            </label>
+                        </div>
+                        <label>Couleur <input id="text-color" type="color" value="#ffffff"></label>
+                        <label class="editor-range-row">
+                            Taille
+                            <span class="editor-range-value"><output id="text-size-value">58</output> px</span>
+                            <input id="text-size" type="range" min="16" max="180" step="1" value="58">
+                        </label>
+                        <label class="editor-range-row">
+                            Opacité
+                            <span class="editor-range-value"><output id="text-opacity-value">100</output> %</span>
+                            <input id="text-opacity" type="range" min="0" max="100" step="1" value="100">
+                        </label>
+                        <button type="button" id="text-emoji-toggle" aria-expanded="false" aria-controls="text-emoji-picker">😊 Émojis</button>
+                        <div id="text-emoji-picker" class="editor-emoji-picker" aria-label="Choisir un emoji à insérer dans le texte" hidden>
+                            <button type="button" data-emoji="😀">😀</button><button type="button" data-emoji="😃">😃</button><button type="button" data-emoji="😄">😄</button><button type="button" data-emoji="😁">😁</button><button type="button" data-emoji="😆">😆</button><button type="button" data-emoji="😅">😅</button><button type="button" data-emoji="😂">😂</button><button type="button" data-emoji="🤣">🤣</button><button type="button" data-emoji="😊">😊</button><button type="button" data-emoji="😍">😍</button><button type="button" data-emoji="🥰">🥰</button><button type="button" data-emoji="😘">😘</button><button type="button" data-emoji="😎">😎</button><button type="button" data-emoji="🤩">🤩</button><button type="button" data-emoji="🥳">🥳</button><button type="button" data-emoji="🤔">🤔</button><button type="button" data-emoji="😭">😭</button><button type="button" data-emoji="😡">😡</button><button type="button" data-emoji="❤️">❤️</button><button type="button" data-emoji="🧡">🧡</button><button type="button" data-emoji="💛">💛</button><button type="button" data-emoji="💚">💚</button><button type="button" data-emoji="💙">💙</button><button type="button" data-emoji="💜">💜</button><button type="button" data-emoji="🖤">🖤</button><button type="button" data-emoji="🤍">🤍</button><button type="button" data-emoji="🔥">🔥</button><button type="button" data-emoji="⭐">⭐</button><button type="button" data-emoji="✨">✨</button><button type="button" data-emoji="💯">💯</button><button type="button" data-emoji="👍">👍</button><button type="button" data-emoji="👎">👎</button><button type="button" data-emoji="👏">👏</button><button type="button" data-emoji="🙌">🙌</button><button type="button" data-emoji="🎉">🎉</button><button type="button" data-emoji="🚀">🚀</button><button type="button" data-emoji="✅">✅</button><button type="button" data-emoji="💡">💡</button><button type="button" data-emoji="🎵">🎵</button><button type="button" data-emoji="🐱">🐱</button><button type="button" data-emoji="🐶">🐶</button><button type="button" data-emoji="🐼">🐼</button><button type="button" data-emoji="🌈">🌈</button><button type="button" data-emoji="☀️">☀️</button><button type="button" data-emoji="🌙">🌙</button><button type="button" data-emoji="🍕">🍕</button><button type="button" data-emoji="☕">☕</button>
+                        </div>
+                        <button type="button" id="add-text">🔤 Ajouter le texte</button>
+                        <p class="editor-hint">Le texte est ajouté au centre. Cliquez sur un texte pour le déplacer, changer sa taille, sa police, son style, sa couleur ou son opacité.</p>
+                    </div>
+
+                    <div class="editor-tool-group">
+                        <h3>Éléments</h3>
+                        <select id="element-type">
+                            <option value="heart">♥ Cœur</option>
+                            <option value="star">★ Étoile</option>
+                            <option value="circle">● Cercle</option>
+                            <option value="rectangle">■ Carré</option>
+                        </select>
+                        <label>Couleur <input id="element-color" type="color" value="#d83ca9"></label>
+                        <label class="editor-range-row">
+                            Taille
+                            <span class="editor-range-value"><output id="element-size-value">96</output> px</span>
+                            <input id="element-size" type="range" min="16" max="220" step="1" value="96">
+                        </label>
+                        <label class="editor-range-row">
+                            Opacité
+                            <span class="editor-range-value"><output id="element-opacity-value">100</output> %</span>
+                            <input id="element-opacity" type="range" min="0" max="100" step="1" value="100">
+                        </label>
+                        <button type="button" id="add-element">➕ Ajouter l’élément</button>
+                        <p class="editor-hint">L’élément est ajouté au centre. Cliquez dessus puis faites-le glisser pour le déplacer.</p>
+                    </div>
+
+                    <div id="selected-overlay-panel" class="editor-selected-panel" hidden>
+                        <h3>Élément sélectionné</h3>
+                        <p id="selected-overlay-label" class="editor-hint">Texte sélectionné</p>
+                        <label>Couleur <input id="overlay-color" type="color" value="#ffffff"></label>
+                        <label class="editor-range-row">
+                            Taille
+                            <span class="editor-range-value"><output id="selected-text-size-value">58</output> px</span>
+                            <input id="selected-text-size" type="range" min="16" max="220" step="1" value="58">
+                        </label>
+                        <label class="editor-range-row">
+                            Opacité
+                            <span class="editor-range-value"><output id="selected-overlay-opacity-value">100</output> %</span>
+                            <input id="selected-overlay-opacity" type="range" min="0" max="100" step="1" value="100">
+                        </label>
+                        <div id="selected-text-format-row" class="editor-selected-text-format" hidden>
+                            <label>Police
+                                <select id="selected-text-font">
+                                    <option value="Arial">Arial</option><option value="Verdana">Verdana</option><option value="Georgia">Georgia</option><option value="Impact">Impact</option><option value="Courier New">Courier New</option><option value="Trebuchet MS">Trebuchet MS</option><option value="Times New Roman">Times New Roman</option>
+                                </select>
+                            </label>
+                            <div class="editor-two-cols">
+                                <label>Épaisseur<select id="selected-text-weight"><option value="400">Normal</option><option value="700">Gras</option></select></label>
+                                <label>Style<select id="selected-text-style"><option value="normal">Normal</option><option value="italic">Italique</option></select></label>
+                            </div>
+                        </div>
+                        <div class="editor-layer-actions">
+                            <button type="button" id="layer-up">▲ Monter</button>
+                            <button type="button" id="layer-down">▼ Descendre</button>
+                            <button type="button" id="layer-delete" class="editor-danger">🗑 Supprimer</button>
+                        </div>
+                        <p class="editor-hint">Déplacez l’élément directement sur le média. Vous pouvez aussi modifier sa taille, sa couleur, son opacité et, pour un texte, sa police et son style.</p>
+                    </div>
+
+                    <p id="editor-message" class="editor-hint" role="status"></p>
+                </aside>
+            </div>
+
+            <footer class="editor-footer">
+                <span class="editor-status">Les retouches sont réalisées dans votre navigateur.</span>
+                <div class="editor-footer-actions">
+                    <button type="button" id="cancel-editor">Annuler</button>
+                    <button type="button" id="apply-editor" class="editor-primary">✓ Utiliser cette photo</button>
+                </div>
+            </footer>
+        </div>
+    </div>
+
     <!-- NAVIGATION -->
 
     <%- include('navbar') %>
@@ -240,7 +480,7 @@
 </div>
 
 
-<script src="/js/post.js"></script>
+<script type="module" src="/js/post.js"></script>
 
 <!-- Suggestions de hashtags pendant la rédaction -->
 <script src="/js/hashtagSuggest.js"></script>
