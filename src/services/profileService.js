@@ -31,11 +31,22 @@ function getVisiblePublicationsForProfile(idUser, idUserVisiteur) {
     ? allPosts
     : postService.filtrerPublicationsVisibles(allPosts, idUserVisiteur);
 
+  /*
+   * Un repost/Duo/collage peut rester visible alors que sa publication
+   * d'origine, elle, ne l'est plus pour idUserVisiteur (post redevenu
+   * privé, amitié rompue...) : sans ce masquage, son média/contenu
+   * original resterait exposé via la carte du repost/Duo/collage.
+   */
+  const maskedPosts = postService.masquerOriginauxInvisibles(
+    visiblePosts,
+    idUserVisiteur
+  );
+
   const idsDejaRepostes = idUserVisiteur
     ? postModel.findRepostedPubliIds(idUserVisiteur)
     : new Set();
 
-  const withReactions = visiblePosts.map(publication => {
+  const withReactions = maskedPosts.map(publication => {
     const reactions = reactionModel.getPostReactions(
       publication.idPubli,
       idUserVisiteur

@@ -105,6 +105,45 @@ function filtrerPublicationsVisibles(publications, idUserVisiteur) {
     });
 }
 
+/**
+ * Pour un repost/Duo/collage, masque les champs de la publication
+ * originale (média, contenu, auteur...) si idUser ne peut pas voir
+ * cette originale indépendamment (elle a pu redevenir privée, ou
+ * appartenir à quelqu'un qui n'est plus ami avec idUser, depuis la
+ * création du repost/Duo/collage).
+ *
+ * Sans ce masquage, n'importe qui pouvant voir le repost/Duo/collage
+ * lui-même verrait aussi le média privé de la publication d'origine,
+ * même sans jamais avoir eu le droit de la voir directement.
+ */
+function masquerOriginalSiInvisible(publication, idUser) {
+    if (
+        !publication.originalIdPubli ||
+        peutVoirPublication(db, publication.originalIdPubli, idUser)
+    ) {
+        return publication;
+    }
+
+    return {
+        ...publication,
+        idPubliPartagee: null,
+        originalIdPubli: null,
+        originalIdUser: null,
+        originalContenuPub: null,
+        originalVisibilite: null,
+        originalTypePublication: null,
+        originalNomMedia: null,
+        originalTypeMedia: null,
+        auteurOriginalPseudo: null
+    };
+}
+
+function masquerOriginauxInvisibles(publications, idUser) {
+    return publications.map((publication) =>
+        masquerOriginalSiInvisible(publication, idUser)
+    );
+}
+
 // ================================
 // PUBLICATIONS PHOTO / VIDÉO
 // ================================
@@ -326,30 +365,10 @@ function getPublicationForUser(idPubli, idUser) {
         ? postModel.findRepostedPubliIds(idUser).has(publication.idPubli)
         : false;
 
-    if (
-        publication.originalIdPubli &&
-        !peutVoirPublication(
-            db,
-            publication.originalIdPubli,
-            idUser
-        )
-    ) {
-        return {
-            ...publication,
-            idPubliPartagee: null,
-            originalIdPubli: null,
-            originalIdUser: null,
-            originalContenuPub: null,
-            originalVisibilite: null,
-            originalTypePublication: null,
-            originalNomMedia: null,
-            originalTypeMedia: null,
-            auteurOriginalPseudo: null,
-            dejaReposte
-        };
-    }
-
-    return { ...publication, dejaReposte };
+    return {
+        ...masquerOriginalSiInvisible(publication, idUser),
+        dejaReposte
+    };
 }
 
 // Créer un Duo (reprend le média de l'original, ajoute le média
@@ -592,27 +611,7 @@ function getFeedForUser(idUser) {
 
             // Si la publication est basée sur une autre publication,
             // on vérifie que l'utilisateur peut également voir l'original.
-            if (
-                publication.originalIdPubli &&
-                !peutVoirPublication(
-                    db,
-                    publication.originalIdPubli,
-                    idUser
-                )
-            ) {
-                publication = {
-                    ...publication,
-                    idPubliPartagee: null,
-                    originalIdPubli: null,
-                    originalIdUser: null,
-                    originalContenuPub: null,
-                    originalVisibilite: null,
-                    originalTypePublication: null,
-                    originalNomMedia: null,
-                    originalTypeMedia: null,
-                    auteurOriginalPseudo: null
-                };
-            }
+            publication = masquerOriginalSiInvisible(publication, idUser);
 
             // Récupération des likes / dislikes
             const reactions =
@@ -637,6 +636,8 @@ module.exports = {
     peutVoirPublication,
     modifierVisibilite,
     filtrerPublicationsVisibles,
+    masquerOriginalSiInvisible,
+    masquerOriginauxInvisibles,
 
     // Publications classiques
     createPublication,
