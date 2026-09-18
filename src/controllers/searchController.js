@@ -1,4 +1,5 @@
 const hashtagService = require('../services/hashtagService');
+const hashtagModel = require('../models/hashtagModel');
 const { linkifyHashtags } = require('../utils/hashtagUtils');
 const db = require('../config/database');
 
@@ -63,8 +64,30 @@ function apiTendances(req, res) {
   }
 }
 
+/**
+ * Suggestions de hashtags existants/populaires pendant la saisie
+ * (création de publication, commentaires). Renvoie une liste vide
+ * tant qu'aucun préfixe utile n'est fourni.
+ */
+function apiSuggestionsHashtags(req, res) {
+  try {
+    const prefix = (req.query.prefix || '').trim();
+
+    if (!prefix) {
+      return res.json([]);
+    }
+
+    const suggestions = hashtagModel.searchHashtags(db, prefix, 8);
+    res.json(suggestions);
+  } catch (err) {
+    console.error('Erreur apiSuggestionsHashtags :', err);
+    res.status(500).json({ error: 'Erreur serveur lors de la suggestion de hashtags.' });
+  }
+}
+
 module.exports = {
   afficherPageRecherche,
   apiRecherche,
-  apiTendances
+  apiTendances,
+  apiSuggestionsHashtags
 };

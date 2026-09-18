@@ -161,36 +161,41 @@
       </svg>
     </button>
 
-    <!-- Duo -->
-    <button
-      type="button"
-      class="publication-action"
-      onclick="creerDuo(<%= publication.idPubli %>)"
-      title="Créer un Duo"
-      aria-label="Créer un Duo"
-    >
-      <svg viewBox="0 0 24 24">
-        <circle cx="8" cy="7" r="3"></circle>
-        <circle cx="16" cy="17" r="3"></circle>
-        <path d="M10.5 8.5L13.5 15.5"></path>
-      </svg>
-    </button>
+    <!-- Duo (nécessite une photo ou vidéo à reprendre, propre à
+         la publication ou héritée si c'est un repost) -->
+    <% if (publication.nomMedia || publication.originalNomMedia) { %>
+      <button
+        type="button"
+        class="publication-action"
+        onclick="creerDuo(<%= publication.idPubli %>)"
+        title="Créer un Duo"
+        aria-label="Créer un Duo"
+      >
+        <svg viewBox="0 0 24 24">
+          <circle cx="8" cy="7" r="3"></circle>
+          <circle cx="16" cy="17" r="3"></circle>
+          <path d="M10.5 8.5L13.5 15.5"></path>
+        </svg>
+      </button>
+    <% } %>
 
-    <!-- Collage -->
-    <button
-      type="button"
-      class="publication-action"
-      onclick="creerCollage(<%= publication.idPubli %>)"
-      title="Créer un collage"
-      aria-label="Créer un collage"
-    >
-      <svg viewBox="0 0 24 24">
-        <rect x="4" y="4" width="7" height="7" rx="1"></rect>
-        <rect x="13" y="4" width="7" height="7" rx="1"></rect>
-        <rect x="4" y="13" width="7" height="7" rx="1"></rect>
-        <rect x="13" y="13" width="7" height="7" rx="1"></rect>
-      </svg>
-    </button>
+    <!-- Collage (nécessite une vidéo à reprendre) -->
+    <% if (publication.typeMedia === 'video' || publication.originalTypeMedia === 'video') { %>
+      <button
+        type="button"
+        class="publication-action"
+        onclick="creerCollage(<%= publication.idPubli %>)"
+        title="Créer un collage"
+        aria-label="Créer un collage"
+      >
+        <svg viewBox="0 0 24 24">
+          <rect x="4" y="4" width="7" height="7" rx="1"></rect>
+          <rect x="13" y="4" width="7" height="7" rx="1"></rect>
+          <rect x="4" y="13" width="7" height="7" rx="1"></rect>
+          <rect x="13" y="13" width="7" height="7" rx="1"></rect>
+        </svg>
+      </button>
+    <% } %>
 
     <span class="action-spacer"></span>
 

@@ -19,6 +19,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    const contenuInput = document.getElementById('remix-contenu');
+
+    if (contenuInput && typeof window.attachHashtagSuggest === 'function') {
+        window.attachHashtagSuggest(contenuInput);
+    }
+
     function ouvrirRemixModal(idPubli, mode) {
         idPubliInput.value = idPubli;
         modeInput.value = mode;
@@ -62,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!mediaInput.files[0]) {
             messageEl.textContent = 'Sélectionnez un fichier.';
+            alert('Sélectionnez un fichier avant de créer.');
             return;
         }
 
@@ -85,7 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!response.ok) {
                 throw new Error(
-                    data.error || 'Erreur lors de la création.'
+                    data.error ||
+                    `Erreur lors de la création (HTTP ${response.status}).`
                 );
             }
 
@@ -94,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Erreur remix :', error);
             messageEl.textContent = error.message;
+            alert(error.message);
             submitBtn.disabled = false;
             submitBtn.textContent = 'Créer';
         }

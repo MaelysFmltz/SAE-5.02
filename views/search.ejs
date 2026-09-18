@@ -113,7 +113,7 @@
           <div class="posts-grid-mosaic" id="list-posts">
             <% if (resultats.publications && resultats.publications.length > 0) { %>
               <% resultats.publications.forEach(post => { %>
-                <article class="mosaic-post-card">
+                <article class="mosaic-post-card" data-idpubli="<%= post.idPubli %>">
                   <div class="post-media-preview">
                     <% if (post.nomMedia) { %>
                       <img src="/uploads/<%= encodeURIComponent(post.nomMedia) %>" alt="Publication" class="post-img">
@@ -215,6 +215,18 @@
       }, 250);
     });
 
+    listPosts.addEventListener('click', (e) => {
+      if (e.target.closest('.post-author-link')) {
+        return;
+      }
+
+      const card = e.target.closest('.mosaic-post-card');
+
+      if (card && card.dataset.idpubli) {
+        window.location.href = `/publication/${card.dataset.idpubli}`;
+      }
+    });
+
     clearBtn.addEventListener('click', () => {
       clearTimeout(debounceTimer);
       searchInput.value = '';
@@ -269,7 +281,7 @@
         listPosts.style.display = 'grid';
         postsEmptyMsg.hidden = true;
         listPosts.innerHTML = data.publications.map(p => `
-          <article class="mosaic-post-card">
+          <article class="mosaic-post-card" data-idpubli="${p.idPubli}">
             <div class="post-media-preview">
               ${p.nomMedia 
                 ? `<img src="/uploads/${encodeURIComponent(p.nomMedia)}" alt="Publication" class="post-img">`

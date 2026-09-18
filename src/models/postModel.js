@@ -568,6 +568,34 @@ function findPostById(idPubli) {
     `).get(idPubli);
 }
 
+/**
+ * Remonte la chaîne des publications partagées (repost/duo/collage)
+ * à partir de idPubli et retourne l'identifiant de la première
+ * publication rencontrée qui possède réellement son propre média
+ * (elle-même incluse), ou null si aucune n'en a.
+ *
+ * Sert à créer un Duo/collage à partir d'un repost : le repost lui
+ * n'a jamais de média propre, il faut remonter jusqu'à la vraie
+ * publication photo/vidéo d'origine.
+ */
+function resolveMediaSource(idPubli) {
+    let current = idPubli;
+    const visited = new Set();
+
+    while (current && !visited.has(current)) {
+        visited.add(current);
+
+        if (findPostById(current)) {
+            return current;
+        }
+
+        const publication = findById(current);
+        current = publication ? publication.idPubliPartagee : null;
+    }
+
+    return null;
+}
+
 module.exports = {
     // Publications
     createPublication,
@@ -590,5 +618,6 @@ module.exports = {
     findAllPostsWithMedia,
     findPostsByUserId,
     findPostById,
+    resolveMediaSource,
     deletePostByIdAndUser
 };

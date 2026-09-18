@@ -19,7 +19,7 @@ const isCollage = publication.typePublication === 'collage';
     <div class="duo-media-item duo-media-original">
       <% if (publication.originalNomMedia) { %>
         <% if (publication.originalTypeMedia === 'video') { %>
-          <video class="<%= videoClass %>" controls preload="metadata">
+          <video class="<%= videoClass %> auto-video" controls muted loop playsinline preload="metadata">
             <source src="/uploads/<%= publication.originalNomMedia %>">
             Votre navigateur ne supporte pas la lecture vidéo.
           </video>
@@ -38,7 +38,7 @@ const isCollage = publication.typePublication === 'collage';
 
     <div class="duo-media-item duo-media-added">
       <% if (publication.typeMedia === 'video') { %>
-        <video class="<%= videoClass %>" controls preload="metadata">
+        <video class="<%= videoClass %> auto-video" controls muted loop playsinline preload="metadata">
           <source src="/uploads/<%= publication.nomMedia %>">
           Votre navigateur ne supporte pas la lecture vidéo.
         </video>
@@ -57,7 +57,7 @@ const isCollage = publication.typePublication === 'collage';
 <% } else if (publication.nomMedia) { %>
 
   <% if (publication.typeMedia === 'video') { %>
-    <video class="<%= videoClass %>" controls preload="metadata">
+    <video class="<%= videoClass %> auto-video" controls muted loop playsinline preload="metadata">
       <source src="/uploads/<%= publication.nomMedia %>">
       Votre navigateur ne supporte pas la lecture vidéo.
     </video>
@@ -73,7 +73,7 @@ const isCollage = publication.typePublication === 'collage';
 
   <!-- Repost (ou Duo/collage sans média propre) : on affiche le média original -->
   <% if (publication.originalTypeMedia === 'video') { %>
-    <video class="<%= videoClass %>" controls preload="metadata">
+    <video class="<%= videoClass %> auto-video" controls muted loop playsinline preload="metadata">
       <source src="/uploads/<%= publication.originalNomMedia %>">
       Votre navigateur ne supporte pas la lecture vidéo.
     </video>

@@ -84,9 +84,10 @@ function createRepost(req, res) {
             req.params.idPubli
         );
 
-        const visibilite = Number(
-            req.body.visibilite
-        );
+        const visibilite =
+            req.body && req.body.visibilite !== undefined
+                ? Number(req.body.visibilite)
+                : 1;
 
         const { reposted, publication } =
             postService.toggleRepost(

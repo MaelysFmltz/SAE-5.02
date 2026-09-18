@@ -11,4 +11,7 @@ router.get('/', authMiddleware, searchController.afficherPageRecherche);
 router.get('/api', authMiddleware, searchController.apiRecherche);
 router.get('/tendances', authMiddleware, searchController.apiTendances);
 
+// Suggestions de hashtags en temps réel (création de publication, commentaires)
+router.get('/hashtags', authMiddleware, searchController.apiSuggestionsHashtags);
+
 module.exports = router;

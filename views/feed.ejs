@@ -974,7 +974,7 @@
             </span>
 
             <span class="comment-text">
-              ${escapeHtml(contenu)}
+              ${linkifyHashtagsClient(contenu)}
             </span>
 
           </div>
@@ -1187,6 +1187,28 @@
         "'",
         '&#039;'
       );
+
+  }
+
+
+  /*
+   * Échappe uniquement & < > (pas les apostrophes), pour que le
+   * hashtag #039 ne soit jamais confondu avec l'entité &#039;
+   * générée par l'échappement d'une apostrophe.
+   */
+  function linkifyHashtagsClient(text) {
+
+    const safeText =
+      String(text || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
+
+    return safeText.replace(
+      /#([a-zA-Z0-9_À-ſ]{1,30})/g,
+      (match, tag) =>
+        `<a href="/search?q=%23${encodeURIComponent(tag.toLowerCase())}" class="hashtag-link">#${tag}</a>`
+    );
 
   }
 
@@ -1899,6 +1921,27 @@
 <!-- Suppression des publications -->
 
 <script src="/js/deletePost.js"></script>
+
+<!-- Lecture automatique des vidéos visibles à l'écran -->
+<script src="/js/autoplayVideos.js"></script>
+
+<!-- Clavier d'émojis + suggestions de hashtags pour les commentaires -->
+<script src="/js/emojiPicker.js"></script>
+<script src="/js/hashtagSuggest.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const commentInput = document.getElementById('comment-input');
+    const commentSubmit = document.querySelector('#comment-form button[type="submit"]');
+
+    if (commentInput && commentSubmit) {
+      attachEmojiPicker(commentInput, commentSubmit);
+    }
+
+    if (commentInput && typeof attachHashtagSuggest === 'function') {
+      attachHashtagSuggest(commentInput);
+    }
+  });
+</script>
 
 <%- include('partials/remixModal') %>
 

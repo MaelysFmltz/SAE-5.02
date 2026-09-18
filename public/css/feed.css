@@ -184,6 +184,22 @@
     border: 1px solid #302d42;
 }
 
+.delete-post {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 20px;
+    background: transparent;
+    color: #ff6b6b;
+    border: 1px solid #4a2a2a;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.delete-post:hover {
+    background: #2a1616;
+}
+
 /* ==========================================
    CONTENU
 ========================================== */

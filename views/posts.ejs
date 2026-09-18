@@ -242,6 +242,18 @@
 
 <script src="/js/post.js"></script>
 
+<!-- Suggestions de hashtags pendant la rédaction -->
+<script src="/js/hashtagSuggest.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const contenuPub = document.getElementById('contenuPub');
+
+        if (contenuPub) {
+            attachHashtagSuggest(contenuPub);
+        }
+    });
+</script>
+
 </body>
 
 </html>

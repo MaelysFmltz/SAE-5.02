@@ -334,6 +334,7 @@
 
   <!-- SUPPRESSION DES PUBLICATIONS -->
   <script src="/js/deletePost.js"></script>
+  <script src="/js/hashtagSuggest.js"></script>
 
 
   <% if (!isOwner) { %>
@@ -680,7 +681,11 @@
 
               headers: {
                 'Content-Type': 'application/json'
-              }
+              },
+
+              body: JSON.stringify({
+                visibilite: 1
+              })
             }
           );
 

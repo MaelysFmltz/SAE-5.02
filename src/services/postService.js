@@ -322,6 +322,10 @@ function getPublicationForUser(idPubli, idUser) {
         );
     }
 
+    const dejaReposte = idUser
+        ? postModel.findRepostedPubliIds(idUser).has(publication.idPubli)
+        : false;
+
     if (
         publication.originalIdPubli &&
         !peutVoirPublication(
@@ -340,11 +344,12 @@ function getPublicationForUser(idPubli, idUser) {
             originalTypePublication: null,
             originalNomMedia: null,
             originalTypeMedia: null,
-            auteurOriginalPseudo: null
+            auteurOriginalPseudo: null,
+            dejaReposte
         };
     }
 
-    return publication;
+    return { ...publication, dejaReposte };
 }
 
 // Créer un Duo (reprend le média de l'original, ajoute le média
@@ -380,9 +385,26 @@ function createDuo(
         );
     }
 
-    if (!postModel.findPostById(idPubliOriginale)) {
+    /*
+     * Un repost n'a jamais de média propre : on remonte la chaîne
+     * jusqu'à la vraie publication photo/vidéo (le Duo se fait
+     * alors avec celle-ci, pas avec le repost intermédiaire).
+     */
+    const idPubliMedia =
+        postModel.resolveMediaSource(idPubliOriginale);
+
+    if (!idPubliMedia) {
         throw new Error(
             'Un Duo ne peut être créé qu’à partir d’une publication contenant une photo ou une vidéo'
+        );
+    }
+
+    if (
+        idPubliMedia !== idPubliOriginale &&
+        !peutVoirPublication(db, idPubliMedia, idUser)
+    ) {
+        throw new Error(
+            'Vous ne pouvez pas créer un Duo avec cette publication'
         );
     }
 
@@ -394,7 +416,7 @@ function createDuo(
 
     return postModel.createDuo(
         idUser,
-        idPubliOriginale,
+        idPubliMedia,
         contenuPub,
         visibilite,
         nomMedia,
@@ -435,11 +457,28 @@ function createCollage(
         );
     }
 
-    const mediaOriginal = postModel.findPostById(idPubliOriginale);
+    /*
+     * Un repost n'a jamais de média propre : on remonte la chaîne
+     * jusqu'à la vraie vidéo d'origine.
+     */
+    const idPubliMedia =
+        postModel.resolveMediaSource(idPubliOriginale);
+
+    const mediaOriginal =
+        idPubliMedia && postModel.findPostById(idPubliMedia);
 
     if (!mediaOriginal || mediaOriginal.typeMedia !== 'video') {
         throw new Error(
             'Un collage ne peut être créé qu’à partir d’une publication contenant une vidéo'
+        );
+    }
+
+    if (
+        idPubliMedia !== idPubliOriginale &&
+        !peutVoirPublication(db, idPubliMedia, idUser)
+    ) {
+        throw new Error(
+            'Vous ne pouvez pas créer un collage avec cette publication'
         );
     }
 
@@ -451,7 +490,7 @@ function createCollage(
 
     return postModel.createCollage(
         idUser,
-        idPubliOriginale,
+        idPubliMedia,
         contenuPub,
         visibilite,
         nomMedia,
