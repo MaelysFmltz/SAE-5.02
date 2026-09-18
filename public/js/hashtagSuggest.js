@@ -24,7 +24,26 @@ window.attachHashtagSuggest = function attachHashtagSuggest(input) {
         const rect = input.getBoundingClientRect();
         dropdown.style.left = `${rect.left}px`;
         dropdown.style.width = `${rect.width}px`;
-        dropdown.style.top = `${rect.bottom + 4}px`;
+
+        /*
+         * Toujours au-dessus du champ : sur un petit écran, le champ
+         * de commentaire est souvent tout en bas et une liste
+         * affichée en dessous sort de l'écran (invisible).
+         */
+        const spaceAbove = rect.top;
+        const maxHeight = 220;
+
+        if (spaceAbove >= 120) {
+            dropdown.style.top = 'auto';
+            dropdown.style.bottom = `${window.innerHeight - rect.top + 4}px`;
+            dropdown.style.maxHeight = `${Math.min(maxHeight, spaceAbove - 8)}px`;
+        } else {
+            // Vraiment pas de place au-dessus : on affiche en dessous.
+            dropdown.style.bottom = 'auto';
+            dropdown.style.top = `${rect.bottom + 4}px`;
+            dropdown.style.maxHeight =
+                `${Math.max(80, window.innerHeight - rect.bottom - 8)}px`;
+        }
     }
 
     window.addEventListener('resize', () => {

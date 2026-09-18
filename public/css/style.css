@@ -126,12 +126,6 @@ body {
    CLAVIER D'ÉMOJIS (commentaires, messagerie)
 ========================================== */
 
-.emoji-picker-wrapper {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
 .emoji-picker-toggle {
   border: none;
   background: transparent;
@@ -139,33 +133,68 @@ body {
   line-height: 1;
   cursor: pointer;
   padding: 4px 6px;
+  flex-shrink: 0;
 }
 
 .emoji-picker-panel {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  right: 0;
-  z-index: 50;
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 2px;
-  width: 220px;
-  max-height: 220px;
-  overflow-y: auto;
-  padding: 8px;
+  position: fixed;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.emoji-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.emoji-picker-close {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.emoji-picker-close:hover {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+.emoji-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  align-content: start;
+  gap: 4px;
+  padding: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .emoji-picker-item {
   border: none;
   background: transparent;
-  font-size: 1.2rem;
+  font-size: 1.35rem;
   line-height: 1;
-  padding: 4px;
-  border-radius: 6px;
+  padding: 6px;
+  border-radius: 8px;
   cursor: pointer;
 }
 

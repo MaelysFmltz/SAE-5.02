@@ -2,6 +2,11 @@
  * Petit clavier d'émojis réutilisable, attaché à un champ texte
  * (commentaires, et plus tard messagerie). Insère l'émoji choisi
  * à la position du curseur, sans dépendance externe.
+ *
+ * Le panneau est ajouté à document.body et positionné en "fixed"
+ * (comme hashtagSuggest.js), pour ne jamais être coupé par un
+ * ancêtre en overflow:hidden (ex : la feuille de la modale de
+ * commentaires) et pour toujours rester visible et défilable.
  */
 (function () {
 
@@ -14,36 +19,6 @@
         '📷', '🎥', '🎵', '🎶', '🐶', '🐱', '🌸', '🌈', '☀️', '🌙'
     ];
 
-    function createPanel() {
-        const panel = document.createElement('div');
-        panel.className = 'emoji-picker-panel';
-        panel.hidden = true;
-
-        EMOJIS.forEach((emoji) => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'emoji-picker-item';
-            btn.textContent = emoji;
-            panel.appendChild(btn);
-        });
-
-        return panel;
-    }
-
-    function insertAtCursor(input, emoji) {
-        const start = input.selectionStart ?? input.value.length;
-        const end = input.selectionEnd ?? input.value.length;
-
-        input.value =
-            input.value.slice(0, start) + emoji + input.value.slice(end);
-
-        const newPos = start + emoji.length;
-        input.setSelectionRange(newPos, newPos);
-        input.focus();
-
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-
     /**
      * Attache un bouton 😊 + panneau d'émojis juste avant
      * `insertBeforeEl`, insérant les émojis choisis dans `input`.
@@ -53,40 +28,140 @@
             return;
         }
 
-        const wrapper = document.createElement('div');
-        wrapper.className = 'emoji-picker-wrapper';
-
         const toggleBtn = document.createElement('button');
         toggleBtn.type = 'button';
         toggleBtn.className = 'emoji-picker-toggle';
         toggleBtn.setAttribute('aria-label', 'Insérer un émoji');
         toggleBtn.textContent = '😊';
 
-        const panel = createPanel();
+        insertBeforeEl.parentNode.insertBefore(toggleBtn, insertBeforeEl);
 
-        wrapper.appendChild(toggleBtn);
-        wrapper.appendChild(panel);
+        const panel = document.createElement('div');
+        panel.className = 'emoji-picker-panel';
+        panel.hidden = true;
 
-        insertBeforeEl.parentNode.insertBefore(wrapper, insertBeforeEl);
+        const header = document.createElement('div');
+        header.className = 'emoji-picker-header';
+
+        const title = document.createElement('span');
+        title.textContent = 'Émojis';
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'emoji-picker-close';
+        closeBtn.setAttribute('aria-label', 'Fermer les émojis');
+        closeBtn.textContent = '✕';
+
+        header.appendChild(title);
+        header.appendChild(closeBtn);
+        panel.appendChild(header);
+
+        const grid = document.createElement('div');
+        grid.className = 'emoji-picker-grid';
+
+        EMOJIS.forEach((emoji) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'emoji-picker-item';
+            btn.textContent = emoji;
+            grid.appendChild(btn);
+        });
+
+        panel.appendChild(grid);
+        document.body.appendChild(panel);
+
+        function positionPanel() {
+            const rect = toggleBtn.getBoundingClientRect();
+            const panelWidth = Math.min(260, window.innerWidth - 16);
+
+            panel.style.width = `${panelWidth}px`;
+
+            let left = rect.right - panelWidth;
+            left = Math.max(8, Math.min(left, window.innerWidth - panelWidth - 8));
+            panel.style.left = `${left}px`;
+
+            /*
+             * Ouvre vers le haut par défaut (le champ est souvent en
+             * bas de l'écran), et vers le bas s'il n'y a pas assez
+             * de place au-dessus.
+             */
+            const spaceAbove = rect.top;
+            const maxHeight = 280;
+
+            if (spaceAbove >= maxHeight + 16) {
+                panel.style.top = 'auto';
+                panel.style.bottom = `${window.innerHeight - rect.top + 8}px`;
+                panel.style.maxHeight = `${maxHeight}px`;
+            } else {
+                panel.style.bottom = 'auto';
+                panel.style.top = `${rect.bottom + 8}px`;
+                panel.style.maxHeight = `${Math.max(160, window.innerHeight - rect.bottom - 16)}px`;
+            }
+        }
+
+        function open() {
+            panel.hidden = false;
+            positionPanel();
+        }
+
+        function close() {
+            panel.hidden = true;
+        }
 
         toggleBtn.addEventListener('click', (event) => {
             event.stopPropagation();
-            panel.hidden = !panel.hidden;
+
+            if (panel.hidden) {
+                open();
+            } else {
+                close();
+            }
         });
 
-        panel.addEventListener('click', (event) => {
+        closeBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            close();
+        });
+
+        grid.addEventListener('click', (event) => {
             const item = event.target.closest('.emoji-picker-item');
 
             if (!item) {
                 return;
             }
 
-            insertAtCursor(input, item.textContent);
+            const start = input.selectionStart ?? input.value.length;
+            const end = input.selectionEnd ?? input.value.length;
+
+            input.value =
+                input.value.slice(0, start) + item.textContent + input.value.slice(end);
+
+            const newPos = start + item.textContent.length;
+            input.setSelectionRange(newPos, newPos);
+            input.focus();
+
+            input.dispatchEvent(new Event('input', { bubbles: true }));
         });
 
         document.addEventListener('click', (event) => {
-            if (!wrapper.contains(event.target)) {
-                panel.hidden = true;
+            if (
+                !panel.hidden &&
+                event.target !== toggleBtn &&
+                !panel.contains(event.target)
+            ) {
+                close();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !panel.hidden) {
+                close();
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            if (!panel.hidden) {
+                positionPanel();
             }
         });
     };
