@@ -267,7 +267,7 @@
                 <button type="button" id="flip-vertical">↕ Miroir V</button>
             </div>
 
-            <div id="editor-video-controls" class="editor-video-controls" hidden>
+            <div id="editor-video-controls" class="editor-video-controls editor-video-only" hidden aria-hidden="true">
                 <button type="button" id="editor-play">▶ Lire</button>
                 <input id="editor-timeline" type="range" min="0" max="0" step="0.01" value="0" aria-label="Position de la vidéo">
                 <span id="editor-time">00:00 / 00:00</span>
@@ -282,15 +282,47 @@
                 </section>
 
                 <aside class="editor-panel">
-                    <div class="editor-tool-group">
+                            <div class="editor-tool-group">
                         <h3>Recadrage</h3>
+                        <label>Format
+                            <select id="crop-aspect">
+                                <option value="free">Libre</option>
+                                <option value="1:1">1:1</option>
+                                <option value="4:5">4:5</option>
+                                <option value="16:9">16:9</option>
+                            </select>
+                        </label>
                         <button type="button" id="crop-start">✂ Commencer</button>
                         <button type="button" id="crop-apply" class="editor-primary">Valider</button>
                         <button type="button" id="crop-cancel">Annuler</button>
-                        <p id="crop-hint" class="editor-hint">Cliquez sur « Commencer », puis tracez une zone sur l’image.</p>
+                        <p id="crop-hint" class="editor-hint">Cliquez sur « Commencer », puis tracez une zone sur le média. Le format choisi est respecté automatiquement.</p>
                     </div>
 
-                    <div id="video-trim-group" class="editor-tool-group" hidden>
+                    <div id="video-audio-group" class="editor-tool-group editor-video-only" hidden aria-hidden="true">
+                        <h3>Son</h3>
+                        <button type="button" id="editor-mute">🔇 Muet</button>
+                        <label class="editor-range-row">
+                            Volume
+                            <span class="editor-range-value"><output id="editor-volume-value">100</output> %</span>
+                            <input id="editor-volume" type="range" min="0" max="100" step="1" value="100">
+                        </label>
+                        <p class="editor-hint">Le niveau du son est appliqué à l’export de la vidéo.</p>
+                    </div>
+
+                    <div id="video-speed-group" class="editor-tool-group editor-video-only" hidden aria-hidden="true">
+                        <h3>Vitesse</h3>
+                        <label>Lecture
+                            <select id="editor-speed">
+                                <option value="0.5">0,5×</option>
+                                <option value="1" selected>1×</option>
+                                <option value="1.5">1,5×</option>
+                                <option value="2">2×</option>
+                            </select>
+                        </label>
+                        <p class="editor-hint">La vitesse choisie sera également appliquée à la vidéo publiée.</p>
+                    </div>
+
+                    <div id="video-trim-group" class="editor-tool-group editor-video-only" hidden aria-hidden="true">
                         <h3>Durée de la vidéo</h3>
                         <label class="editor-range-row">
                             Début
@@ -326,31 +358,48 @@
                     <div class="editor-tool-group">
                         <h3>Texte</h3>
                         <input id="text-value" type="text" maxlength="120" placeholder="Votre texte...">
+                        <label>Police
+                            <select id="text-font">
+                                <option value="Arial">Arial</option>
+                                <option value="Verdana">Verdana</option>
+                                <option value="Georgia">Georgia</option>
+                                <option value="Impact">Impact</option>
+                                <option value="Courier New">Courier New</option>
+                                <option value="Trebuchet MS">Trebuchet MS</option>
+                                <option value="Times New Roman">Times New Roman</option>
+                            </select>
+                        </label>
+                        <div class="editor-two-cols">
+                            <label>Épaisseur
+                                <select id="text-weight">
+                                    <option value="400">Normal</option>
+                                    <option value="700" selected>Gras</option>
+                                </select>
+                            </label>
+                            <label>Style
+                                <select id="text-style">
+                                    <option value="normal">Normal</option>
+                                    <option value="italic">Italique</option>
+                                </select>
+                            </label>
+                        </div>
                         <label>Couleur <input id="text-color" type="color" value="#ffffff"></label>
                         <label class="editor-range-row">
                             Taille
                             <span class="editor-range-value"><output id="text-size-value">58</output> px</span>
                             <input id="text-size" type="range" min="16" max="180" step="1" value="58">
                         </label>
-                        <div id="text-emoji-picker" class="editor-emoji-picker" aria-label="Choisir un emoji à insérer dans le texte">
-                            <span class="editor-emoji-label">Émojis</span>
-                            <button type="button" data-emoji="😀" aria-label="Insérer 😀">😀</button>
-                            <button type="button" data-emoji="😂" aria-label="Insérer 😂">😂</button>
-                            <button type="button" data-emoji="😍" aria-label="Insérer 😍">😍</button>
-                            <button type="button" data-emoji="😎" aria-label="Insérer 😎">😎</button>
-                            <button type="button" data-emoji="🥳" aria-label="Insérer 🥳">🥳</button>
-                            <button type="button" data-emoji="❤️" aria-label="Insérer ❤️">❤️</button>
-                            <button type="button" data-emoji="🔥" aria-label="Insérer 🔥">🔥</button>
-                            <button type="button" data-emoji="⭐" aria-label="Insérer ⭐">⭐</button>
-                            <button type="button" data-emoji="👍" aria-label="Insérer 👍">👍</button>
-                            <button type="button" data-emoji="🎉" aria-label="Insérer 🎉">🎉</button>
-                            <button type="button" data-emoji="🚀" aria-label="Insérer 🚀">🚀</button>
-                            <button type="button" data-emoji="💯" aria-label="Insérer 💯">💯</button>
-                            <button type="button" data-emoji="✅" aria-label="Insérer ✅">✅</button>
-                            <button type="button" data-emoji="✨" aria-label="Insérer ✨">✨</button>
+                        <label class="editor-range-row">
+                            Opacité
+                            <span class="editor-range-value"><output id="text-opacity-value">100</output> %</span>
+                            <input id="text-opacity" type="range" min="0" max="100" step="1" value="100">
+                        </label>
+                        <button type="button" id="text-emoji-toggle" aria-expanded="false" aria-controls="text-emoji-picker">😊 Émojis</button>
+                        <div id="text-emoji-picker" class="editor-emoji-picker" aria-label="Choisir un emoji à insérer dans le texte" hidden>
+                            <button type="button" data-emoji="😀">😀</button><button type="button" data-emoji="😃">😃</button><button type="button" data-emoji="😄">😄</button><button type="button" data-emoji="😁">😁</button><button type="button" data-emoji="😆">😆</button><button type="button" data-emoji="😅">😅</button><button type="button" data-emoji="😂">😂</button><button type="button" data-emoji="🤣">🤣</button><button type="button" data-emoji="😊">😊</button><button type="button" data-emoji="😍">😍</button><button type="button" data-emoji="🥰">🥰</button><button type="button" data-emoji="😘">😘</button><button type="button" data-emoji="😎">😎</button><button type="button" data-emoji="🤩">🤩</button><button type="button" data-emoji="🥳">🥳</button><button type="button" data-emoji="🤔">🤔</button><button type="button" data-emoji="😭">😭</button><button type="button" data-emoji="😡">😡</button><button type="button" data-emoji="❤️">❤️</button><button type="button" data-emoji="🧡">🧡</button><button type="button" data-emoji="💛">💛</button><button type="button" data-emoji="💚">💚</button><button type="button" data-emoji="💙">💙</button><button type="button" data-emoji="💜">💜</button><button type="button" data-emoji="🖤">🖤</button><button type="button" data-emoji="🤍">🤍</button><button type="button" data-emoji="🔥">🔥</button><button type="button" data-emoji="⭐">⭐</button><button type="button" data-emoji="✨">✨</button><button type="button" data-emoji="💯">💯</button><button type="button" data-emoji="👍">👍</button><button type="button" data-emoji="👎">👎</button><button type="button" data-emoji="👏">👏</button><button type="button" data-emoji="🙌">🙌</button><button type="button" data-emoji="🎉">🎉</button><button type="button" data-emoji="🚀">🚀</button><button type="button" data-emoji="✅">✅</button><button type="button" data-emoji="💡">💡</button><button type="button" data-emoji="🎵">🎵</button><button type="button" data-emoji="🐱">🐱</button><button type="button" data-emoji="🐶">🐶</button><button type="button" data-emoji="🐼">🐼</button><button type="button" data-emoji="🌈">🌈</button><button type="button" data-emoji="☀️">☀️</button><button type="button" data-emoji="🌙">🌙</button><button type="button" data-emoji="🍕">🍕</button><button type="button" data-emoji="☕">☕</button>
                         </div>
                         <button type="button" id="add-text">🔤 Ajouter le texte</button>
-                        <p class="editor-hint">Le texte est ajouté au centre. Choisissez un emoji ci-dessus pour l'insérer dans le texte, puis cliquez sur le texte pour le déplacer ou modifier sa taille.</p>
+                        <p class="editor-hint">Le texte est ajouté au centre. Cliquez sur un texte pour le déplacer, changer sa taille, sa police, son style, sa couleur ou son opacité.</p>
                     </div>
 
                     <div class="editor-tool-group">
@@ -360,10 +409,18 @@
                             <option value="star">★ Étoile</option>
                             <option value="circle">● Cercle</option>
                             <option value="rectangle">■ Carré</option>
-                            <option value="emoji">✨ Emoji</option>
                         </select>
-                        <input id="element-emoji" type="text" maxlength="4" value="✨" placeholder="Emoji">
                         <label>Couleur <input id="element-color" type="color" value="#d83ca9"></label>
+                        <label class="editor-range-row">
+                            Taille
+                            <span class="editor-range-value"><output id="element-size-value">96</output> px</span>
+                            <input id="element-size" type="range" min="16" max="220" step="1" value="96">
+                        </label>
+                        <label class="editor-range-row">
+                            Opacité
+                            <span class="editor-range-value"><output id="element-opacity-value">100</output> %</span>
+                            <input id="element-opacity" type="range" min="0" max="100" step="1" value="100">
+                        </label>
                         <button type="button" id="add-element">➕ Ajouter l’élément</button>
                         <p class="editor-hint">L’élément est ajouté au centre. Cliquez dessus puis faites-le glisser pour le déplacer.</p>
                     </div>
@@ -372,12 +429,33 @@
                         <h3>Élément sélectionné</h3>
                         <p id="selected-overlay-label" class="editor-hint">Texte sélectionné</p>
                         <label>Couleur <input id="overlay-color" type="color" value="#ffffff"></label>
-                        <label id="selected-text-size-row" class="editor-range-row" hidden>
+                        <label class="editor-range-row">
                             Taille
                             <span class="editor-range-value"><output id="selected-text-size-value">58</output> px</span>
-                            <input id="selected-text-size" type="range" min="16" max="180" step="1" value="58">
+                            <input id="selected-text-size" type="range" min="16" max="220" step="1" value="58">
                         </label>
-                        <p class="editor-hint">Vous pouvez déplacer le texte ou l’élément directement avec la souris ou le doigt sur l’image/vidéo. La taille se règle avec le curseur ci-dessus.</p>
+                        <label class="editor-range-row">
+                            Opacité
+                            <span class="editor-range-value"><output id="selected-overlay-opacity-value">100</output> %</span>
+                            <input id="selected-overlay-opacity" type="range" min="0" max="100" step="1" value="100">
+                        </label>
+                        <div id="selected-text-format-row" class="editor-selected-text-format" hidden>
+                            <label>Police
+                                <select id="selected-text-font">
+                                    <option value="Arial">Arial</option><option value="Verdana">Verdana</option><option value="Georgia">Georgia</option><option value="Impact">Impact</option><option value="Courier New">Courier New</option><option value="Trebuchet MS">Trebuchet MS</option><option value="Times New Roman">Times New Roman</option>
+                                </select>
+                            </label>
+                            <div class="editor-two-cols">
+                                <label>Épaisseur<select id="selected-text-weight"><option value="400">Normal</option><option value="700">Gras</option></select></label>
+                                <label>Style<select id="selected-text-style"><option value="normal">Normal</option><option value="italic">Italique</option></select></label>
+                            </div>
+                        </div>
+                        <div class="editor-layer-actions">
+                            <button type="button" id="layer-up">▲ Monter</button>
+                            <button type="button" id="layer-down">▼ Descendre</button>
+                            <button type="button" id="layer-delete" class="editor-danger">🗑 Supprimer</button>
+                        </div>
+                        <p class="editor-hint">Déplacez l’élément directement sur le média. Vous pouvez aussi modifier sa taille, sa couleur, son opacité et, pour un texte, sa police et son style.</p>
                     </div>
 
                     <p id="editor-message" class="editor-hint" role="status"></p>

@@ -304,3 +304,81 @@
     padding: 0.9rem 1rem;
   }
 }
+
+/* ============================================================
+   FOND ANIMÉ — FEED
+============================================================ */
+
+body {
+  position: relative;
+  isolation: isolate;
+  background: #020203;
+  overflow-x: hidden;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: -18%;
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform, background-position;
+}
+
+body::before {
+  background:
+    radial-gradient(42% 32% at 12% 18%, rgba(105, 32, 170, 0.42) 0%, rgba(105, 32, 170, 0) 72%),
+    radial-gradient(48% 38% at 82% 28%, rgba(150, 48, 220, 0.38) 0%, rgba(150, 48, 220, 0) 74%),
+    radial-gradient(44% 35% at 58% 82%, rgba(91, 36, 190, 0.36) 0%, rgba(91, 36, 190, 0) 76%);
+  animation: feed-purple-waves 18s ease-in-out infinite alternate;
+}
+
+body::after {
+  background:
+    radial-gradient(32% 26% at 24% 72%, rgba(188, 70, 238, 0.24) 0%, rgba(188, 70, 238, 0) 76%),
+    radial-gradient(38% 30% at 76% 78%, rgba(104, 45, 226, 0.27) 0%, rgba(104, 45, 226, 0) 78%);
+  filter: blur(32px);
+  opacity: 1;
+  animation: feed-purple-waves-soft 24s ease-in-out infinite alternate;
+}
+
+@keyframes feed-purple-waves {
+  0% {
+    transform: translate3d(-2%, -1%, 0) scale(1.03);
+  }
+  35% {
+    transform: translate3d(3%, 1%, 0) scale(1.07);
+  }
+  70% {
+    transform: translate3d(1%, -3%, 0) scale(1.05);
+  }
+  100% {
+    transform: translate3d(-3%, 2%, 0) scale(1.08);
+  }
+}
+
+@keyframes feed-purple-waves-soft {
+  0% {
+    transform: translate3d(3%, 0, 0) scale(1.08);
+  }
+  50% {
+    transform: translate3d(-4%, 2%, 0) scale(1.12);
+  }
+  100% {
+    transform: translate3d(2%, -3%, 0) scale(1.1);
+  }
+}
+
+.app-container {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before,
+  body::after {
+    animation: none;
+  }
+}
+

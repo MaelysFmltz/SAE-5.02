@@ -13,7 +13,7 @@ export class ImageEditor {
         this.rotation = 0; this.flipX = false; this.flipY = false; this.scale = 1;
         this.filters = { brightness: 100, contrast: 100, saturation: 100, grayscale: 0, sepia: 0, blur: 0 };
         this.text = []; this.elements = []; this.crop = null; this.cropActive = false; this.dragging = false; this.cropStart = null;
-        this.selectedOverlay = null; this.overlayDrag = null;
+        this.selectedOverlay = null; this.overlayDrag = null; this.cropAspect = 'free';
         this.active = false;
         this.loadId = 0;
         this.initCanvasEvents();
@@ -42,13 +42,15 @@ export class ImageEditor {
         this.rotation = 0; this.flipX = false; this.flipY = false; this.scale = 1;
         this.filters = { brightness: 100, contrast: 100, saturation: 100, grayscale: 0, sepia: 0, blur: 0 };
         this.text = []; this.elements = []; this.crop = null; this.cropActive = false;
-        this.selectedOverlay = null; this.overlayDrag = null;
+        this.selectedOverlay = null; this.overlayDrag = null; this.cropAspect = 'free';
     }
-    snapshot() { return { baseDataURL: this.baseDataURL, rotation: this.rotation, flipX: this.flipX, flipY: this.flipY, scale: this.scale, filters: { ...this.filters }, text: structuredClone(this.text), elements: structuredClone(this.elements), crop: this.crop ? { ...this.crop } : null }; }
+    snapshot() { return { baseDataURL: this.baseDataURL, rotation: this.rotation, flipX: this.flipX, flipY: this.flipY, scale: this.scale, filters: { ...this.filters }, text: structuredClone(this.text), elements: structuredClone(this.elements), crop: this.crop ? { ...this.crop } : null, cropAspect: this.cropAspect }; }
     async restore(s) {
         this.baseDataURL = s.baseDataURL; this.image = await dataURLToImage(this.baseDataURL);
         this.rotation = s.rotation; this.flipX = s.flipX; this.flipY = s.flipY; this.scale = s.scale;
         this.filters = { ...s.filters }; this.text = structuredClone(s.text); this.elements = structuredClone(s.elements); this.crop = s.crop ? { ...s.crop } : null;
+        this.ensureLayerIndexes();
+        this.cropAspect = s.cropAspect || 'free';
         this.cropActive = false; this.selectedOverlay = null; this.overlayDrag = null; this.render();
     }
     commit() { this.history.push(this.snapshot()); this.render(); this.updateSelectedOverlayUI(); this.changed(); }
@@ -101,18 +103,47 @@ export class ImageEditor {
         this.updateCropOverlay();
         this.el.dimensions.textContent = `${canvas.width} × ${canvas.height}px — format standard`;
     }
-    drawOverlays(ctx) {
-        for (const item of this.text) {
-            ctx.save(); ctx.translate(item.x, item.y); ctx.rotate(item.rotation || 0); ctx.font = `${item.weight} ${item.size}px ${item.font}`; ctx.fillStyle = item.color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            if (item.stroke) { ctx.lineWidth = Math.max(2, item.size / 10); ctx.strokeStyle = item.stroke; ctx.strokeText(item.value, 0, 0); } ctx.fillText(item.value, 0, 0); ctx.restore();
+    ensureLayerIndexes() {
+        const all = [...this.text, ...this.elements];
+        let next = 0;
+        for (const item of all) {
+            if (!Number.isFinite(item.zIndex)) item.zIndex = next;
+            next = Math.max(next, item.zIndex + 1);
+            if (!Number.isFinite(item.opacity)) item.opacity = 1;
+            if (!item.fontStyle) item.fontStyle = 'normal';
+            if (!item.weight) item.weight = '700';
+            if (!item.font) item.font = 'Arial';
         }
-        for (const item of this.elements) {
-            ctx.save(); ctx.translate(item.x, item.y); ctx.rotate(item.rotation || 0); ctx.fillStyle = item.fill; ctx.strokeStyle = item.stroke || item.fill; ctx.lineWidth = item.lineWidth || 4;
-            if (item.type === 'circle') { ctx.beginPath(); ctx.arc(0, 0, item.size / 2, 0, Math.PI * 2); ctx.fill(); }
-            else if (item.type === 'rectangle') ctx.fillRect(-item.size / 2, -item.size / 2, item.size, item.size);
-            else if (item.type === 'star') this.drawStar(ctx, item.size / 2, 5);
-            else if (item.type === 'heart') this.drawHeart(ctx, item.size);
-            else if (item.type === 'emoji') { ctx.font = `${item.size}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(item.value, 0, 0); }
+        return all;
+    }
+
+    getLayerItems() {
+        return this.ensureLayerIndexes().slice().sort((a, b) => a.zIndex - b.zIndex);
+    }
+
+    drawOverlays(ctx) {
+        for (const item of this.getLayerItems()) {
+            ctx.save();
+            ctx.globalAlpha = clamp(Number(item.opacity) || 0, 0, 1);
+            ctx.translate(item.x, item.y);
+            ctx.rotate(item.rotation || 0);
+            if (this.text.includes(item)) {
+                ctx.font = `${item.fontStyle || 'normal'} ${item.weight || '700'} ${item.size}px ${item.font || 'Arial'}`;
+                ctx.fillStyle = item.color;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                if (item.stroke) { ctx.lineWidth = Math.max(2, item.size / 10); ctx.strokeStyle = item.stroke; ctx.strokeText(item.value, 0, 0); }
+                ctx.fillText(item.value, 0, 0);
+            } else {
+                ctx.fillStyle = item.fill;
+                ctx.strokeStyle = item.stroke || item.fill;
+                ctx.lineWidth = item.lineWidth || 4;
+                if (item.type === 'circle') { ctx.beginPath(); ctx.arc(0, 0, item.size / 2, 0, Math.PI * 2); ctx.fill(); }
+                else if (item.type === 'rectangle') ctx.fillRect(-item.size / 2, -item.size / 2, item.size, item.size);
+                else if (item.type === 'star') this.drawStar(ctx, item.size / 2, 5);
+                else if (item.type === 'heart') this.drawHeart(ctx, item.size);
+                else if (item.type === 'emoji') { ctx.font = `${item.size}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(item.value, 0, 0); }
+            }
             ctx.restore();
         }
         this.drawSelection(ctx);
@@ -145,7 +176,7 @@ export class ImageEditor {
         if (kind === 'text') {
             const ctx = this.el.canvas.getContext('2d');
             ctx.save();
-            ctx.font = `${item.weight} ${item.size}px ${item.font}`;
+            ctx.font = `${item.fontStyle || 'normal'} ${item.weight || '700'} ${item.size}px ${item.font || 'Arial'}`;
             const width = Math.max(item.size, ctx.measureText(item.value).width) + item.size * .22;
             ctx.restore();
             return { x: item.x - width / 2, y: item.y - item.size * .7, width, height: item.size * 1.4 };
@@ -156,8 +187,11 @@ export class ImageEditor {
 
     hitTestOverlay(point) {
         const candidates = [];
-        this.text.forEach((item, index) => candidates.push({ kind: 'text', index, item }));
-        this.elements.forEach((item, index) => candidates.push({ kind: 'element', index, item }));
+        for (const item of this.getLayerItems()) {
+            const kind = this.text.includes(item) ? 'text' : 'element';
+            const index = (kind === 'text' ? this.text : this.elements).indexOf(item);
+            candidates.push({ kind, index, item });
+        }
         for (let i = candidates.length - 1; i >= 0; i--) {
             const candidate = candidates[i];
             const b = this.getOverlayBounds(candidate.kind, candidate.item);
@@ -181,18 +215,20 @@ export class ImageEditor {
         const selected = this.getSelectedItem();
         const hasSelection = Boolean(selected);
         this.el.selectedOverlayPanel?.toggleAttribute('hidden', !hasSelection);
-        if (!selected) {
-            if (this.el.selectedTextSizeRow) this.el.selectedTextSizeRow.hidden = true;
-            return;
-        }
+        if (!selected) return;
         const isText = selected.kind === 'text';
         const color = isText ? selected.item.color : selected.item.fill;
         if (this.el.overlayColor) this.el.overlayColor.value = color || '#ffffff';
         if (this.el.selectedOverlayLabel) this.el.selectedOverlayLabel.textContent = isText ? 'Texte sélectionné' : 'Élément sélectionné';
-        if (this.el.selectedTextSizeRow) this.el.selectedTextSizeRow.hidden = false;
-        if (this.el.selectedTextSizeInput) {
-            this.el.selectedTextSizeInput.value = String(selected.item.size);
-            if (this.el.selectedTextSizeValue) this.el.selectedTextSizeValue.value = String(selected.item.size);
+        if (this.el.selectedTextSizeInput) this.el.selectedTextSizeInput.value = String(selected.item.size);
+        if (this.el.selectedTextSizeValue) this.el.selectedTextSizeValue.textContent = String(selected.item.size);
+        if (this.el.selectedOverlayOpacityInput) this.el.selectedOverlayOpacityInput.value = String(Math.round((selected.item.opacity ?? 1) * 100));
+        if (this.el.selectedOverlayOpacityValue) this.el.selectedOverlayOpacityValue.textContent = String(Math.round((selected.item.opacity ?? 1) * 100));
+        if (this.el.selectedTextFormatRow) this.el.selectedTextFormatRow.hidden = !isText;
+        if (isText) {
+            if (this.el.selectedTextFont) this.el.selectedTextFont.value = selected.item.font || 'Arial';
+            if (this.el.selectedTextWeight) this.el.selectedTextWeight.value = String(selected.item.weight || '700');
+            if (this.el.selectedTextStyle) this.el.selectedTextStyle.value = selected.item.fontStyle || 'normal';
         }
     }
 
@@ -200,7 +236,7 @@ export class ImageEditor {
         const selected = this.getSelectedItem();
         if (!selected) return;
 
-        const nextSize = clamp(Number(size) || selected.item.size, 16, 180);
+        const nextSize = clamp(Number(size) || selected.item.size, 16, 220);
         selected.item.size = nextSize;
 
         const box = this.getOverlayBounds(selected.kind, selected.item);
@@ -222,10 +258,51 @@ export class ImageEditor {
     setSelectedColor(color) {
         const selected = this.getSelectedItem();
         if (!selected || !/^#[0-9a-f]{6}$/i.test(color)) return;
-        if (selected.kind === 'text') selected.item.color = color;
-        else selected.item.fill = color;
+        if (selected.kind === 'text') selected.item.color = color; else selected.item.fill = color;
         this.commit();
+    }
+
+    setSelectedOpacity(value, commit = true) {
+        const selected = this.getSelectedItem();
+        if (!selected) return;
+        selected.item.opacity = clamp(Number(value) / 100, 0, 1);
+        this.render();
         this.updateSelectedOverlayUI();
+        if (commit) this.commit();
+    }
+
+    setSelectedTextFormat({ font, weight, fontStyle }, commit = true) {
+        const selected = this.getSelectedItem();
+        if (!selected || selected.kind !== 'text') return;
+        if (font) selected.item.font = font;
+        if (weight) selected.item.weight = String(weight);
+        if (fontStyle) selected.item.fontStyle = fontStyle;
+        this.render();
+        this.updateSelectedOverlayUI();
+        if (commit) this.commit();
+    }
+
+    moveSelectedLayer(direction) {
+        const selected = this.getSelectedItem();
+        if (!selected) return;
+        const ordered = this.getLayerItems();
+        const pos = ordered.indexOf(selected.item);
+        const target = pos + Number(direction);
+        if (target < 0 || target >= ordered.length) return;
+        const other = ordered[target];
+        const tmp = selected.item.zIndex;
+        selected.item.zIndex = other.zIndex;
+        other.zIndex = tmp;
+        this.commit();
+    }
+
+    deleteSelectedOverlay() {
+        const selected = this.getSelectedItem();
+        if (!selected) return;
+        const list = selected.kind === 'text' ? this.text : this.elements;
+        list.splice(selected.index, 1);
+        this.selectedOverlay = null;
+        this.commit();
     }
 
     moveSelectedTo(point) {
@@ -290,20 +367,20 @@ export class ImageEditor {
     async commitFilters() { await this.commitCurrentToBase(); }
     addText(value, options = {}) {
         value = String(value || '').trim(); if (!value) throw new Error('Le texte ne peut pas être vide.');
-        const item = { value, x: this.el.canvas.width / 2, y: this.el.canvas.height / 2, size: Number(options.size) || Math.max(24, Math.round(this.el.canvas.width / 20)), color: options.color || '#ffffff', stroke: options.stroke || '#000000', weight: 'bold', font: 'Arial', rotation: 0 };
-        this.text.push(item);
-        this.selectedOverlay = { kind: 'text', index: this.text.length - 1 };
-        this.commit();
+        const item = { value, x: this.el.canvas.width / 2, y: this.el.canvas.height / 2, size: Number(options.size) || 58, color: options.color || '#ffffff', stroke: options.stroke || '#000000', weight: String(options.weight || '700'), font: options.font || 'Arial', fontStyle: options.fontStyle || 'normal', opacity: clamp(Number(options.opacity ?? 100) / 100, 0, 1), rotation: 0, zIndex: this.getLayerItems().length ? Math.max(...this.getLayerItems().map(i => i.zIndex)) + 1 : 0 };
+        this.text.push(item); this.selectedOverlay = { kind: 'text', index: this.text.length - 1 }; this.commit();
     }
     addElement(type, options = {}) {
-        const allowed = ['circle', 'rectangle', 'star', 'heart', 'emoji']; if (!allowed.includes(type)) throw new Error('Élément inconnu.');
-        const item = { type, value: options.value || '✨', x: this.el.canvas.width / 2, y: this.el.canvas.height / 2, size: Number(options.size) || Math.max(48, Math.round(this.el.canvas.width / 10)), fill: options.fill || '#d83ca9', stroke: '#ffffff', lineWidth: 4, rotation: 0 };
-        this.elements.push(item);
-        this.selectedOverlay = { kind: 'element', index: this.elements.length - 1 };
-        this.commit();
+        const allowed = ['circle', 'rectangle', 'star', 'heart']; if (!allowed.includes(type)) throw new Error('Élément inconnu.');
+        const layers = this.getLayerItems();
+        const item = { type, value: '', x: this.el.canvas.width / 2, y: this.el.canvas.height / 2, size: Number(options.size) || 96, fill: options.fill || '#d83ca9', stroke: '#ffffff', lineWidth: 4, opacity: clamp(Number(options.opacity ?? 100) / 100, 0, 1), rotation: 0, zIndex: layers.length ? Math.max(...layers.map(i => i.zIndex)) + 1 : 0 };
+        this.elements.push(item); this.selectedOverlay = { kind: 'element', index: this.elements.length - 1 }; this.commit();
     }
 
-    startCrop() { this.cropActive = true; this.el.canvas.classList.add('editor-cropping'); this.el.cropHint.textContent = 'Tracez une zone sur l’image puis cliquez sur Valider.'; }
+    setCropAspect(value) { this.cropAspect = ['free', '1:1', '4:5', '16:9'].includes(value) ? value : 'free'; }
+    getCropAspectRatio() { if (this.cropAspect === 'free') return null; const [w, h] = this.cropAspect.split(':').map(Number); return w / h; }
+
+    startCrop() { this.cropActive = true; this.el.canvas.classList.add('editor-cropping'); this.el.cropHint.textContent = this.cropAspect === 'free' ? 'Tracez une zone libre sur l’image puis cliquez sur Valider.' : `Tracez une zone ${this.cropAspect} sur l’image puis cliquez sur Valider.`; }
     cancelCrop() { this.cropActive = false; this.crop = null; this.cropStart = null; this.dragging = false; this.overlayDrag = null; this.el.canvas.classList.remove('editor-cropping'); this.el.cropOverlay.hidden = true; }
     pointerToCanvas(e) { const r = this.el.canvas.getBoundingClientRect(); return { x: clamp((e.clientX - r.left) * this.el.canvas.width / r.width, 0, this.el.canvas.width), y: clamp((e.clientY - r.top) * this.el.canvas.height / r.height, 0, this.el.canvas.height) }; }
     updateCropOverlay() {
@@ -337,7 +414,22 @@ export class ImageEditor {
             const point = this.pointerToCanvas(e);
             if (this.cropActive && this.dragging) {
                 const s = this.cropStart;
-                this.crop = { x: Math.min(s.x, point.x), y: Math.min(s.y, point.y), width: Math.abs(point.x - s.x), height: Math.abs(point.y - s.y) };
+                const ratio = this.getCropAspectRatio();
+                let dx = point.x - s.x;
+                let dy = point.y - s.y;
+                let width = Math.abs(dx);
+                let height = Math.abs(dy);
+                if (ratio) {
+                    if (width > height * ratio) height = width / ratio; else width = height * ratio;
+                    const signX = dx >= 0 ? 1 : -1;
+                    const signY = dy >= 0 ? 1 : -1;
+                    const maxWidth = signX > 0 ? this.el.canvas.width - s.x : s.x;
+                    const maxHeight = signY > 0 ? this.el.canvas.height - s.y : s.y;
+                    const scale = Math.min(1, maxWidth / Math.max(width, 1), maxHeight / Math.max(height, 1));
+                    width *= scale; height *= scale;
+                    dx = signX * width; dy = signY * height;
+                }
+                this.crop = { x: dx >= 0 ? s.x : s.x - width, y: dy >= 0 ? s.y : s.y - height, width, height };
                 this.updateCropOverlay();
                 return;
             }

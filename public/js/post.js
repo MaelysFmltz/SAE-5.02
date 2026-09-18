@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const editorCanvas = document.getElementById('editor-canvas');
     const cropOverlay = document.getElementById('editor-crop-overlay');
     const cropHint = document.getElementById('crop-hint');
+    const cropAspectInput = document.getElementById('crop-aspect');
     const dimensions = document.getElementById('editor-dimensions');
     const editorMessage = document.getElementById('editor-message');
     const editorFileName = document.getElementById('editor-file-name');
@@ -31,12 +32,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const elementColorInput = document.getElementById('element-color');
     const selectedOverlayPanel = document.getElementById('selected-overlay-panel');
     const selectedOverlayLabel = document.getElementById('selected-overlay-label');
-    const selectedTextSizeRow = document.getElementById('selected-text-size-row');
     const selectedTextSizeInput = document.getElementById('selected-text-size');
     const selectedTextSizeValue = document.getElementById('selected-text-size-value');
     const overlayColorInput = document.getElementById('overlay-color');
     const textSizeInput = document.getElementById('text-size');
     const textSizeValue = document.getElementById('text-size-value');
+    const textFontInput = document.getElementById('text-font');
+    const textWeightInput = document.getElementById('text-weight');
+    const textStyleInput = document.getElementById('text-style');
+    const textOpacityInput = document.getElementById('text-opacity');
+    const textOpacityValue = document.getElementById('text-opacity-value');
+    const elementSizeInput = document.getElementById('element-size');
+    const elementSizeValue = document.getElementById('element-size-value');
+    const elementOpacityInput = document.getElementById('element-opacity');
+    const elementOpacityValue = document.getElementById('element-opacity-value');
+    const textEmojiToggle = document.getElementById('text-emoji-toggle');
     const filterApplyButton = document.getElementById('filters-apply');
     const playButton = document.getElementById('editor-play');
     const timeline = document.getElementById('editor-timeline');
@@ -50,6 +60,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const trimDurationValue = document.getElementById('editor-trim-duration-value');
     const textInput = document.getElementById('text-value');
     const textEmojiPicker = document.getElementById('text-emoji-picker');
+    const selectedOverlayOpacityInput = document.getElementById('selected-overlay-opacity');
+    const selectedOverlayOpacityValue = document.getElementById('selected-overlay-opacity-value');
+    const selectedTextFormatRow = document.getElementById('selected-text-format-row');
+    const selectedTextFont = document.getElementById('selected-text-font');
+    const selectedTextWeight = document.getElementById('selected-text-weight');
+    const selectedTextStyle = document.getElementById('selected-text-style');
+    const layerUpButton = document.getElementById('layer-up');
+    const layerDownButton = document.getElementById('layer-down');
+    const layerDeleteButton = document.getElementById('layer-delete');
+    const videoAudioGroup = document.getElementById('video-audio-group');
+    const videoSpeedGroup = document.getElementById('video-speed-group');
+    const muteButton = document.getElementById('editor-mute');
+    const volumeInput = document.getElementById('editor-volume');
+    const volumeValue = document.getElementById('editor-volume-value');
+    const speedInput = document.getElementById('editor-speed');
 
     if (!form || !mediaInput) return;
 
@@ -64,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeEditorType = null;
     let mediaSelectionVersion = 0;
 
-    const imageEditor = new ImageEditor({ canvas: editorCanvas, cropOverlay, cropHint, dimensions, selectedOverlayPanel, selectedOverlayLabel, selectedTextSizeRow, selectedTextSizeInput, selectedTextSizeValue, overlayColor: overlayColorInput }, {
+    const imageEditor = new ImageEditor({ canvas: editorCanvas, cropOverlay, cropHint, cropAspectInput, dimensions, selectedOverlayPanel, selectedOverlayLabel, selectedTextSizeInput, selectedTextSizeValue, selectedOverlayOpacityInput, selectedOverlayOpacityValue, selectedTextFormatRow, selectedTextFont, selectedTextWeight, selectedTextStyle, overlayColor: overlayColorInput }, {
         onChange: (canUndo, canRedo) => {
             undoButton.disabled = !canUndo;
             redoButton.disabled = !canRedo;
@@ -75,16 +100,26 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas: editorCanvas,
         cropOverlay,
         cropHint,
+        cropAspectInput,
         dimensions,
         selectedOverlayPanel,
         selectedOverlayLabel,
-        selectedTextSizeRow,
         selectedTextSizeInput,
         selectedTextSizeValue,
+        selectedOverlayOpacityInput,
+        selectedOverlayOpacityValue,
+        selectedTextFormatRow,
+        selectedTextFont,
+        selectedTextWeight,
+        selectedTextStyle,
         overlayColor: overlayColorInput,
         playButton,
         timeline,
         timeLabel,
+        volumeInput,
+        volumeValue,
+        muteButton,
+        speedInput,
         trimStartInput,
         trimEndInput,
         trimStartValue,
@@ -146,22 +181,50 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function setVideoOnlyControlsVisible(visible) {
+        const controls = [videoControls, videoTrimGroup, videoAudioGroup, videoSpeedGroup];
+        controls.forEach((element) => {
+            if (!element) return;
+            element.hidden = !visible;
+            element.setAttribute('aria-hidden', String(!visible));
+        });
+    }
+
     function updateEditorMode(type) {
         const isVideo = type === 'video';
         editorTitle.textContent = isVideo ? 'Éditeur vidéo' : 'Éditeur photo';
         openEditorButton.textContent = isVideo ? '✨ Modifier la vidéo' : '✨ Modifier la photo';
         applyEditorButton.textContent = isVideo ? '✓ Utiliser cette vidéo' : '✓ Utiliser cette photo';
-        videoControls.hidden = !isVideo;
-        videoControls.setAttribute('aria-hidden', String(!isVideo));
-        if (videoTrimGroup) {
-            videoTrimGroup.hidden = !isVideo;
-        }
-        if (!isVideo) {
+
+        // Les outils spécifiques à la vidéo ne doivent jamais apparaître
+        // lorsque l'éditeur photo est actif, même si l'utilisateur vient
+        // juste d'éditer une vidéo.
+        setVideoOnlyControlsVisible(isVideo);
+
+        if (cropAspectInput) cropAspectInput.value = 'free';
+        activeEditor?.setCropAspect?.('free');
+
+        if (isVideo) {
+            videoEditor.updateAudioUI();
+        } else {
             videoEditor.pause();
             if (playButton) playButton.textContent = '▶ Lire';
+            if (timeline) timeline.value = '0';
+            if (timeLabel) timeLabel.textContent = '00:00 / 00:00';
         }
-        if (timeline) timeline.value = '0';
-        if (timeLabel) timeLabel.textContent = '00:00 / 00:00';
+
+        if (!isVideo) {
+            // Remise à zéro visuelle des contrôles vidéo pour éviter qu'une
+            // ancienne session vidéo laisse un état visible ou interactif.
+            if (volumeInput) volumeInput.value = '100';
+            if (volumeValue) volumeValue.textContent = '100';
+            if (speedInput) speedInput.value = '1';
+            if (trimStartInput) trimStartInput.value = '0';
+            if (trimEndInput) trimEndInput.value = '0';
+            if (trimStartValue) trimStartValue.textContent = '00:00';
+            if (trimEndValue) trimEndValue.textContent = '00:00';
+            if (trimDurationValue) trimDurationValue.textContent = '00:00';
+        }
     }
 
     function showEditor() {
@@ -271,6 +334,12 @@ document.addEventListener('DOMContentLoaded', () => {
         catch (e) { setEditorMessage(e.message, true); }
     });
 
+    textEmojiToggle?.addEventListener('click', () => {
+        if (!textEmojiPicker) return;
+        textEmojiPicker.hidden = !textEmojiPicker.hidden;
+        textEmojiToggle.setAttribute('aria-expanded', String(!textEmojiPicker.hidden));
+    });
+
     textEmojiPicker?.querySelectorAll('[data-emoji]').forEach(button => {
         button.addEventListener('click', () => {
             const emoji = button.dataset.emoji || '';
@@ -289,7 +358,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const value = document.getElementById('text-value').value;
             const color = document.getElementById('text-color').value;
             const size = Number(textSizeInput?.value || 58);
-            activeEditor?.addText(value, { color, size });
+            const opacity = Number(textOpacityInput?.value || 100);
+            activeEditor?.addText(value, {
+                color, size, opacity,
+                font: textFontInput?.value || 'Arial',
+                weight: textWeightInput?.value || '700',
+                fontStyle: textStyleInput?.value || 'normal'
+            });
             document.getElementById('text-value').value = '';
             setEditorMessage('Texte ajouté. Cliquez dessus puis faites-le glisser pour le placer.');
         } catch (e) { setEditorMessage(e.message, true); }
@@ -298,8 +373,9 @@ document.addEventListener('DOMContentLoaded', () => {
     addElementButton.addEventListener('click', () => {
         try {
             const type = document.getElementById('element-type').value;
-            const value = document.getElementById('element-emoji').value || '✨';
-            activeEditor?.addElement(type, { value, fill: elementColorInput?.value || '#d83ca9' });
+            const size = Number(elementSizeInput?.value || 96);
+            const opacity = Number(elementOpacityInput?.value || 100);
+            activeEditor?.addElement(type, { size, opacity, fill: elementColorInput?.value || '#d83ca9' });
             setEditorMessage('Élément ajouté. Cliquez dessus puis faites-le glisser pour le placer.');
         } catch (e) { setEditorMessage(e.message, true); }
     });
@@ -308,18 +384,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
     textSizeInput?.addEventListener('input', () => {
         const value = Number(textSizeInput.value);
-        if (textSizeValue) textSizeValue.value = String(value);
+        if (textSizeValue) textSizeValue.textContent = String(value);
+    });
+    textOpacityInput?.addEventListener('input', () => {
+        const value = Number(textOpacityInput.value);
+        if (textOpacityValue) textOpacityValue.textContent = String(value);
+    });
+    elementSizeInput?.addEventListener('input', () => {
+        const value = Number(elementSizeInput.value);
+        if (elementSizeValue) elementSizeValue.textContent = String(value);
+    });
+    elementOpacityInput?.addEventListener('input', () => {
+        const value = Number(elementOpacityInput.value);
+        if (elementOpacityValue) elementOpacityValue.textContent = String(value);
     });
 
     selectedTextSizeInput?.addEventListener('input', () => {
         const value = Number(selectedTextSizeInput.value);
-        if (selectedTextSizeValue) selectedTextSizeValue.value = String(value);
+        if (selectedTextSizeValue) selectedTextSizeValue.textContent = String(value);
         activeEditor?.setSelectedOverlaySize(value, false);
     });
 
     selectedTextSizeInput?.addEventListener('change', () => {
         const value = Number(selectedTextSizeInput.value);
         activeEditor?.setSelectedOverlaySize(value, true);
+    });
+    selectedOverlayOpacityInput?.addEventListener('input', () => {
+        const value = Number(selectedOverlayOpacityInput.value);
+        if (selectedOverlayOpacityValue) selectedOverlayOpacityValue.textContent = String(value);
+        activeEditor?.setSelectedOpacity(value, false);
+    });
+    selectedOverlayOpacityInput?.addEventListener('change', () => {
+        activeEditor?.setSelectedOpacity(Number(selectedOverlayOpacityInput.value), true);
+    });
+    const applySelectedTextFormat = () => activeEditor?.setSelectedTextFormat({
+        font: selectedTextFont?.value, weight: selectedTextWeight?.value, fontStyle: selectedTextStyle?.value
+    }, true);
+    selectedTextFont?.addEventListener('change', applySelectedTextFormat);
+    selectedTextWeight?.addEventListener('change', applySelectedTextFormat);
+    selectedTextStyle?.addEventListener('change', applySelectedTextFormat);
+    layerUpButton?.addEventListener('click', () => activeEditor?.moveSelectedLayer(1));
+    layerDownButton?.addEventListener('click', () => activeEditor?.moveSelectedLayer(-1));
+    layerDeleteButton?.addEventListener('click', () => activeEditor?.deleteSelectedOverlay());
+
+    cropAspectInput?.addEventListener('change', () => activeEditor?.setCropAspect(cropAspectInput.value));
+
+    muteButton?.addEventListener('click', () => {
+        if (activeEditorType === 'video') videoEditor.toggleMute();
+    });
+    volumeInput?.addEventListener('input', () => {
+        if (activeEditorType !== 'video') return;
+        const value = Number(volumeInput.value);
+        if (volumeValue) volumeValue.textContent = String(value);
+        videoEditor.setVolume(value, false);
+    });
+    volumeInput?.addEventListener('change', () => {
+        if (activeEditorType === 'video') videoEditor.setVolume(Number(volumeInput.value), true);
+    });
+    speedInput?.addEventListener('change', () => {
+        if (activeEditorType === 'video') videoEditor.setPlaybackRate(Number(speedInput.value), true);
     });
 
     trimStartInput?.addEventListener('input', () => {
@@ -339,7 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
         videoEditor.setTrimEnd(trimEndInput.value, true);
     });
 
-    cropStartButton.addEventListener('click', () => { activeEditor?.startCrop(); setEditorMessage(''); });
+    cropStartButton.addEventListener('click', () => { if (activeEditor) { activeEditor.setCropAspect(cropAspectInput?.value || 'free'); activeEditor.startCrop(); } setEditorMessage(''); });
     cropCancelButton.addEventListener('click', () => activeEditor?.cancelCrop());
     cropApplyButton.addEventListener('click', () => {
         try {
