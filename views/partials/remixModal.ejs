@@ -1,0 +1,132 @@
+<!-- =====================================================
+     MODAL DUO / COLLAGE (média personnel ajouté à côté /
+     avec celui de la publication d'origine)
+====================================================== -->
+
+<style>
+  .remix-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.68);
+    backdrop-filter: blur(3px);
+    padding: 16px;
+  }
+
+  .remix-modal-overlay.open {
+    display: flex;
+  }
+
+  .remix-modal-sheet {
+    width: 100%;
+    max-width: 420px;
+    background: #17181c;
+    border-radius: 18px;
+    padding: 20px;
+    color: #f5f5f7;
+  }
+
+  .remix-modal-sheet h2 {
+    margin: 0 0 14px;
+    font-size: 19px;
+    font-weight: 700;
+  }
+
+  .remix-modal-sheet label {
+    display: block;
+    font-size: 13px;
+    color: #a5a7b0;
+    margin: 12px 0 4px;
+  }
+
+  .remix-modal-sheet input[type="file"],
+  .remix-modal-sheet textarea,
+  .remix-modal-sheet select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #33343c;
+    background: #1e1f26;
+    color: #f5f5f7;
+    font-size: 14px;
+  }
+
+  .remix-modal-sheet textarea {
+    min-height: 70px;
+    resize: vertical;
+  }
+
+  .remix-modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .remix-modal-actions button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .remix-modal-cancel {
+    background: #26272e;
+    color: #f5f5f7;
+  }
+
+  .remix-modal-submit {
+    background: var(--primary, #6366f1);
+    color: #fff;
+  }
+
+  .remix-modal-message {
+    margin-top: 10px;
+    font-size: 13px;
+    min-height: 16px;
+    color: #ff8a8a;
+  }
+</style>
+
+<div id="remix-modal-overlay" class="remix-modal-overlay" onclick="fermerRemixModal(event)">
+
+  <form
+    id="remix-form"
+    class="remix-modal-sheet"
+    onclick="event.stopPropagation()"
+  >
+
+    <h2 id="remix-modal-title">Créer un Duo</h2>
+
+    <input type="hidden" id="remix-idPubli">
+    <input type="hidden" id="remix-mode" value="duo">
+
+    <label for="remix-media" id="remix-media-label">Votre photo ou vidéo</label>
+    <input type="file" id="remix-media" name="media" required>
+
+    <label for="remix-contenu">Description (optionnel)</label>
+    <textarea id="remix-contenu" name="contenuPub" maxlength="5000"></textarea>
+
+    <label for="remix-visibilite">Visibilité</label>
+    <select id="remix-visibilite" name="visibilite">
+      <option value="1">Public</option>
+      <option value="0">Privé</option>
+    </select>
+
+    <div class="remix-modal-message" id="remix-modal-message"></div>
+
+    <div class="remix-modal-actions">
+      <button type="button" class="remix-modal-cancel" onclick="fermerRemixModal()">Annuler</button>
+      <button type="submit" class="remix-modal-submit" id="remix-modal-submit">Créer</button>
+    </div>
+
+  </form>
+
+</div>
+
+<script src="/js/remixModal.js"></script>

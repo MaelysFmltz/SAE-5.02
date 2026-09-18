@@ -79,20 +79,22 @@ function createMediaPost(
 }
 
 /**
- * Supprime une publication contenant un média
- * uniquement si elle appartient à l'utilisateur.
+ * Supprime une publication (avec ou sans média, quel que soit
+ * son type : originale, repost, duo ou collage) uniquement si
+ * elle appartient à l'utilisateur.
+ *
+ * Retourne la liste des médias qui lui étaient associés (pour que
+ * l'appelant supprime les fichiers correspondants sur le disque),
+ * ou null si la publication n'existe pas / n'appartient pas
+ * à l'utilisateur.
  */
 function deletePostByIdAndUser(idPubli, idUser) {
     const transaction = db.transaction(() => {
-        const media = db.prepare(`
-            SELECT
-                m.idMedia,
-                m.nomMedia
-            FROM Media m
-            INNER JOIN Publication p
-                ON p.idPubli = m.idPubli
-            WHERE p.idPubli = ?
-            AND p.idUser = ?
+        const publication = db.prepare(`
+            SELECT idPubli
+            FROM Publication
+            WHERE idPubli = ?
+            AND idUser = ?
         `).get(
             idPubli,
             idUser
@@ -100,15 +102,19 @@ function deletePostByIdAndUser(idPubli, idUser) {
 
         // Publication inexistante ou utilisateur
         // qui n'est pas propriétaire.
-        if (!media) {
+        if (!publication) {
             return null;
         }
 
-        db.prepare(`
-            DELETE FROM Media
+        const medias = db.prepare(`
+            SELECT idMedia, nomMedia
+            FROM Media
             WHERE idPubli = ?
-        `).run(idPubli);
+        `).all(idPubli);
 
+        // La suppression de la publication entraîne, via les
+        // contraintes ON DELETE CASCADE, celle de ses médias,
+        // commentaires, réactions et associations de hashtags.
         db.prepare(`
             DELETE FROM Publication
             WHERE idPubli = ?
@@ -118,7 +124,7 @@ function deletePostByIdAndUser(idPubli, idUser) {
             idUser
         );
 
-        return media;
+        return medias;
     });
 
     return transaction();
@@ -152,6 +158,11 @@ function findAuthor(idPubli) {
 
 /**
  * Récupérer une publication avec les informations de son original.
+ *
+ * Inclut le média propre à la publication (celui qu'un Duo ou un
+ * collage ajoute lui-même) ainsi que le média de la publication
+ * d'origine (celui repris depuis l'original), pour permettre un
+ * affichage identique partout (feed, profil, page de publication).
  */
 function findWithOriginal(idPubli) {
     return db.prepare(`
@@ -165,25 +176,43 @@ function findWithOriginal(idPubli) {
             p.datePubli,
             p.dateModif,
 
+            (
+                SELECT COUNT(*)
+                FROM Commentaire c
+                WHERE c.idPubli = p.idPubli
+            ) AS nombreCommentaires,
+
+            m.nomMedia,
+            m.typeMedia,
+
             original.idPubli AS originalIdPubli,
             original.idUser AS originalIdUser,
             original.contenuPub AS originalContenuPub,
             original.visibilite AS originalVisibilite,
             original.typePublication AS originalTypePublication,
 
+            om.nomMedia AS originalNomMedia,
+            om.typeMedia AS originalTypeMedia,
+
             u.pseudo AS auteurPseudo,
             originalUser.pseudo AS auteurOriginalPseudo
 
         FROM Publication p
 
-        LEFT JOIN Publication original
-            ON p.idPubliPartagee = original.idPubli
-
         JOIN Utilisateur u
             ON p.idUser = u.idUser
 
+        LEFT JOIN Media m
+            ON m.idPubli = p.idPubli
+
+        LEFT JOIN Publication original
+            ON p.idPubliPartagee = original.idPubli
+
         LEFT JOIN Utilisateur originalUser
             ON original.idUser = originalUser.idUser
+
+        LEFT JOIN Media om
+            ON om.idPubli = original.idPubli
 
         WHERE p.idPubli = ?
     `).get(idPubli);
@@ -213,53 +242,123 @@ function createRepost(
 }
 
 /**
- * Créer une publication Duo.
+ * Retrouve le repost qu'un utilisateur a déjà fait
+ * d'une publication donnée, s'il existe.
+ */
+function findRepost(idUser, idPubliPartagee) {
+    return db.prepare(`
+        SELECT idPubli
+        FROM Publication
+        WHERE idUser = ?
+        AND idPubliPartagee = ?
+        AND typePublication = 'repost'
+    `).get(idUser, idPubliPartagee);
+}
+
+/**
+ * Supprime le repost qu'un utilisateur a fait d'une publication
+ * (annulation d'un repost déjà existant).
+ */
+function deleteRepost(idUser, idPubliPartagee) {
+    db.prepare(`
+        DELETE FROM Publication
+        WHERE idUser = ?
+        AND idPubliPartagee = ?
+        AND typePublication = 'repost'
+    `).run(idUser, idPubliPartagee);
+}
+
+/**
+ * Identifiants des publications qu'un utilisateur a déjà repostées,
+ * pour permettre l'affichage de l'état "déjà reposté" du bouton.
+ */
+function findRepostedPubliIds(idUser) {
+    const rows = db.prepare(`
+        SELECT idPubliPartagee
+        FROM Publication
+        WHERE idUser = ?
+        AND typePublication = 'repost'
+    `).all(idUser);
+
+    return new Set(rows.map(row => row.idPubliPartagee));
+}
+
+/**
+ * Créer une publication Duo, avec le média ajouté par
+ * l'utilisateur (affiché à côté du média de l'original).
  */
 function createDuo(
     idUser,
     idPubliOriginale,
     contenuPub,
-    visibilite = 1
+    visibilite = 1,
+    nomMedia = null,
+    typeMedia = null
 ) {
-    const stmt = db.prepare(`
-        INSERT INTO Publication
-        (idUser, contenuPub, visibilite, idPubliPartagee, typePublication)
-        VALUES (?, ?, ?, ?, 'duo')
-    `);
+    const transaction = db.transaction(() => {
+        const result = db.prepare(`
+            INSERT INTO Publication
+            (idUser, contenuPub, visibilite, idPubliPartagee, typePublication)
+            VALUES (?, ?, ?, ?, 'duo')
+        `).run(
+            idUser,
+            contenuPub,
+            visibilite,
+            idPubliOriginale
+        );
 
-    const result = stmt.run(
-        idUser,
-        contenuPub,
-        visibilite,
-        idPubliOriginale
-    );
+        const idPubli = result.lastInsertRowid;
 
-    return findById(result.lastInsertRowid);
+        if (nomMedia && typeMedia) {
+            db.prepare(`
+                INSERT INTO Media (idPubli, nomMedia, typeMedia)
+                VALUES (?, ?, ?)
+            `).run(idPubli, nomMedia, typeMedia);
+        }
+
+        return idPubli;
+    });
+
+    return findWithOriginal(transaction());
 }
 
 /**
- * Créer un collage.
+ * Créer un collage, avec la vidéo ajoutée par l'utilisateur
+ * (affichée avec celle de la publication d'origine).
  */
 function createCollage(
     idUser,
     idPubliOriginale,
     contenuPub,
-    visibilite = 1
+    visibilite = 1,
+    nomMedia = null,
+    typeMedia = null
 ) {
-    const stmt = db.prepare(`
-        INSERT INTO Publication
-        (idUser, contenuPub, visibilite, idPubliPartagee, typePublication)
-        VALUES (?, ?, ?, ?, 'collage')
-    `);
+    const transaction = db.transaction(() => {
+        const result = db.prepare(`
+            INSERT INTO Publication
+            (idUser, contenuPub, visibilite, idPubliPartagee, typePublication)
+            VALUES (?, ?, ?, ?, 'collage')
+        `).run(
+            idUser,
+            contenuPub,
+            visibilite,
+            idPubliOriginale
+        );
 
-    const result = stmt.run(
-        idUser,
-        contenuPub,
-        visibilite,
-        idPubliOriginale
-    );
+        const idPubli = result.lastInsertRowid;
 
-    return findById(result.lastInsertRowid);
+        if (nomMedia && typeMedia) {
+            db.prepare(`
+                INSERT INTO Media (idPubli, nomMedia, typeMedia)
+                VALUES (?, ?, ?)
+            `).run(idPubli, nomMedia, typeMedia);
+        }
+
+        return idPubli;
+    });
+
+    return findWithOriginal(transaction());
 }
 
 /**
@@ -331,11 +430,17 @@ function findByUserId(idUser) {
 
             u.pseudo AS auteurPseudo,
 
+            m.nomMedia,
+            m.typeMedia,
+
             original.idPubli AS originalIdPubli,
             original.idUser AS originalIdUser,
             original.contenuPub AS originalContenuPub,
             original.visibilite AS originalVisibilite,
             original.typePublication AS originalTypePublication,
+
+            om.nomMedia AS originalNomMedia,
+            om.typeMedia AS originalTypeMedia,
 
             originalUser.pseudo AS auteurOriginalPseudo
 
@@ -344,11 +449,17 @@ function findByUserId(idUser) {
         JOIN Utilisateur u
             ON p.idUser = u.idUser
 
+        LEFT JOIN Media m
+            ON m.idPubli = p.idPubli
+
         LEFT JOIN Publication original
             ON p.idPubliPartagee = original.idPubli
 
         LEFT JOIN Utilisateur originalUser
             ON original.idUser = originalUser.idUser
+
+        LEFT JOIN Media om
+            ON om.idPubli = original.idPubli
 
         WHERE p.idUser = ?
         ORDER BY p.datePubli DESC
@@ -461,6 +572,9 @@ module.exports = {
     // Publications
     createPublication,
     createRepost,
+    findRepost,
+    deleteRepost,
+    findRepostedPubliIds,
     createDuo,
     createCollage,
 

@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const response =
                 await fetch(
-                    `/post/api/${idPubli}`,
+                    `/api/publications/api/${idPubli}`,
                     {
                         method: 'DELETE',
                         credentials: 'include',
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
              */
             const postElement =
                 button.closest(
-                    '.feed-post, .profile-post'
+                    '.publication-card'
                 );
 
 

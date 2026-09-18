@@ -91,7 +91,8 @@ app.get('/profile', authMiddleware, async (req, res) => {
       isOwner: true,
       estAbonne: false,
       sontAmis: false,
-      stats
+      stats,
+      linkifyHashtags
     });
   } catch (err) {
     console.error('Erreur GET /profile :', err);
@@ -164,7 +165,8 @@ app.post('/profile/edit', authMiddleware, async (req, res) => {
 app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
   try {
     const targetProfile = await profileService.getPublicProfile(
-      req.params.pseudo
+      req.params.pseudo,
+      req.user.idUser
     );
 
     const isOwner = req.user.idUser === targetProfile.idUser;
@@ -214,7 +216,8 @@ app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
       isOwner,
       estAbonne,
       sontAmis,
-      stats
+      stats,
+      linkifyHashtags
     });
   } catch (err) {
     console.error(

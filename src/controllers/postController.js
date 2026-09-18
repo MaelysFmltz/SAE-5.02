@@ -1,240 +1,23 @@
 const fs = require('fs/promises');
-const path = require('path');
 
 const postService = require('../services/postService');
 const hashtagModel = require('../models/hashtagModel');
 const { extractHashtags } = require('../utils/hashtagUtils');
 const db = require('../config/database');
-
-/*
- * ============================================================
- * CONSTANTES MÉDIAS
- * ============================================================
- */
-
-const IMAGE_MAX_SIZE = 20 * 1024 * 1024;
-const VIDEO_MAX_SIZE = 100 * 1024 * 1024;
-
-const IMAGE_TYPES = [
-    'image/jpeg',
-    'image/png',
-    'image/webp'
-];
-
-const VIDEO_TYPES = [
-    'video/mp4',
-    'video/webm',
-    'video/ogg',
-    'video/quicktime'
-];
-
-/*
- * ============================================================
- * VÉRIFICATION DES SIGNATURES BINAIRES
- * ============================================================
- */
-
-/**
- * Vérifie la signature réelle d'un JPEG.
- */
-function isRealJPEG(buffer) {
-    if (
-        !Buffer.isBuffer(buffer) ||
-        buffer.length < 3
-    ) {
-        return false;
-    }
-
-    return (
-        buffer[0] === 0xFF &&
-        buffer[1] === 0xD8 &&
-        buffer[2] === 0xFF
-    );
-}
-
-/**
- * Vérifie la signature réelle d'un PNG.
- */
-function isRealPNG(buffer) {
-    if (
-        !Buffer.isBuffer(buffer) ||
-        buffer.length < 8
-    ) {
-        return false;
-    }
-
-    return (
-        buffer[0] === 0x89 &&
-        buffer[1] === 0x50 &&
-        buffer[2] === 0x4E &&
-        buffer[3] === 0x47 &&
-        buffer[4] === 0x0D &&
-        buffer[5] === 0x0A &&
-        buffer[6] === 0x1A &&
-        buffer[7] === 0x0A
-    );
-}
-
-/**
- * Vérifie la signature réelle d'un WebP.
- */
-function isRealWebP(buffer) {
-    if (
-        !Buffer.isBuffer(buffer) ||
-        buffer.length < 12
-    ) {
-        return false;
-    }
-
-    return (
-        buffer.toString('ascii', 0, 4) === 'RIFF' &&
-        buffer.toString('ascii', 8, 12) === 'WEBP'
-    );
-}
-
-/**
- * Vérifie qu'un fichier contient une structure MP4/MOV.
- *
- * Les conteneurs ISO Base Media utilisent normalement
- * une boîte "ftyp" dans leur en-tête.
- */
-function isRealMP4(buffer) {
-    if (
-        !Buffer.isBuffer(buffer) ||
-        buffer.length < 12
-    ) {
-        return false;
-    }
-
-    const maxOffset = Math.min(
-        buffer.length - 4,
-        64
-    );
-
-    for (
-        let i = 0;
-        i <= maxOffset;
-        i++
-    ) {
-        if (
-            buffer.toString(
-                'ascii',
-                i,
-                i + 4
-            ) === 'ftyp'
-        ) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/**
- * Vérifie la signature EBML d'un WebM.
- */
-function isRealWebM(buffer) {
-    if (
-        !Buffer.isBuffer(buffer) ||
-        buffer.length < 4
-    ) {
-        return false;
-    }
-
-    return (
-        buffer[0] === 0x1A &&
-        buffer[1] === 0x45 &&
-        buffer[2] === 0xDF &&
-        buffer[3] === 0xA3
-    );
-}
-
-/**
- * Vérifie la signature d'un fichier OGG.
- */
-function isRealOGG(buffer) {
-    if (
-        !Buffer.isBuffer(buffer) ||
-        buffer.length < 4
-    ) {
-        return false;
-    }
-
-    return (
-        buffer.toString(
-            'ascii',
-            0,
-            4
-        ) === 'OggS'
-    );
-}
-
-/*
- * ============================================================
- * SUPPRESSION SÉCURISÉE D'UN FICHIER
- * ============================================================
- */
-
-/**
- * Supprime un fichier utilisateur uniquement s'il se trouve
- * directement dans le dossier uploads.
- */
-async function deleteUploadedFile(filename) {
-    if (
-        typeof filename !== 'string' ||
-        !filename
-    ) {
-        throw new Error(
-            'Nom de fichier invalide'
-        );
-    }
-
-    const uploadDir = path.resolve(
-        __dirname,
-        '../../uploads'
-    );
-
-    /*
-     * On interdit tout chemin.
-     * Seul un nom de fichier simple est accepté.
-     */
-    if (
-        filename !== path.basename(filename)
-    ) {
-        throw new Error(
-            'Nom de fichier invalide'
-        );
-    }
-
-    const filePath = path.resolve(
-        uploadDir,
-        filename
-    );
-
-    /*
-     * Le fichier doit être directement dans uploads.
-     */
-    if (
-        path.dirname(filePath) !== uploadDir
-    ) {
-        throw new Error(
-            'Chemin de fichier invalide'
-        );
-    }
-
-    try {
-        await fs.unlink(filePath);
-    } catch (error) {
-        /*
-         * Un fichier déjà absent n'est pas bloquant.
-         */
-        if (error.code === 'ENOENT') {
-            return;
-        }
-
-        throw error;
-    }
-}
+const {
+    IMAGE_MAX_SIZE,
+    VIDEO_MAX_SIZE,
+    IMAGE_TYPES,
+    VIDEO_TYPES,
+    isRealJPEG,
+    isRealPNG,
+    isRealWebP,
+    isRealMP4,
+    isRealWebM,
+    isRealOGG,
+    validateMediaFile
+} = require('../utils/mediaValidation');
+const { deleteUploadedFile } = require('../utils/uploadedFiles');
 
 /*
  * ============================================================
@@ -305,16 +88,18 @@ function createRepost(req, res) {
             req.body.visibilite
         );
 
-        const publication =
-            postService.createRepost(
+        const { reposted, publication } =
+            postService.toggleRepost(
                 req.user.idUser,
                 idPubli,
                 visibilite
             );
 
-        return res.status(201).json({
-            message:
-                'Publication repartagée avec succès',
+        return res.status(reposted ? 201 : 200).json({
+            message: reposted
+                ? 'Publication repartagée avec succès'
+                : 'Repost annulé',
+            reposted,
             publication
         });
     } catch (error) {
@@ -330,20 +115,48 @@ function createRepost(req, res) {
  * ============================================================
  */
 
-function createDuo(req, res) {
+async function createDuo(req, res) {
+    let uploadedFilePath = null;
+
     try {
         const { contenuPub } = req.body;
         const visibilite = Number(
             req.body.visibilite
         );
 
+        if (!req.file) {
+            return res.status(400).json({
+                error: 'Ajoutez votre propre photo ou vidéo pour créer un Duo.'
+            });
+        }
+
+        uploadedFilePath = req.file.path;
+
+        const buffer = await fs.readFile(uploadedFilePath);
+
+        let typeMedia;
+
+        try {
+            ({ typeMedia } = validateMediaFile(req.file, buffer));
+        } catch (validationError) {
+            await fs.unlink(uploadedFilePath).catch(() => {});
+
+            return res.status(400).json({
+                error: validationError.message
+            });
+        }
+
         const publication =
             postService.createDuo(
                 req.user.idUser,
                 req.params.idPubli,
                 contenuPub,
-                visibilite
+                visibilite,
+                req.file.filename,
+                typeMedia
             );
+
+        uploadedFilePath = null;
 
         if (contenuPub) {
             const hashtags =
@@ -363,6 +176,10 @@ function createDuo(req, res) {
             publication
         });
     } catch (error) {
+        if (uploadedFilePath) {
+            await fs.unlink(uploadedFilePath).catch(() => {});
+        }
+
         return res.status(400).json({
             error: error.message
         });
@@ -375,20 +192,56 @@ function createDuo(req, res) {
  * ============================================================
  */
 
-function createCollage(req, res) {
+async function createCollage(req, res) {
+    let uploadedFilePath = null;
+
     try {
         const { contenuPub } = req.body;
         const visibilite = Number(
             req.body.visibilite
         );
 
+        if (!req.file) {
+            return res.status(400).json({
+                error: 'Ajoutez votre propre vidéo pour créer un collage.'
+            });
+        }
+
+        uploadedFilePath = req.file.path;
+
+        const buffer = await fs.readFile(uploadedFilePath);
+
+        let typeMedia;
+
+        try {
+            ({ typeMedia } = validateMediaFile(req.file, buffer));
+        } catch (validationError) {
+            await fs.unlink(uploadedFilePath).catch(() => {});
+
+            return res.status(400).json({
+                error: validationError.message
+            });
+        }
+
+        if (typeMedia !== 'video') {
+            await fs.unlink(uploadedFilePath).catch(() => {});
+
+            return res.status(400).json({
+                error: 'Le collage nécessite une vidéo, pas une image.'
+            });
+        }
+
         const publication =
             postService.createCollage(
                 req.user.idUser,
                 req.params.idPubli,
                 contenuPub,
-                visibilite
+                visibilite,
+                req.file.filename,
+                typeMedia
             );
+
+        uploadedFilePath = null;
 
         if (contenuPub) {
             const hashtags =
@@ -409,6 +262,10 @@ function createCollage(req, res) {
             publication
         });
     } catch (error) {
+        if (uploadedFilePath) {
+            await fs.unlink(uploadedFilePath).catch(() => {});
+        }
+
         return res.status(400).json({
             error: error.message
         });
@@ -541,139 +398,25 @@ async function uploadImage(req, res) {
         uploadedFilePath = file.path;
 
         /*
-         * DÉTERMINATION DU TYPE
-         */
-        let typeMedia = null;
-
-        if (
-            IMAGE_TYPES.includes(
-                file.mimetype
-            )
-        ) {
-            typeMedia = 'image';
-        } else if (
-            VIDEO_TYPES.includes(
-                file.mimetype
-            )
-        ) {
-            typeMedia = 'video';
-        } else {
-            await fs
-                .unlink(uploadedFilePath)
-                .catch(() => {});
-
-            return res.status(400).json({
-                error:
-                    'Format de fichier non autorisé.'
-            });
-        }
-
-        /*
-         * LIMITE DE TAILLE
-         */
-        const maxSize =
-            typeMedia === 'image'
-                ? IMAGE_MAX_SIZE
-                : VIDEO_MAX_SIZE;
-
-        if (file.size > maxSize) {
-            await fs
-                .unlink(uploadedFilePath)
-                .catch(() => {});
-
-            return res.status(400).json({
-                error:
-                    typeMedia === 'image'
-                        ? 'L’image ne doit pas dépasser 20 Mo.'
-                        : 'La vidéo ne doit pas dépasser 100 Mo.'
-            });
-        }
-
-        /*
-         * LECTURE DU FICHIER
+         * TYPE, TAILLE ET SIGNATURE RÉELLE DU FICHIER
          */
         const buffer =
             await fs.readFile(
                 uploadedFilePath
             );
 
-        /*
-         * VÉRIFICATION IMAGE
-         */
-        if (typeMedia === 'image') {
-            let validImage = false;
-            let formatLabel = '';
+        let typeMedia;
 
-            if (
-                file.mimetype === 'image/jpeg'
-            ) {
-                formatLabel = 'JPEG';
-                validImage =
-                    isRealJPEG(buffer);
-            } else if (
-                file.mimetype === 'image/png'
-            ) {
-                formatLabel = 'PNG';
-                validImage =
-                    isRealPNG(buffer);
-            } else if (
-                file.mimetype === 'image/webp'
-            ) {
-                formatLabel = 'WebP';
-                validImage =
-                    isRealWebP(buffer);
-            }
+        try {
+            ({ typeMedia } = validateMediaFile(file, buffer));
+        } catch (validationError) {
+            await fs
+                .unlink(uploadedFilePath)
+                .catch(() => {});
 
-            if (!validImage) {
-                await fs
-                    .unlink(uploadedFilePath)
-                    .catch(() => {});
-
-                return res.status(400).json({
-                    error:
-                        `Le fichier envoyé n'est pas un véritable ${formatLabel}.`
-                });
-            }
-        }
-
-        /*
-         * VÉRIFICATION VIDÉO
-         */
-        if (typeMedia === 'video') {
-            let validVideo = false;
-
-            if (
-                file.mimetype === 'video/mp4'
-            ) {
-                validVideo =
-                    isRealMP4(buffer);
-            } else if (
-                file.mimetype === 'video/quicktime'
-            ) {
-                validVideo =
-                    isRealMP4(buffer);
-            } else if (
-                file.mimetype === 'video/webm'
-            ) {
-                validVideo =
-                    isRealWebM(buffer);
-            } else if (
-                file.mimetype === 'video/ogg'
-            ) {
-                validVideo =
-                    isRealOGG(buffer);
-            }
-
-            if (!validVideo) {
-                await fs
-                    .unlink(uploadedFilePath)
-                    .catch(() => {});
-
-                return res.status(400).json({
-                    error:
-                        "Le fichier envoyé n'est pas une véritable vidéo."
-                });
-            }
+            return res.status(400).json({
+                error: validationError.message
+            });
         }
 
         /*
@@ -813,24 +556,30 @@ async function deletePost(req, res) {
         /*
          * SUPPRESSION EN BASE
          */
-        const media =
+        const medias =
             await postService.deletePost(
                 idPubli,
                 req.user.idUser
             );
 
         /*
-         * SUPPRESSION DU FICHIER
+         * SUPPRESSION DES FICHIERS
+         *
+         * Une publication peut avoir plusieurs médias
+         * (ex : un Duo ou un collage a son propre média
+         * en plus de celui de la publication d'origine).
          */
-        try {
-            await deleteUploadedFile(
-                media.nomMedia
-            );
-        } catch (fileError) {
-            console.error(
-                'Erreur suppression fichier média :',
-                fileError.message
-            );
+        for (const media of medias) {
+            try {
+                await deleteUploadedFile(
+                    media.nomMedia
+                );
+            } catch (fileError) {
+                console.error(
+                    'Erreur suppression fichier média :',
+                    fileError.message
+                );
+            }
         }
 
         return res.status(200).json({

@@ -2,6 +2,7 @@ const commentModel = require('../models/commentModel');
 const reactionModel = require('../models/reactionModel');
 const db = require('../config/database');
 const jwt = require('jsonwebtoken');
+const postService = require('../services/postService');
 const { linkifyHashtags } = require('../utils/hashtagUtils');
 
 // ============================================================
@@ -37,47 +38,55 @@ async function renderPostPage(req, res) {
     }
 
     // --------------------------------------------------------
-    // Récupération de la publication
+    // Utilisateur connecté (si présent).
+    //
+    // Cette page est accessible à la fois via une route protégée
+    // (/publication/:idPubli, authMiddleware déjà passé, req.user
+    // défini) et via une route publique (/api/comments/view/:idPubli,
+    // sans authMiddleware) : on décode alors le JWT nous-mêmes si
+    // un token est présent, sinon la publication est traitée comme
+    // consultée par un visiteur anonyme.
     // --------------------------------------------------------
 
-    const post = db.prepare(`
-      SELECT
-        p.*,
-        u.pseudo AS auteurPseudo
-      FROM Publication p
-      JOIN Utilisateur u
-        ON p.idUser = u.idUser
-      WHERE p.idPubli = ?
-    `).get(idPubli);
+    let currentUser = req.user || null;
 
-    if (!post) {
-      return res.status(404).send('Publication introuvable.');
-    }
+    if (!currentUser) {
+      let token = req.cookies?.token;
 
-    // --------------------------------------------------------
-    // Récupération de l'utilisateur connecté
-    // --------------------------------------------------------
-
-    let currentUser = null;
-    let token = req.cookies?.token;
-
-    if (
-      !token &&
-      req.headers.authorization &&
-      req.headers.authorization.startsWith('Bearer ')
-    ) {
-      token = req.headers.authorization.split(' ')[1];
-    }
-
-    if (token) {
-      try {
-        currentUser = jwt.verify(
-          token,
-          process.env.JWT_SECRET || 'secret_de_secours_temporaire'
-        );
-      } catch (error) {
-        currentUser = null;
+      if (
+        !token &&
+        req.headers.authorization &&
+        req.headers.authorization.startsWith('Bearer ')
+      ) {
+        token = req.headers.authorization.split(' ')[1];
       }
+
+      if (token) {
+        try {
+          currentUser = jwt.verify(
+            token,
+            process.env.JWT_SECRET || 'secret_de_secours_temporaire'
+          );
+        } catch (error) {
+          currentUser = null;
+        }
+      }
+    }
+
+    // --------------------------------------------------------
+    // Récupération de la publication, avec vérification de la
+    // visibilité (publique / propriétaire / ami uniquement).
+    // --------------------------------------------------------
+
+    let post;
+
+    try {
+      post = postService.getPublicationForUser(
+        idPubli,
+        currentUser?.idUser
+      );
+    } catch (error) {
+      return res.status(404).send('Publication introuvable.');
     }
 
     // --------------------------------------------------------

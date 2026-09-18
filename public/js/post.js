@@ -404,7 +404,7 @@ document.addEventListener(
 
                 const response =
                     await fetch(
-                        '/post/upload',
+                        '/api/publications/upload',
                         {
                             method: 'POST',
 

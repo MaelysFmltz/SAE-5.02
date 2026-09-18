@@ -159,19 +159,24 @@ function getUserPosts(idUser, idUserVisiteur) {
 }
 
 /**
- * Supprime une publication appartenant à l'utilisateur.
+ * Supprime une publication appartenant à l'utilisateur
+ * (avec ou sans média, quel que soit son type).
+ *
+ * Retourne la liste (éventuellement vide) des médias qui lui
+ * étaient associés, pour que l'appelant supprime les fichiers
+ * correspondants sur le disque.
  */
 function deletePost(idPubli, idUser) {
     if (!idPubli || !idUser) {
         throw new Error('Identifiants de publication invalides');
     }
 
-    const media = postModel.deletePostByIdAndUser(
+    const medias = postModel.deletePostByIdAndUser(
         idPubli,
         idUser
     );
 
-    if (!media) {
+    if (!medias) {
         const error = new Error(
             'Publication introuvable ou non autorisée'
         );
@@ -180,7 +185,7 @@ function deletePost(idPubli, idUser) {
         throw error;
     }
 
-    return media;
+    return medias;
 }
 
 // ================================
@@ -265,6 +270,31 @@ function createRepost(
     );
 }
 
+/**
+ * Bascule le repost d'une publication par un utilisateur :
+ * le crée s'il n'existe pas encore, l'annule (suppression) s'il
+ * existe déjà. Un utilisateur ne peut avoir qu'un seul repost
+ * actif d'une même publication à la fois.
+ */
+function toggleRepost(idUser, idPubliPartagee, visibilite = 1) {
+    const repostExistant =
+        postModel.findRepost(idUser, idPubliPartagee);
+
+    if (repostExistant) {
+        postModel.deleteRepost(idUser, idPubliPartagee);
+
+        return {
+            reposted: false,
+            publication: null
+        };
+    }
+
+    return {
+        reposted: true,
+        publication: createRepost(idUser, idPubliPartagee, visibilite)
+    };
+}
+
 // Récupérer une publication
 function getPublication(idPubli) {
     const publication =
@@ -308,6 +338,8 @@ function getPublicationForUser(idPubli, idUser) {
             originalContenuPub: null,
             originalVisibilite: null,
             originalTypePublication: null,
+            originalNomMedia: null,
+            originalTypeMedia: null,
             auteurOriginalPseudo: null
         };
     }
@@ -315,12 +347,15 @@ function getPublicationForUser(idPubli, idUser) {
     return publication;
 }
 
-// Créer un Duo
+// Créer un Duo (reprend le média de l'original, ajoute le média
+// propre de l'utilisateur, affichés côte à côte)
 function createDuo(
     idUser,
     idPubliOriginale,
     contenuPub,
-    visibilite = 1
+    visibilite = 1,
+    nomMedia = null,
+    typeMedia = null
 ) {
     const user = userModel.findById(idUser);
 
@@ -345,20 +380,37 @@ function createDuo(
         );
     }
 
+    if (!postModel.findPostById(idPubliOriginale)) {
+        throw new Error(
+            'Un Duo ne peut être créé qu’à partir d’une publication contenant une photo ou une vidéo'
+        );
+    }
+
+    if (!nomMedia || !typeMedia) {
+        throw new Error(
+            'Ajoutez votre propre photo ou vidéo pour créer un Duo'
+        );
+    }
+
     return postModel.createDuo(
         idUser,
         idPubliOriginale,
         contenuPub,
-        visibilite
+        visibilite,
+        nomMedia,
+        typeMedia
     );
 }
 
-// Créer un collage
+// Créer un collage (reprend la vidéo de l'original, ajoute la
+// vidéo propre de l'utilisateur)
 function createCollage(
     idUser,
     idPubliOriginale,
     contenuPub,
-    visibilite = 1
+    visibilite = 1,
+    nomMedia = null,
+    typeMedia = null
 ) {
     const user = userModel.findById(idUser);
 
@@ -383,11 +435,27 @@ function createCollage(
         );
     }
 
+    const mediaOriginal = postModel.findPostById(idPubliOriginale);
+
+    if (!mediaOriginal || mediaOriginal.typeMedia !== 'video') {
+        throw new Error(
+            'Un collage ne peut être créé qu’à partir d’une publication contenant une vidéo'
+        );
+    }
+
+    if (!nomMedia || typeMedia !== 'video') {
+        throw new Error(
+            'Ajoutez votre propre vidéo pour créer un collage'
+        );
+    }
+
     return postModel.createCollage(
         idUser,
         idPubliOriginale,
         contenuPub,
-        visibilite
+        visibilite,
+        nomMedia,
+        typeMedia
     );
 }
 
@@ -436,11 +504,17 @@ function getFeedForUser(idUser) {
 
             u.pseudo AS auteurPseudo,
 
+            m.nomMedia,
+            m.typeMedia,
+
             original.idPubli AS originalIdPubli,
             original.idUser AS originalIdUser,
             original.contenuPub AS originalContenuPub,
             original.visibilite AS originalVisibilite,
             original.typePublication AS originalTypePublication,
+
+            om.nomMedia AS originalNomMedia,
+            om.typeMedia AS originalTypeMedia,
 
             originalUser.pseudo AS auteurOriginalPseudo
 
@@ -449,14 +523,23 @@ function getFeedForUser(idUser) {
         JOIN Utilisateur u
             ON p.idUser = u.idUser
 
+        LEFT JOIN Media m
+            ON m.idPubli = p.idPubli
+
         LEFT JOIN Publication original
             ON p.idPubliPartagee = original.idPubli
 
         LEFT JOIN Utilisateur originalUser
             ON original.idUser = originalUser.idUser
 
+        LEFT JOIN Media om
+            ON om.idPubli = original.idPubli
+
         ORDER BY p.datePubli DESC
     `).all();
+
+    const idsDejaRepostes =
+        postModel.findRepostedPubliIds(idUser);
 
     return publications
         .filter(publication =>
@@ -486,6 +569,8 @@ function getFeedForUser(idUser) {
                     originalContenuPub: null,
                     originalVisibilite: null,
                     originalTypePublication: null,
+                    originalNomMedia: null,
+                    originalTypeMedia: null,
                     auteurOriginalPseudo: null
                 };
             }
@@ -501,7 +586,8 @@ function getFeedForUser(idUser) {
                 ...publication,
                 likes: reactions.likes,
                 dislikes: reactions.dislikes,
-                userReaction: reactions.userReaction
+                userReaction: reactions.userReaction,
+                dejaReposte: idsDejaRepostes.has(publication.idPubli)
             };
         });
 }
@@ -511,10 +597,12 @@ module.exports = {
     sontAmis,
     peutVoirPublication,
     modifierVisibilite,
+    filtrerPublicationsVisibles,
 
     // Publications classiques
     createPublication,
     createRepost,
+    toggleRepost,
     getPublication,
     getPublicationForUser,
     createDuo,

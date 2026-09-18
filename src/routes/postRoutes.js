@@ -1,9 +1,8 @@
 const express = require('express');
-const multer = require('multer');
 
 const postController = require('../controllers/postController');
 const authMiddleware = require('../middlewares/authMiddleware');
-const upload = require('../middlewares/uploadMiddleware');
+const handleUpload = require('../middlewares/handleUpload');
 
 const router = express.Router();
 
@@ -29,17 +28,19 @@ router.post(
     postController.createRepost
 );
 
-// Créer un Duo
+// Créer un Duo (média personnel affiché à côté de l'original)
 router.post(
     '/:idPubli/duo',
     authMiddleware,
+    handleUpload('media'),
     postController.createDuo
 );
 
-// Créer un collage
+// Créer un collage (vidéo personnelle associée à la vidéo originale)
 router.post(
     '/:idPubli/collage',
     authMiddleware,
+    handleUpload('media'),
     postController.createCollage
 );
 
@@ -72,42 +73,7 @@ router.get(
 router.post(
     '/upload',
     authMiddleware,
-    (req, res, next) => {
-        upload.single('media')(req, res, (err) => {
-            if (err) {
-                // Fichier refusé par le fileFilter
-                if (
-                    err.message ===
-                    'Type de fichier non autorisé'
-                ) {
-                    return res.status(400).json({
-                        error: 'Type de fichier non autorisé.'
-                    });
-                }
-
-                // Limite de taille Multer
-                if (err instanceof multer.MulterError) {
-                    if (err.code === 'LIMIT_FILE_SIZE') {
-                        return res.status(400).json({
-                            error: 'Le fichier est trop volumineux.'
-                        });
-                    }
-
-                    return res.status(400).json({
-                        error: err.message
-                    });
-                }
-
-                return res.status(400).json({
-                    error:
-                        err.message ||
-                        'Erreur lors de l’envoi du fichier.'
-                });
-            }
-
-            next();
-        });
-    },
+    handleUpload('media'),
     postController.uploadImage
 );
 

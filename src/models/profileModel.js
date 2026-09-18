@@ -17,7 +17,7 @@ function createProfile(idUser) {
  */
 function getProfileByUserId(idUser) {
   const query = `
-    SELECT 
+    SELECT
       u.idUser,
       u.pseudo,
       u.email,
@@ -27,9 +27,11 @@ function getProfileByUserId(idUser) {
       p.nom,
       p.prenom,
       p.bio,
-      p.idMedia
+      p.idMedia,
+      m.nomMedia AS avatarNomMedia
     FROM Utilisateur u
     LEFT JOIN Profil p ON u.idUser = p.idUser
+    LEFT JOIN Media m ON m.idMedia = p.idMedia
     WHERE u.idUser = ?
   `;
   return db.prepare(query).get(idUser);
@@ -40,7 +42,7 @@ function getProfileByUserId(idUser) {
  */
 function getProfileByPseudo(pseudo) {
   const query = `
-    SELECT 
+    SELECT
       u.idUser,
       u.pseudo,
       u.role,
@@ -48,9 +50,11 @@ function getProfileByPseudo(pseudo) {
       p.nom,
       p.prenom,
       p.bio,
-      p.idMedia
+      p.idMedia,
+      m.nomMedia AS avatarNomMedia
     FROM Utilisateur u
     LEFT JOIN Profil p ON u.idUser = p.idUser
+    LEFT JOIN Media m ON m.idMedia = p.idMedia
     WHERE u.pseudo = ?
   `;
   return db.prepare(query).get(pseudo);
@@ -71,9 +75,48 @@ function updateProfile(idUser, { nom, prenom, bio }) {
   return db.prepare(query).run(idUser, nom, prenom, bio);
 }
 
+/**
+ * Récupère le média actuellement utilisé comme photo de profil
+ * d'un utilisateur, s'il en a une.
+ */
+function getAvatarMedia(idUser) {
+  return db.prepare(`
+    SELECT m.idMedia, m.nomMedia
+    FROM Profil p
+    JOIN Media m ON m.idMedia = p.idMedia
+    WHERE p.idUser = ?
+  `).get(idUser);
+}
+
+/**
+ * Enregistre un nouveau média (idPubli NULL, réservé à l'avatar)
+ * et le définit comme photo de profil de l'utilisateur, en une
+ * seule transaction. Crée la ligne Profil si elle n'existait pas
+ * encore.
+ */
+function setAvatar(idUser, nomMedia, typeMedia) {
+  const transaction = db.transaction(() => {
+    const media = db.prepare(`
+      INSERT INTO Media (idPubli, nomMedia, typeMedia)
+      VALUES (NULL, ?, ?)
+    `).run(nomMedia, typeMedia);
+
+    db.prepare(`
+      INSERT INTO Profil (idUser, idMedia)
+      VALUES (?, ?)
+      ON CONFLICT(idUser) DO UPDATE SET
+        idMedia = excluded.idMedia
+    `).run(idUser, media.lastInsertRowid);
+  });
+
+  transaction();
+}
+
 module.exports = {
   createProfile,
   getProfileByUserId,
   getProfileByPseudo,
-  updateProfile
+  updateProfile,
+  getAvatarMedia,
+  setAvatar
 };

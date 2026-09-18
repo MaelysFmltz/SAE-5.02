@@ -182,7 +182,7 @@ describe('Sécurité - authentification des publications', () => {
 
             const res =
                 await request(app)
-                    .post('/post/upload')
+                    .post('/api/publications/upload')
                     .set('Accept', 'application/json')
                     .attach(
                         'media',
@@ -209,7 +209,7 @@ describe('Sécurité - authentification des publications', () => {
 
             const res =
                 await request(app)
-                    .post('/post/upload')
+                    .post('/api/publications/upload')
                     .set(
                         'Authorization',
                         'Bearer token-totalement-invalide'
@@ -254,7 +254,7 @@ describe('Sécurité - fichier envoyé', () => {
 
             const res =
                 await request(app)
-                    .post('/post/upload')
+                    .post('/api/publications/upload')
                     .set(
                         'Authorization',
                         `Bearer ${token}`
@@ -293,7 +293,7 @@ describe('Sécurité - fichier envoyé', () => {
 
             const res =
                 await request(app)
-                    .post('/post/upload')
+                    .post('/api/publications/upload')
                     .set(
                         'Authorization',
                         `Bearer ${token}`
@@ -355,7 +355,7 @@ describe(
                  */
                 const res =
                     await request(app)
-                        .post('/post/upload')
+                        .post('/api/publications/upload')
                         .set(
                             'Authorization',
                             `Bearer ${token}`
@@ -437,7 +437,7 @@ describe(
 
                 const res =
                     await request(app)
-                        .post('/post/upload')
+                        .post('/api/publications/upload')
                         .set(
                             'Authorization',
                             `Bearer ${token}`
@@ -492,7 +492,7 @@ describe(
 
                 const res =
                     await request(app)
-                        .post('/post/upload')
+                        .post('/api/publications/upload')
                         .set(
                             'Authorization',
                             `Bearer ${token}`
@@ -562,7 +562,7 @@ describe(
 
                 const res =
                     await request(app)
-                        .post('/post/upload')
+                        .post('/api/publications/upload')
                         .set(
                             'Authorization',
                             `Bearer ${token}`
@@ -614,7 +614,7 @@ describe(
 
                 const res =
                     await request(app)
-                        .post('/post/upload')
+                        .post('/api/publications/upload')
                         .set(
                             'Authorization',
                             `Bearer ${token}`
@@ -653,7 +653,7 @@ describe(
 
                 const res =
                     await request(app)
-                        .post('/post/upload')
+                        .post('/api/publications/upload')
                         .set(
                             'Authorization',
                             `Bearer ${token}`
@@ -692,7 +692,7 @@ describe(
 
                 const res =
                     await request(app)
-                        .post('/post/upload')
+                        .post('/api/publications/upload')
                         .set(
                             'Authorization',
                             `Bearer ${token}`
@@ -741,7 +741,7 @@ describe('Sécurité - vérification réelle des images', () => {
 
             const res =
                 await request(app)
-                    .post('/post/upload')
+                    .post('/api/publications/upload')
                     .set(
                         'Authorization',
                         `Bearer ${token}`
@@ -785,7 +785,7 @@ describe('Sécurité - vérification réelle des images', () => {
 
             const res =
                 await request(app)
-                    .post('/post/upload')
+                    .post('/api/publications/upload')
                     .set(
                         'Authorization',
                         `Bearer ${token}`
@@ -824,7 +824,7 @@ describe('Sécurité - vérification réelle des images', () => {
 
             const res =
                 await request(app)
-                    .post('/post/upload')
+                    .post('/api/publications/upload')
                     .set(
                         'Authorization',
                         `Bearer ${token}`
@@ -872,7 +872,7 @@ describe('Sécurité - visibilité', () => {
 
             const res =
                 await request(app)
-                    .post('/post/upload')
+                    .post('/api/publications/upload')
                     .set(
                         'Authorization',
                         `Bearer ${token}`
@@ -944,7 +944,7 @@ describe(
 
                 const res =
                     await request(app)
-                        .post('/post/upload')
+                        .post('/api/publications/upload')
                         .set(
                             'Authorization',
                             `Bearer ${token}`
@@ -1042,7 +1042,7 @@ describe(
 
                 const res =
                     await request(app)
-                        .post('/post/upload')
+                        .post('/api/publications/upload')
                         .set(
                             'Authorization',
                             `Bearer ${token}`

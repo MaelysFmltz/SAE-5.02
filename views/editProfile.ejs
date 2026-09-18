@@ -6,6 +6,38 @@
   <title>Modifier le profil — Pixora</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/profile.css">
+  <style>
+    .avatar-edit-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .avatar-edit-btn {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background: var(--bg-input);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .avatar-edit-btn:hover {
+      opacity: 0.9;
+    }
+
+    .avatar-message {
+      min-height: 16px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin: 0;
+    }
+  </style>
 </head>
 <body>
   <div class="app-container">
@@ -24,6 +56,27 @@
 
     <!-- Formulaire centré -->
     <main class="profile-container">
+
+      <!-- Photo de profil -->
+      <div class="avatar-edit-row">
+        <div class="avatar-circle" id="avatar-preview-circle">
+          <% if (profile.avatarUrl) { %>
+            <img src="<%= profile.avatarUrl %>" alt="Photo de profil" class="avatar-img" id="avatar-preview-img">
+          <% } else { %>
+            <svg viewBox="0 0 24 24" fill="currentColor" id="avatar-placeholder-icon">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+          <% } %>
+        </div>
+
+        <label for="avatar-input" class="btn-secondary avatar-edit-btn">
+          Changer la photo
+        </label>
+        <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp" hidden>
+
+        <p id="avatar-message" class="avatar-message"></p>
+      </div>
+
       <form action="/profile/edit" method="POST" class="edit-form">
 
         <!-- Pseudo -->
@@ -57,5 +110,47 @@
     <!-- 5 boutons en bas -->
     <%- include('navbar') %>
   </div>
+
+  <script>
+    const avatarInput = document.getElementById('avatar-input');
+    const avatarMessage = document.getElementById('avatar-message');
+    const avatarCircle = document.getElementById('avatar-preview-circle');
+
+    avatarInput.addEventListener('change', async () => {
+      const file = avatarInput.files[0];
+
+      if (!file) {
+        return;
+      }
+
+      avatarMessage.textContent = 'Envoi en cours...';
+
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      try {
+        const response = await fetch('/api/profile/avatar', {
+          method: 'POST',
+          credentials: 'same-origin',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Erreur lors de l’envoi.');
+        }
+
+        avatarCircle.innerHTML =
+          '<img src="' + data.avatarUrl + '" alt="Photo de profil" class="avatar-img" id="avatar-preview-img">';
+
+        avatarMessage.textContent = 'Photo de profil mise à jour.';
+
+      } catch (error) {
+        console.error('Erreur avatar :', error);
+        avatarMessage.textContent = error.message;
+      }
+    });
+  </script>
 </body>
 </html>

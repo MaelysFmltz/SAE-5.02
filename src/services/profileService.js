@@ -2,6 +2,8 @@ const profileModel = require('../models/profileModel');
 const { validatePseudo, sanitizeText } = require('../utils/validationUtils');
 const postModel = require('../models/postModel');
 const reactionModel = require('../models/reactionModel');
+const postService = require('./postService');
+
 /**
  * Formate un objet profil pour y adjoindre l'URL d'avatar
  */
@@ -9,7 +11,52 @@ function formatProfileData(profile) {
   if (!profile) return null;
   return {
     ...profile,
-    avatarUrl: profile.idMedia ? `/media/${profile.idMedia}` : null
+    avatarUrl: profile.avatarNomMedia ? `/uploads/${profile.avatarNomMedia}` : null
+  };
+}
+
+/**
+ * Récupère les publications d'un utilisateur, avec réactions,
+ * réparties en publications originales / reposts-duos-collages,
+ * en ne gardant que celles visibles par idUserVisiteur (un
+ * propriétaire voit tout, un visiteur uniquement le public,
+ * ses propres publications et celles de ses amis).
+ */
+function getVisiblePublicationsForProfile(idUser, idUserVisiteur) {
+  const isOwner = Number(idUser) === Number(idUserVisiteur);
+
+  const allPosts = postModel.findByUserId(idUser);
+
+  const visiblePosts = isOwner
+    ? allPosts
+    : postService.filtrerPublicationsVisibles(allPosts, idUserVisiteur);
+
+  const idsDejaRepostes = idUserVisiteur
+    ? postModel.findRepostedPubliIds(idUserVisiteur)
+    : new Set();
+
+  const withReactions = visiblePosts.map(publication => {
+    const reactions = reactionModel.getPostReactions(
+      publication.idPubli,
+      idUserVisiteur
+    );
+
+    return {
+      ...publication,
+      likes: reactions.likes,
+      dislikes: reactions.dislikes,
+      userReaction: reactions.userReaction,
+      dejaReposte: idsDejaRepostes.has(publication.idPubli)
+    };
+  });
+
+  return {
+    publications: withReactions.filter(
+      publication => publication.typePublication === 'original'
+    ),
+    reposts: withReactions.filter(publication =>
+      ['repost', 'duo', 'collage'].includes(publication.typePublication)
+    )
   };
 }
 
@@ -26,39 +73,8 @@ async function getMyProfile(idUser) {
     throw new Error('Profil introuvable');
   }
 
-  const publications = postModel.findByUserId(idUser)
-    .filter(publication => publication.typePublication === 'original')
-    .map(publication => {
-        const reactions = reactionModel.getPostReactions(
-            publication.idPubli,
-            idUser
-        );
-
-        return {
-            ...publication,
-            likes: reactions.likes,
-            dislikes: reactions.dislikes,
-            userReaction: reactions.userReaction
-        };
-    });
-
-  const reposts = postModel.findByUserId(idUser)
-    .filter(publication =>
-        ['repost', 'duo', 'collage'].includes(publication.typePublication)
-    )
-    .map(publication => {
-        const reactions = reactionModel.getPostReactions(
-            publication.idPubli,
-            idUser
-        );
-
-        return {
-            ...publication,
-            likes: reactions.likes,
-            dislikes: reactions.dislikes,
-            userReaction: reactions.userReaction
-        };
-    });
+  const { publications, reposts } =
+    getVisiblePublicationsForProfile(idUser, idUser);
 
   return {
     ...formatProfileData(profile),
@@ -70,13 +86,16 @@ async function getMyProfile(idUser) {
 /**
  * Récupère le profil public d'un utilisateur à partir de son pseudo
  */
-async function getPublicProfile(pseudo) {
+async function getPublicProfile(pseudo, idUserVisiteur = null) {
   const cleanPseudo = validatePseudo(pseudo);
 
   const profile = profileModel.getProfileByPseudo(cleanPseudo);
   if (!profile) {
     throw new Error('Utilisateur introuvable');
   }
+
+  const { publications, reposts } =
+    getVisiblePublicationsForProfile(profile.idUser, idUserVisiteur);
 
   return {
     idUser: profile.idUser,
@@ -86,7 +105,9 @@ async function getPublicProfile(pseudo) {
     prenom: profile.prenom,
     bio: profile.bio,
     idMedia: profile.idMedia,
-    avatarUrl: profile.idMedia ? `/media/${profile.idMedia}` : null
+    avatarUrl: profile.avatarNomMedia ? `/uploads/${profile.avatarNomMedia}` : null,
+    publications,
+    reposts
   };
 }
 
@@ -125,8 +146,26 @@ async function updateMyProfile(idUser, data) {
   return formatProfileData(updatedProfile);
 }
 
+/**
+ * Définit (ou remplace) la photo de profil de l'utilisateur.
+ * Retourne le nom du fichier précédent (à supprimer sur le
+ * disque par l'appelant), ou null s'il n'y en avait pas.
+ */
+async function updateAvatar(idUser, nomMedia, typeMedia) {
+  if (!idUser) {
+    throw new Error('Action non autorisée');
+  }
+
+  const ancienAvatar = profileModel.getAvatarMedia(idUser);
+
+  profileModel.setAvatar(idUser, nomMedia, typeMedia);
+
+  return ancienAvatar ? ancienAvatar.nomMedia : null;
+}
+
 module.exports = {
   getMyProfile,
   getPublicProfile,
-  updateMyProfile
+  updateMyProfile,
+  updateAvatar
 };

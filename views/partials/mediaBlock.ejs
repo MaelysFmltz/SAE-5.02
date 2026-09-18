@@ -1,0 +1,92 @@
+<%
+/*
+ * Bloc média partagé entre le feed, le profil et la page d'une
+ * publication, pour garantir un affichage identique partout.
+ *
+ * Attend en locals :
+ * - publication : la publication enrichie (nomMedia/typeMedia,
+ *   originalNomMedia/originalTypeMedia, typePublication...)
+ * - imgClass / videoClass : classes CSS à appliquer aux <img>/<video>
+ */
+const isDuo = publication.typePublication === 'duo';
+const isCollage = publication.typePublication === 'collage';
+%>
+
+<% if ((isDuo || isCollage) && publication.nomMedia) { %>
+
+  <div class="<%= isDuo ? 'duo-media-row' : 'collage-media-stack' %>">
+
+    <div class="duo-media-item duo-media-original">
+      <% if (publication.originalNomMedia) { %>
+        <% if (publication.originalTypeMedia === 'video') { %>
+          <video class="<%= videoClass %>" controls preload="metadata">
+            <source src="/uploads/<%= publication.originalNomMedia %>">
+            Votre navigateur ne supporte pas la lecture vidéo.
+          </video>
+        <% } else { %>
+          <img
+            src="/uploads/<%= publication.originalNomMedia %>"
+            alt="Média original de <%= publication.auteurOriginalPseudo %>"
+            class="<%= imgClass %>"
+          >
+        <% } %>
+      <% } else { %>
+        <div class="media-placeholder">📷 Média Pixora</div>
+      <% } %>
+      <span class="duo-media-label">@<%= publication.auteurOriginalPseudo %></span>
+    </div>
+
+    <div class="duo-media-item duo-media-added">
+      <% if (publication.typeMedia === 'video') { %>
+        <video class="<%= videoClass %>" controls preload="metadata">
+          <source src="/uploads/<%= publication.nomMedia %>">
+          Votre navigateur ne supporte pas la lecture vidéo.
+        </video>
+      <% } else { %>
+        <img
+          src="/uploads/<%= publication.nomMedia %>"
+          alt="Média ajouté par <%= publication.auteurPseudo %>"
+          class="<%= imgClass %>"
+        >
+      <% } %>
+      <span class="duo-media-label">@<%= publication.auteurPseudo %></span>
+    </div>
+
+  </div>
+
+<% } else if (publication.nomMedia) { %>
+
+  <% if (publication.typeMedia === 'video') { %>
+    <video class="<%= videoClass %>" controls preload="metadata">
+      <source src="/uploads/<%= publication.nomMedia %>">
+      Votre navigateur ne supporte pas la lecture vidéo.
+    </video>
+  <% } else { %>
+    <img
+      src="/uploads/<%= publication.nomMedia %>"
+      alt="Photo publiée par <%= publication.auteurPseudo %>"
+      class="<%= imgClass %>"
+    >
+  <% } %>
+
+<% } else if (publication.originalNomMedia) { %>
+
+  <!-- Repost (ou Duo/collage sans média propre) : on affiche le média original -->
+  <% if (publication.originalTypeMedia === 'video') { %>
+    <video class="<%= videoClass %>" controls preload="metadata">
+      <source src="/uploads/<%= publication.originalNomMedia %>">
+      Votre navigateur ne supporte pas la lecture vidéo.
+    </video>
+  <% } else { %>
+    <img
+      src="/uploads/<%= publication.originalNomMedia %>"
+      alt="Média original de <%= publication.auteurOriginalPseudo %>"
+      class="<%= imgClass %>"
+    >
+  <% } %>
+
+<% } else { %>
+
+  <div class="media-placeholder">📷 Média Pixora</div>
+
+<% } %>

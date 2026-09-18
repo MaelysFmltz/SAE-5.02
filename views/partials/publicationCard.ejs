@@ -1,0 +1,213 @@
+<%
+/*
+ * Carte de publication partagée entre le feed, le profil (onglets
+ * "Publications" et "Reposts") et toute autre liste de publications,
+ * pour garantir un affichage et des actions identiques partout.
+ *
+ * Attend en locals :
+ * - publication   : la publication enrichie
+ * - canDelete     : bouton Supprimer visible ou non
+ * - mediaLinkHref : lien du clic sur le média (profil auteur ou page de la publication)
+ * - imgClass / videoClass : classes CSS transmises au bloc média
+ */
+%>
+
+<article
+  class="publication-card"
+  data-publication-id="<%= publication.idPubli %>"
+>
+
+  <!-- AUTEUR + TYPE + SUPPRESSION -->
+  <div class="publication-header">
+
+    <a
+      href="/profile/<%= encodeURIComponent(publication.auteurPseudo) %>"
+      style="color: inherit; text-decoration: none;"
+    >
+      <strong>@<%= publication.auteurPseudo %></strong>
+    </a>
+
+    <span class="publication-type">
+      <% if (publication.typePublication === 'repost') { %>
+        🔁 Repost
+      <% } else if (publication.typePublication === 'duo') { %>
+        🎭 Duo
+      <% } else if (publication.typePublication === 'collage') { %>
+        🧩 Collage
+      <% } else { %>
+        Publication
+      <% } %>
+    </span>
+
+    <% if (canDelete) { %>
+      <button
+        type="button"
+        class="delete-post"
+        data-id="<%= publication.idPubli %>"
+      >
+        Supprimer
+      </button>
+    <% } %>
+
+  </div>
+
+  <!-- MÉDIA -->
+  <a href="<%= mediaLinkHref %>" class="publication-main-link">
+    <div class="publication-media">
+      <%- include('mediaBlock', { publication, imgClass, videoClass }) %>
+    </div>
+  </a>
+
+  <!-- DESCRIPTION / HASHTAGS -->
+  <% if (publication.contenuPub) { %>
+    <p class="publication-content">
+      <% if (typeof linkifyHashtags === 'function') { %>
+        <%- linkifyHashtags(publication.contenuPub) %>
+      <% } else { %>
+        <%= publication.contenuPub %>
+      <% } %>
+    </p>
+  <% } %>
+
+  <!-- PUBLICATION PARTAGÉE -->
+  <% if (publication.idPubliPartagee) { %>
+    <div class="shared-publication">
+      <% if (publication.auteurOriginalPseudo) { %>
+
+        <% if (publication.typePublication === 'repost') { %>
+          Repost de
+        <% } else { %>
+          Basé sur la publication de
+        <% } %>
+        <strong>@<%= publication.auteurOriginalPseudo %></strong>
+
+        <% if (!publication.contenuPub && publication.originalContenuPub) { %>
+          <p class="publication-content original-content">
+            <% if (typeof linkifyHashtags === 'function') { %>
+              <%- linkifyHashtags(publication.originalContenuPub) %>
+            <% } else { %>
+              <%= publication.originalContenuPub %>
+            <% } %>
+          </p>
+        <% } %>
+
+      <% } else { %>
+        Cette publication d'origine n'est plus disponible.
+      <% } %>
+    </div>
+  <% } %>
+
+  <!-- ACTIONS -->
+  <div class="publication-actions">
+
+    <!-- Like -->
+    <button
+      type="button"
+      class="publication-action reaction-action like-action <%= publication.userReaction === 'LIKE' ? 'active' : '' %>"
+      onclick="reactionPublication(<%= publication.idPubli %>, 'LIKE')"
+      title="J'aime"
+      aria-label="J'aime"
+    >
+      <svg viewBox="0 0 24 24">
+        <path d="M20.8 8.8 C20.8 5.8 18.5 4 15.9 4 C14.1 4 12.7 5 12 6.3 C11.3 5 9.9 4 8.1 4 C5.5 4 3.2 5.8 3.2 8.8 C3.2 13.1 7.4 16.1 12 20 C16.6 16.1 20.8 13.1 20.8 8.8Z"></path>
+      </svg>
+      <span class="reaction-count"><%= publication.likes || 0 %></span>
+    </button>
+
+    <!-- Dislike -->
+    <button
+      type="button"
+      class="publication-action reaction-action dislike-action <%= publication.userReaction === 'DISLIKE' ? 'active' : '' %>"
+      onclick="reactionPublication(<%= publication.idPubli %>, 'DISLIKE')"
+      title="Je n'aime pas"
+      aria-label="Je n'aime pas"
+    >
+      <svg viewBox="0 0 24 24">
+        <path d="M20.5 8.7 C20.5 5.9 18.3 4.2 15.8 4.2 C14.1 4.2 12.8 5.1 12 6.4"></path>
+        <path d="M12 6.4 L10.6 8.5 L13.3 11.2 L11.1 13.6 L13.8 16.3 L12 19.8"></path>
+        <path d="M12 6.4 C11.2 5.1 9.9 4.2 8.2 4.2 C5.7 4.2 3.5 5.9 3.5 8.7 C3.5 11.5 5.1 13.7 7.3 15.7"></path>
+      </svg>
+      <span class="reaction-count"><%= publication.dislikes || 0 %></span>
+    </button>
+
+    <!-- Commentaires -->
+    <button
+      type="button"
+      class="publication-action"
+      onclick="ouvrirCommentaires(<%= publication.idPubli %>)"
+      title="Commentaires"
+      aria-label="Commentaires"
+    >
+      <svg viewBox="0 0 24 24">
+        <path d="M20 11.5 C20 15.6 16.4 19 12 19 C10.8 19 9.6 18.8 8.6 18.3 L4 20 L5.2 16.2 C4.4 14.9 4 13.3 4 11.5 C4 7.4 7.6 4 12 4 C16.4 4 20 7.4 20 11.5Z"></path>
+      </svg>
+      <span class="reaction-count"><%= publication.nombreCommentaires || 0 %></span>
+    </button>
+
+    <!-- Repost -->
+    <button
+      type="button"
+      class="publication-action repost-action <%= publication.dejaReposte ? 'active' : '' %>"
+      onclick="repartager(<%= publication.idPubli %>, this)"
+      data-reposted="<%= publication.dejaReposte ? 'true' : 'false' %>"
+      title="<%= publication.dejaReposte ? 'Annuler le repost' : 'Reposter' %>"
+      aria-label="<%= publication.dejaReposte ? 'Annuler le repost' : 'Reposter' %>"
+    >
+      <svg viewBox="0 0 24 24">
+        <path d="M17 7H7 C5.3 7 4 8.3 4 10 C4 11.7 5.3 13 7 13 H16"></path>
+        <path d="M14 10L17 7L14 4"></path>
+        <path d="M7 17H17 C18.7 17 20 15.7 20 14 C20 12.3 18.7 11 17 11 H8"></path>
+        <path d="M10 14L7 17L10 20"></path>
+      </svg>
+    </button>
+
+    <!-- Duo -->
+    <button
+      type="button"
+      class="publication-action"
+      onclick="creerDuo(<%= publication.idPubli %>)"
+      title="Créer un Duo"
+      aria-label="Créer un Duo"
+    >
+      <svg viewBox="0 0 24 24">
+        <circle cx="8" cy="7" r="3"></circle>
+        <circle cx="16" cy="17" r="3"></circle>
+        <path d="M10.5 8.5L13.5 15.5"></path>
+      </svg>
+    </button>
+
+    <!-- Collage -->
+    <button
+      type="button"
+      class="publication-action"
+      onclick="creerCollage(<%= publication.idPubli %>)"
+      title="Créer un collage"
+      aria-label="Créer un collage"
+    >
+      <svg viewBox="0 0 24 24">
+        <rect x="4" y="4" width="7" height="7" rx="1"></rect>
+        <rect x="13" y="4" width="7" height="7" rx="1"></rect>
+        <rect x="4" y="13" width="7" height="7" rx="1"></rect>
+        <rect x="13" y="13" width="7" height="7" rx="1"></rect>
+      </svg>
+    </button>
+
+    <span class="action-spacer"></span>
+
+    <!-- Copier le lien -->
+    <button
+      type="button"
+      class="publication-action"
+      onclick="copierLien(<%= publication.idPubli %>)"
+      title="Copier le lien"
+      aria-label="Copier le lien"
+    >
+      <svg viewBox="0 0 24 24">
+        <path d="M10 13 C8.3 14.7 8.3 17.3 10 19 C11.7 20.7 14.3 20.7 16 19 L19 16 C20.7 14.3 20.7 11.7 19 10 C17.3 8.3 14.7 8.3 13 10"></path>
+        <path d="M14 11 C15.7 9.3 15.7 6.7 14 5 C12.3 3.3 9.7 3.3 8 5 L5 8 C3.3 9.7 3.3 12.3 5 14 C6.7 15.7 9.3 15.7 11 14"></path>
+      </svg>
+    </button>
+
+  </div>
+
+</article>

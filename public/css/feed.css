@@ -345,6 +345,72 @@
     object-fit: contain;
 }
 
+.publication-action svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.like-action.active svg,
+.dislike-action.active svg {
+    fill: currentColor;
+}
+
+.publication-action.active {
+    color: var(--primary, #6366f1);
+}
+
+.media-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    width: 100%;
+    background: #08080d;
+    color: var(--text-secondary);
+}
+
+.duo-media-row {
+    display: flex;
+    gap: 2px;
+    width: 100%;
+}
+
+.duo-media-row .duo-media-item {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+}
+
+.collage-media-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+}
+
+.duo-media-row .feed-post-image,
+.duo-media-row .feed-post-video,
+.collage-media-stack .feed-post-image,
+.collage-media-stack .feed-post-video {
+    max-height: 400px;
+}
+
+.duo-media-label {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 0.75rem;
+}
+
 .feed-post-content {
     padding: 1rem 1.2rem;
     color: var(--text-primary);
