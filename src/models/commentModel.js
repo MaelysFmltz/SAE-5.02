@@ -18,11 +18,18 @@ function getCommentsByPostId(idPubli, currentUserId = null) {
       c.contenuCom,
       c.dateCommentaire,
       c.dateModif,
-      u.pseudo
+      u.pseudo,
+      m.nomMedia AS avatarNomMedia
     FROM Commentaire c
 
     JOIN Utilisateur u
       ON c.idUser = u.idUser
+
+    LEFT JOIN Profil p
+      ON p.idUser = u.idUser
+
+    LEFT JOIN Media m
+      ON m.idMedia = p.idMedia
 
     WHERE c.idPubli = ?
 
@@ -32,6 +39,14 @@ function getCommentsByPostId(idPubli, currentUserId = null) {
   const allComments = db
     .prepare(query)
     .all(idPubli);
+
+  allComments.forEach(comment => {
+    comment.avatarUrl = comment.avatarNomMedia
+      ? `/uploads/${comment.avatarNomMedia}`
+      : null;
+
+    delete comment.avatarNomMedia;
+  });
 
 
   /*
