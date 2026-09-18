@@ -5,7 +5,8 @@ const postService =
 require('../services/postService');
 
 const {
-    validateEditedImage
+    validateEditedImage,
+    validateEditedVideo
 } = require('../services/mediaEditorService');
 
 /*
@@ -461,12 +462,28 @@ try {
      * ====================================================
      */
 
-    if (
-        req.body.editedMedia === 'true'
-    ) {
+    if (req.body.editedMedia === 'true') {
 
         const editedValidation =
             validateEditedImage({
+                buffer,
+                mimetype: file.mimetype,
+                size: file.size
+            });
+
+        if (!editedValidation.valid) {
+            await fs.unlink(uploadedFilePath).catch(() => {});
+
+            return res.status(400).json({
+                error: editedValidation.error
+            });
+        }
+    }
+
+    if (req.body.editedVideo === 'true') {
+
+        const editedValidation =
+            validateEditedVideo({
                 buffer,
                 mimetype: file.mimetype,
                 size: file.size

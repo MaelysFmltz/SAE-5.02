@@ -181,31 +181,33 @@
             </div>
 
 
-            <% if (post.typeMedia === 'video') { %>
+            <div class="feed-post-media-frame">
+                <% if (post.typeMedia === 'video') { %>
 
-                <video
-                    class="feed-post-video"
-                    controls
-                    preload="metadata"
-                >
-
-                    <source
-                        src="/uploads/<%= post.nomMedia %>"
+                    <video
+                        class="feed-post-video"
+                        controls
+                        preload="metadata"
                     >
 
-                    Votre navigateur ne supporte pas la lecture vidéo.
+                        <source
+                            src="/uploads/<%= post.nomMedia %>"
+                        >
 
-                </video>
+                        Votre navigateur ne supporte pas la lecture vidéo.
 
-            <% } else { %>
+                    </video>
 
-                <img
-                    src="/uploads/<%= post.nomMedia %>"
-                    alt="Photo publiée par <%= post.pseudo %>"
-                    class="feed-post-image"
-                >
+                <% } else { %>
 
-            <% } %>
+                    <img
+                        src="/uploads/<%= post.nomMedia %>"
+                        alt="Photo publiée par <%= post.pseudo %>"
+                        class="feed-post-image"
+                    >
+
+                <% } %>
+            </div>
 
 
             <!-- DESCRIPTION -->

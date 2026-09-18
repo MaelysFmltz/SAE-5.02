@@ -140,7 +140,7 @@
                         class="editor-open-button"
                         disabled
                     >
-                        ✨ Modifier la photo
+                        ✨ Modifier le média
                     </button>
 
                     <div
@@ -246,7 +246,7 @@
     </main>
 
 
-    <!-- ÉDITEUR PHOTO -->
+    <!-- ÉDITEUR PHOTO / VIDÉO -->
     <div id="editor-modal" class="editor-modal" hidden>
         <div class="editor-window" role="dialog" aria-modal="true" aria-labelledby="editor-title">
             <header class="editor-header">
@@ -265,6 +265,12 @@
                 <button type="button" id="rotate-right">↷ Rotation droite</button>
                 <button type="button" id="flip-horizontal">↔ Miroir H</button>
                 <button type="button" id="flip-vertical">↕ Miroir V</button>
+            </div>
+
+            <div id="editor-video-controls" class="editor-video-controls" hidden>
+                <button type="button" id="editor-play">▶ Lire</button>
+                <input id="editor-timeline" type="range" min="0" max="0" step="0.01" value="0" aria-label="Position de la vidéo">
+                <span id="editor-time">00:00 / 00:00</span>
             </div>
 
             <div class="editor-main">
@@ -287,7 +293,7 @@
                     <div class="editor-tool-group">
                         <h3>Format de la publication</h3>
                         <p id="editor-dimensions" class="editor-standard-size">1150 × 628 px</p>
-                        <p class="editor-hint">Toutes les photos sont exportées dans ce format standard afin de garder la même taille d'affichage sur les publications.</p>
+                        <p class="editor-hint">Photos et vidéos sont exportées dans ce format standard afin de garder la même taille d'affichage sur les publications.</p>
                     </div>
 
                     <div class="editor-tool-group">

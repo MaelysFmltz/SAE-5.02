@@ -1,4 +1,5 @@
 import { ImageEditor } from './editor/imageEditor.js';
+import { VideoEditor } from './editor/videoEditor.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('upload-form');
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dimensions = document.getElementById('editor-dimensions');
     const editorMessage = document.getElementById('editor-message');
     const editorFileName = document.getElementById('editor-file-name');
+    const editorTitle = document.getElementById('editor-title');
     const openEditorButton = document.getElementById('open-editor');
     const closeEditorButton = document.getElementById('close-editor');
     const cancelEditorButton = document.getElementById('cancel-editor');
@@ -31,6 +33,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedOverlayLabel = document.getElementById('selected-overlay-label');
     const overlayColorInput = document.getElementById('overlay-color');
     const filterApplyButton = document.getElementById('filters-apply');
+    const playButton = document.getElementById('editor-play');
+    const timeline = document.getElementById('editor-timeline');
+    const timeLabel = document.getElementById('editor-time');
+    const videoControls = document.getElementById('editor-video-controls');
 
     if (!form || !mediaInput) return;
 
@@ -41,8 +47,29 @@ document.addEventListener('DOMContentLoaded', () => {
     let previewUrl = null;
     let selectedFile = null;
     let editedFile = null;
+    let activeEditor = null;
+    let activeEditorType = null;
+    let mediaSelectionVersion = 0;
 
-    const editor = new ImageEditor({ canvas: editorCanvas, cropOverlay, cropHint, dimensions, selectedOverlayPanel, selectedOverlayLabel, overlayColor: overlayColorInput }, {
+    const imageEditor = new ImageEditor({ canvas: editorCanvas, cropOverlay, cropHint, dimensions, selectedOverlayPanel, selectedOverlayLabel, overlayColor: overlayColorInput }, {
+        onChange: (canUndo, canRedo) => {
+            undoButton.disabled = !canUndo;
+            redoButton.disabled = !canRedo;
+        }
+    });
+
+    const videoEditor = new VideoEditor({
+        canvas: editorCanvas,
+        cropOverlay,
+        cropHint,
+        dimensions,
+        selectedOverlayPanel,
+        selectedOverlayLabel,
+        overlayColor: overlayColorInput,
+        playButton,
+        timeline,
+        timeLabel
+    }, {
         onChange: (canUndo, canRedo) => {
             undoButton.disabled = !canUndo;
             redoButton.disabled = !canRedo;
@@ -53,21 +80,29 @@ document.addEventListener('DOMContentLoaded', () => {
         message.textContent = text;
         message.classList.toggle('error', error);
     }
+
     function setEditorMessage(text, error = false) {
         editorMessage.textContent = text;
         editorMessage.classList.toggle('error', error);
     }
+
     function clearPreview() {
         if (previewUrl) URL.revokeObjectURL(previewUrl);
         previewUrl = null;
-        imagePreview.src = ''; videoPreview.removeAttribute('src'); videoPreview.load();
-        imagePreview.style.display = 'none'; videoPreview.style.display = 'none'; previewContainer.style.display = 'none';
+        imagePreview.src = '';
+        videoPreview.removeAttribute('src');
+        videoPreview.load();
+        imagePreview.style.display = 'none';
+        videoPreview.style.display = 'none';
+        previewContainer.style.display = 'none';
     }
+
     function mediaType(file) {
         if (ALLOWED_IMAGE_TYPES.includes(file.type)) return 'image';
         if (ALLOWED_VIDEO_TYPES.includes(file.type)) return 'video';
         return null;
     }
+
     function validateFile(file) {
         const type = mediaType(file);
         if (!type) return { valid: false, error: 'Veuillez sélectionner une image ou une vidéo dans un format autorisé.' };
@@ -75,112 +110,223 @@ document.addEventListener('DOMContentLoaded', () => {
         if (file.size > max) return { valid: false, error: type === 'image' ? 'L’image ne doit pas dépasser 20 Mo.' : 'La vidéo ne doit pas dépasser 100 Mo.' };
         return { valid: true, type };
     }
-    function refreshPreview(file) {
-        clearPreview(); previewUrl = URL.createObjectURL(file); previewContainer.style.display = 'block';
-        if (mediaType(file) === 'image') { imagePreview.src = previewUrl; imagePreview.style.display = 'block'; }
-        else { videoPreview.src = previewUrl; videoPreview.style.display = 'block'; videoPreview.load(); }
-    }
-    function showEditor() {
-        if (!selectedFile || mediaType(selectedFile) !== 'image') return;
 
+    function refreshPreview(file) {
+        clearPreview();
+        previewUrl = URL.createObjectURL(file);
+        previewContainer.style.display = 'block';
+        if (mediaType(file) === 'image') {
+            imagePreview.src = previewUrl;
+            imagePreview.style.display = 'block';
+        } else {
+            videoPreview.src = previewUrl;
+            videoPreview.style.display = 'block';
+            videoPreview.load();
+        }
+    }
+
+    function updateEditorMode(type) {
+        const isVideo = type === 'video';
+        editorTitle.textContent = isVideo ? 'Éditeur vidéo' : 'Éditeur photo';
+        openEditorButton.textContent = isVideo ? '✨ Modifier la vidéo' : '✨ Modifier la photo';
+        applyEditorButton.textContent = isVideo ? '✓ Utiliser cette vidéo' : '✓ Utiliser cette photo';
+        videoControls.hidden = !isVideo;
+        videoControls.setAttribute('aria-hidden', String(!isVideo));
+        if (!isVideo) {
+            videoEditor.pause();
+            if (playButton) playButton.textContent = '▶ Lire';
+        }
+        if (timeline) timeline.value = '0';
+        if (timeLabel) timeLabel.textContent = '00:00 / 00:00';
+    }
+
+    function showEditor() {
+        if (!selectedFile) return;
+        activeEditorType = mediaType(selectedFile);
+        imageEditor.setActive(false);
+        videoEditor.setActive(false);
+        activeEditor = activeEditorType === 'video' ? videoEditor : imageEditor;
+        if (!activeEditor) return;
+        activeEditor.setActive(true);
         editorFileName.textContent = selectedFile.name;
+        updateEditorMode(activeEditorType);
         editorModal.hidden = false;
         document.body.classList.add('editor-open');
-        setEditorMessage('');
+        setEditorMessage(activeEditorType === 'video'
+            ? 'La vidéo est prévisualisée dans le cadre standard 1150 × 628. Vous pouvez ajouter des retouches puis exporter la vidéo.'
+            : 'La photo est éditée dans le cadre standard 1150 × 628.');
+        activeEditor.render();
     }
 
     function hideEditor() {
+        imageEditor.setActive(false);
+        videoEditor.setActive(false);
         editorModal.hidden = true;
-        editor.cancelCrop();
+        activeEditor?.cancelCrop();
         document.body.classList.remove('editor-open');
         setEditorMessage('');
+        activeEditor = null;
+        activeEditorType = null;
     }
 
     mediaInput.addEventListener('change', async () => {
-        setMessage(''); editedFile = null; selectedFile = mediaInput.files[0] || null;
-        if (!selectedFile) { clearPreview(); openEditorButton.disabled = true; return; }
+        setMessage('');
+        editedFile = null;
+        selectedFile = mediaInput.files[0] || null;
+        if (!selectedFile) {
+            clearPreview();
+            openEditorButton.disabled = true;
+            return;
+        }
+        const selectionVersion = ++mediaSelectionVersion;
+        imageEditor.setActive(false);
+        videoEditor.setActive(false);
         const validation = validateFile(selectedFile);
-        if (!validation.valid) { setMessage(validation.error, true); mediaInput.value = ''; selectedFile = null; clearPreview(); openEditorButton.disabled = true; return; }
+        if (!validation.valid) {
+            setMessage(validation.error, true);
+            mediaInput.value = '';
+            selectedFile = null;
+            clearPreview();
+            openEditorButton.disabled = true;
+            return;
+        }
+
         refreshPreview(selectedFile);
-        openEditorButton.disabled = validation.type !== 'image';
-        if (validation.type === 'image') {
-            try {
-                await editor.load(selectedFile);
-            } catch (e) { setMessage('Impossible de charger l’image dans l’éditeur.', true); openEditorButton.disabled = true; }
+        openEditorButton.disabled = false;
+        updateEditorMode(validation.type);
+
+        try {
+            if (validation.type === 'image') {
+                await imageEditor.load(selectedFile);
+            } else {
+                await videoEditor.load(selectedFile);
+            }
+            if (selectionVersion !== mediaSelectionVersion || selectedFile !== mediaInput.files[0]) return;
+        } catch (e) {
+            setMessage(e.message || 'Impossible de charger le média dans l’éditeur.', true);
+            openEditorButton.disabled = true;
         }
     });
 
     openEditorButton.addEventListener('click', showEditor);
     closeEditorButton.addEventListener('click', hideEditor);
     cancelEditorButton.addEventListener('click', hideEditor);
-    undoButton.addEventListener('click', () => editor.undo());
-    redoButton.addEventListener('click', () => editor.redo());
-    resetButton.addEventListener('click', async () => { try { await editor.reset(); setEditorMessage('Image réinitialisée.'); } catch (e) { setEditorMessage(e.message, true); } });
-    document.getElementById('rotate-left').addEventListener('click', () => editor.rotate(-90));
-    document.getElementById('rotate-right').addEventListener('click', () => editor.rotate(90));
-    document.getElementById('flip-horizontal').addEventListener('click', () => editor.flip('x'));
-    document.getElementById('flip-vertical').addEventListener('click', () => editor.flip('y'));
 
-    const filterInputs = ['brightness','contrast','saturation','grayscale','sepia','blur'].map(name => document.getElementById(`filter-${name}`));
-    filterInputs.forEach(input => input.addEventListener('input', () => editor.applyFilter(input.dataset.filter, input.value)));
-    filterApplyButton.addEventListener('click', async () => { try { await editor.commitFilters(); setEditorMessage('Effets appliqués.'); } catch (e) { setEditorMessage(e.message, true); } });
+    undoButton.addEventListener('click', () => activeEditor?.undo());
+    redoButton.addEventListener('click', () => activeEditor?.redo());
+    resetButton.addEventListener('click', async () => {
+        if (!activeEditor) return;
+        try {
+            await activeEditor.reset();
+            setEditorMessage(activeEditorType === 'video' ? 'Vidéo réinitialisée.' : 'Image réinitialisée.');
+        } catch (e) {
+            setEditorMessage(e.message, true);
+        }
+    });
 
-    addTextButton.addEventListener('click', async () => {
-        try { const value = document.getElementById('text-value').value; const color = document.getElementById('text-color').value; editor.addText(value, { color }); document.getElementById('text-value').value = ''; setEditorMessage('Texte ajouté. Cliquez dessus puis faites-le glisser pour le placer.'); }
+    document.getElementById('rotate-left').addEventListener('click', () => activeEditor?.rotate(-90));
+    document.getElementById('rotate-right').addEventListener('click', () => activeEditor?.rotate(90));
+    document.getElementById('flip-horizontal').addEventListener('click', () => activeEditor?.flip('x'));
+    document.getElementById('flip-vertical').addEventListener('click', () => activeEditor?.flip('y'));
+
+    if (playButton) playButton.addEventListener('click', async () => {
+        if (activeEditorType !== 'video') return;
+        try { videoEditor.togglePlayback(); } catch (e) { setEditorMessage(e.message, true); }
+    });
+
+    if (timeline) timeline.addEventListener('input', () => {
+        if (activeEditorType === 'video') videoEditor.seek(timeline.value);
+    });
+
+    const filterInputs = ['brightness', 'contrast', 'saturation', 'grayscale', 'sepia', 'blur']
+        .map(name => document.getElementById(`filter-${name}`));
+    filterInputs.forEach(input => input.addEventListener('input', () => activeEditor?.applyFilter(input.dataset.filter, input.value)));
+    filterApplyButton.addEventListener('click', async () => {
+        if (!activeEditor) return;
+        try { await activeEditor.commitFilters(); setEditorMessage('Effets appliqués.'); }
         catch (e) { setEditorMessage(e.message, true); }
     });
-    addElementButton.addEventListener('click', async () => {
-        try { const type = document.getElementById('element-type').value; const value = document.getElementById('element-emoji').value || '✨'; editor.addElement(type, { value, fill: elementColorInput?.value || '#d83ca9' }); setEditorMessage('Élément ajouté. Cliquez dessus puis faites-le glisser pour le placer.'); }
-        catch (e) { setEditorMessage(e.message, true); }
+
+    addTextButton.addEventListener('click', () => {
+        try {
+            const value = document.getElementById('text-value').value;
+            const color = document.getElementById('text-color').value;
+            activeEditor?.addText(value, { color });
+            document.getElementById('text-value').value = '';
+            setEditorMessage('Texte ajouté. Cliquez dessus puis faites-le glisser pour le placer.');
+        } catch (e) { setEditorMessage(e.message, true); }
     });
 
-    overlayColorInput?.addEventListener('input', () => {
-        editor.setSelectedColor(overlayColorInput.value);
+    addElementButton.addEventListener('click', () => {
+        try {
+            const type = document.getElementById('element-type').value;
+            const value = document.getElementById('element-emoji').value || '✨';
+            activeEditor?.addElement(type, { value, fill: elementColorInput?.value || '#d83ca9' });
+            setEditorMessage('Élément ajouté. Cliquez dessus puis faites-le glisser pour le placer.');
+        } catch (e) { setEditorMessage(e.message, true); }
     });
 
-    cropStartButton.addEventListener('click', () => { editor.startCrop(); setEditorMessage(''); });
-    cropCancelButton.addEventListener('click', () => editor.cancelCrop());
-    cropApplyButton.addEventListener('click', async () => { try { await editor.applyCrop(); setEditorMessage('Recadrage appliqué.'); } catch (e) { setEditorMessage(e.message, true); } });
+    overlayColorInput?.addEventListener('input', () => activeEditor?.setSelectedColor(overlayColorInput.value));
+
+    cropStartButton.addEventListener('click', () => { activeEditor?.startCrop(); setEditorMessage(''); });
+    cropCancelButton.addEventListener('click', () => activeEditor?.cancelCrop());
+    cropApplyButton.addEventListener('click', () => {
+        try {
+            activeEditor?.applyCrop();
+            setEditorMessage('Recadrage appliqué.');
+        } catch (e) { setEditorMessage(e.message, true); }
+    });
 
     applyEditorButton.addEventListener('click', async () => {
+        if (!activeEditor) return;
+        applyEditorButton.disabled = true;
         try {
-            editedFile = await editor.exportFile();
+            editedFile = await activeEditor.exportFile();
             selectedFile = editedFile;
             refreshPreview(editedFile);
-            setMessage('Retouches appliquées. Vous pouvez maintenant publier.');
+            setMessage(activeEditorType === 'video' ? 'Retouches vidéo appliquées. Vous pouvez maintenant publier.' : 'Retouches appliquées. Vous pouvez maintenant publier.');
             hideEditor();
-        } catch (e) { setEditorMessage(e.message || 'Impossible d’exporter l’image.', true); }
+        } catch (e) {
+            setEditorMessage(e.message || 'Impossible d’exporter le média.', true);
+        } finally {
+            applyEditorButton.disabled = false;
+        }
     });
 
     form.addEventListener('submit', async event => {
-        event.preventDefault(); setMessage('');
+        event.preventDefault();
+        setMessage('');
         const file = selectedFile || mediaInput.files[0];
         if (!file) return setMessage('Veuillez sélectionner une photo ou une vidéo.', true);
         const validation = validateFile(file);
         if (!validation.valid) return setMessage(validation.error, true);
+
         const submitButton = form.querySelector('button[type="submit"]');
-        submitButton.disabled = true; submitButton.textContent = 'Publication...';
-        // L'authentification actuelle du projet utilise un cookie JWT httpOnly.
-        // Il n'est donc ni nécessaire ni possible de le lire depuis JavaScript.
-        // credentials: 'include' permet au navigateur de transmettre le cookie.
+        submitButton.disabled = true;
+        submitButton.textContent = 'Publication...';
+
         const formData = new FormData(form);
         formData.delete('media');
         formData.append('media', file);
-        if (editedFile) formData.append('editedMedia', 'true');
+        if (editedFile && validation.type === 'image') formData.append('editedMedia', 'true');
+        if (editedFile && validation.type === 'video') formData.append('editedVideo', 'true');
 
         try {
             const response = await fetch('/post/upload', {
                 method: 'POST',
                 credentials: 'include',
                 body: formData,
-                headers: {
-                    Accept: 'application/json'
-                }
+                headers: { Accept: 'application/json' }
             });
             const data = response.headers.get('content-type')?.includes('application/json') ? await response.json() : {};
             if (!response.ok) throw new Error(data.error || 'Erreur lors de la publication.');
             setMessage('Publication réussie !');
             setTimeout(() => { window.location.href = '/home'; }, 300);
-        } catch (error) { console.error('Erreur publication :', error); setMessage(error.message || 'Une erreur est survenue lors de la publication.', true); submitButton.disabled = false; submitButton.textContent = 'Publier'; }
+        } catch (error) {
+            console.error('Erreur publication :', error);
+            setMessage(error.message || 'Une erreur est survenue lors de la publication.', true);
+            submitButton.disabled = false;
+            submitButton.textContent = 'Publier';
+        }
     });
 });

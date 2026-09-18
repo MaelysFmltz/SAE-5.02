@@ -122,22 +122,24 @@
                 </div>
 
                 <!-- MÉDIA -->
-                <% if (post.typeMedia === 'video') { %>
+                <div class="profile-post-media-frame">
+                  <% if (post.typeMedia === 'video') { %>
 
-                  <video class="profile-post-video" controls preload="metadata">
-                    <source src="/uploads/<%= post.nomMedia %>">
-                    Votre navigateur ne supporte pas la lecture vidéo.
-                  </video>
+                    <video class="profile-post-video" controls preload="metadata">
+                      <source src="/uploads/<%= post.nomMedia %>">
+                      Votre navigateur ne supporte pas la lecture vidéo.
+                    </video>
 
-                <% } else { %>
+                  <% } else { %>
 
-                  <img
-                    src="/uploads/<%= post.nomMedia %>"
-                    alt="Publication de <%= profile.pseudo %>"
-                    class="profile-post-image"
-                  >
+                    <img
+                      src="/uploads/<%= post.nomMedia %>"
+                      alt="Publication de <%= profile.pseudo %>"
+                      class="profile-post-image"
+                    >
 
-                <% } %>
+                  <% } %>
+                </div>
 
                 <!-- DESCRIPTION -->
                 <% if (post.contenuPub) { %>

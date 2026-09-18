@@ -14,13 +14,28 @@ export class ImageEditor {
         this.filters = { brightness: 100, contrast: 100, saturation: 100, grayscale: 0, sepia: 0, blur: 0 };
         this.text = []; this.elements = []; this.crop = null; this.cropActive = false; this.dragging = false; this.cropStart = null;
         this.selectedOverlay = null; this.overlayDrag = null;
+        this.active = false;
+        this.loadId = 0;
         this.initCanvasEvents();
     }
 
+    setActive(active) {
+        this.active = Boolean(active);
+        if (!this.active) {
+            this.cropActive = false;
+            this.dragging = false;
+            this.overlayDrag = null;
+            this.el.canvas.classList.remove('editor-cropping');
+            if (this.el.cropOverlay) this.el.cropOverlay.hidden = true;
+        }
+    }
+
     async load(file) {
+        const loadId = ++this.loadId;
         this.originalFile = file;
         this.baseDataURL = await blobToDataURL(file);
         this.image = await dataURLToImage(this.baseDataURL);
+        if (loadId !== this.loadId || this.originalFile !== file) return;
         this.resetState(); this.history.clear(); this.history.push(this.snapshot()); this.render();
     }
     resetState() {
@@ -267,6 +282,7 @@ export class ImageEditor {
     initCanvasEvents() {
         const c = this.el.canvas;
         c.addEventListener('pointerdown', e => {
+            if (!this.active) return;
             e.preventDefault();
             const point = this.pointerToCanvas(e);
             if (this.cropActive) {
@@ -285,6 +301,7 @@ export class ImageEditor {
             }
         });
         c.addEventListener('pointermove', e => {
+            if (!this.active) return;
             const point = this.pointerToCanvas(e);
             if (this.cropActive && this.dragging) {
                 const s = this.cropStart;
@@ -300,6 +317,7 @@ export class ImageEditor {
             this.render();
         });
         const end = e => {
+            if (!this.active) return;
             if (this.cropActive) {
                 if (!this.dragging) return;
                 this.dragging = false;
@@ -315,7 +333,7 @@ export class ImageEditor {
         c.addEventListener('pointerup', end);
         c.addEventListener('pointercancel', end);
         c.addEventListener('dblclick', e => {
-            if (this.cropActive) return;
+            if (!this.active || this.cropActive) return;
             const hit = this.hitTestOverlay(this.pointerToCanvas(e));
             this.selectOverlay(hit);
         });
