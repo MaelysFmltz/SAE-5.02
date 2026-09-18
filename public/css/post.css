@@ -219,8 +219,10 @@ select {
 #preview {
     display: block;
 
+    width: min(100%, 900px);
+    aspect-ratio: 1150 / 628;
     max-width: 100%;
-
+    height: auto;
     max-height: 450px;
 
     margin: auto;
@@ -228,6 +230,7 @@ select {
     border-radius: 8px;
 
     object-fit: contain;
+    background: #000000;
 }
 
 

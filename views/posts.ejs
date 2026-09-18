@@ -285,13 +285,9 @@
                     </div>
 
                     <div class="editor-tool-group">
-                        <h3>Redimensionnement</h3>
-                        <div class="editor-size-row">
-                            <label>Largeur<input id="resize-width" type="number" min="20" max="8000" value="800"></label>
-                            <label>Hauteur<input id="resize-height" type="number" min="20" max="8000" value="600"></label>
-                        </div>
-                        <button type="button" id="resize-apply">Redimensionner</button>
-                        <p id="editor-dimensions" class="editor-hint"></p>
+                        <h3>Format de la publication</h3>
+                        <p id="editor-dimensions" class="editor-standard-size">1150 × 628 px</p>
+                        <p class="editor-hint">Toutes les photos sont exportées dans ce format standard afin de garder la même taille d'affichage sur les publications.</p>
                     </div>
 
                     <div class="editor-tool-group">
@@ -310,7 +306,7 @@
                         <input id="text-value" type="text" maxlength="120" placeholder="Votre texte...">
                         <label>Couleur <input id="text-color" type="color" value="#ffffff"></label>
                         <button type="button" id="add-text">🔤 Ajouter le texte</button>
-                        <p class="editor-hint">Le texte est ajouté au centre de l’image.</p>
+                        <p class="editor-hint">Le texte est ajouté au centre. Cliquez dessus puis faites-le glisser pour le déplacer.</p>
                     </div>
 
                     <div class="editor-tool-group">
@@ -323,8 +319,16 @@
                             <option value="emoji">✨ Emoji</option>
                         </select>
                         <input id="element-emoji" type="text" maxlength="4" value="✨" placeholder="Emoji">
+                        <label>Couleur <input id="element-color" type="color" value="#d83ca9"></label>
                         <button type="button" id="add-element">➕ Ajouter l’élément</button>
-                        <p class="editor-hint">L’élément est ajouté au centre de l’image.</p>
+                        <p class="editor-hint">L’élément est ajouté au centre. Cliquez dessus puis faites-le glisser pour le déplacer.</p>
+                    </div>
+
+                    <div id="selected-overlay-panel" class="editor-selected-panel" hidden>
+                        <h3>Élément sélectionné</h3>
+                        <p id="selected-overlay-label" class="editor-hint">Texte sélectionné</p>
+                        <label>Couleur <input id="overlay-color" type="color" value="#ffffff"></label>
+                        <p class="editor-hint">Vous pouvez aussi déplacer l’élément directement avec la souris ou le doigt sur l’image.</p>
                     </div>
 
                     <p id="editor-message" class="editor-hint" role="status"></p>

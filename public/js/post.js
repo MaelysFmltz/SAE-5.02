@@ -24,9 +24,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const cropStartButton = document.getElementById('crop-start');
     const cropApplyButton = document.getElementById('crop-apply');
     const cropCancelButton = document.getElementById('crop-cancel');
-    const resizeButton = document.getElementById('resize-apply');
     const addTextButton = document.getElementById('add-text');
     const addElementButton = document.getElementById('add-element');
+    const elementColorInput = document.getElementById('element-color');
+    const selectedOverlayPanel = document.getElementById('selected-overlay-panel');
+    const selectedOverlayLabel = document.getElementById('selected-overlay-label');
+    const overlayColorInput = document.getElementById('overlay-color');
     const filterApplyButton = document.getElementById('filters-apply');
 
     if (!form || !mediaInput) return;
@@ -39,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedFile = null;
     let editedFile = null;
 
-    const editor = new ImageEditor({ canvas: editorCanvas, cropOverlay, cropHint, dimensions }, {
+    const editor = new ImageEditor({ canvas: editorCanvas, cropOverlay, cropHint, dimensions, selectedOverlayPanel, selectedOverlayLabel, overlayColor: overlayColorInput }, {
         onChange: (canUndo, canRedo) => {
             undoButton.disabled = !canUndo;
             redoButton.disabled = !canRedo;
@@ -103,8 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (validation.type === 'image') {
             try {
                 await editor.load(selectedFile);
-                document.getElementById('resize-width').value = editor.image.width;
-                document.getElementById('resize-height').value = editor.image.height;
             } catch (e) { setMessage('Impossible de charger l’image dans l’éditeur.', true); openEditorButton.disabled = true; }
         }
     });
@@ -124,17 +125,17 @@ document.addEventListener('DOMContentLoaded', () => {
     filterInputs.forEach(input => input.addEventListener('input', () => editor.applyFilter(input.dataset.filter, input.value)));
     filterApplyButton.addEventListener('click', async () => { try { await editor.commitFilters(); setEditorMessage('Effets appliqués.'); } catch (e) { setEditorMessage(e.message, true); } });
 
-    resizeButton.addEventListener('click', async () => {
-        try { await editor.resize(document.getElementById('resize-width').value, document.getElementById('resize-height').value); setEditorMessage('Image redimensionnée.'); }
-        catch (e) { setEditorMessage(e.message, true); }
-    });
     addTextButton.addEventListener('click', async () => {
-        try { const value = document.getElementById('text-value').value; const color = document.getElementById('text-color').value; await editor.addText(value, { color }); document.getElementById('text-value').value = ''; setEditorMessage('Texte ajouté au centre de l’image.'); }
+        try { const value = document.getElementById('text-value').value; const color = document.getElementById('text-color').value; editor.addText(value, { color }); document.getElementById('text-value').value = ''; setEditorMessage('Texte ajouté. Cliquez dessus puis faites-le glisser pour le placer.'); }
         catch (e) { setEditorMessage(e.message, true); }
     });
     addElementButton.addEventListener('click', async () => {
-        try { const type = document.getElementById('element-type').value; const value = document.getElementById('element-emoji').value || '✨'; await editor.addElement(type, { value }); setEditorMessage('Élément ajouté au centre de l’image.'); }
+        try { const type = document.getElementById('element-type').value; const value = document.getElementById('element-emoji').value || '✨'; editor.addElement(type, { value, fill: elementColorInput?.value || '#d83ca9' }); setEditorMessage('Élément ajouté. Cliquez dessus puis faites-le glisser pour le placer.'); }
         catch (e) { setEditorMessage(e.message, true); }
+    });
+
+    overlayColorInput?.addEventListener('input', () => {
+        editor.setSelectedColor(overlayColorInput.value);
     });
 
     cropStartButton.addEventListener('click', () => { editor.startCrop(); setEditorMessage(''); });
