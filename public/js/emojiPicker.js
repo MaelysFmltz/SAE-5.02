@@ -81,22 +81,36 @@
             panel.style.left = `${left}px`;
 
             /*
+             * Hauteur FIXE (pas max-height) : la grille est ensuite
+             * positionnée en absolu à l'intérieur, du bas du header
+             * jusqu'au bas du panneau, avec son propre overflow-y.
+             * Ça évite toute ambiguïté de calcul flexbox (basis,
+             * min-height...) qui a posé problème jusqu'ici.
+             */
+            const desiredHeight = 320;
+
+            /*
              * Ouvre vers le haut par défaut (le champ est souvent en
              * bas de l'écran), et vers le bas s'il n'y a pas assez
              * de place au-dessus.
              */
-            const spaceAbove = rect.top;
-            const maxHeight = 280;
+            const spaceAbove = rect.top - 16;
+            const spaceBelow = window.innerHeight - rect.bottom - 16;
 
-            if (spaceAbove >= maxHeight + 16) {
+            let height;
+
+            if (spaceAbove >= 160) {
+                height = Math.min(desiredHeight, spaceAbove);
                 panel.style.top = 'auto';
                 panel.style.bottom = `${window.innerHeight - rect.top + 8}px`;
-                panel.style.maxHeight = `${maxHeight}px`;
             } else {
+                height = Math.min(desiredHeight, Math.max(160, spaceBelow));
                 panel.style.bottom = 'auto';
                 panel.style.top = `${rect.bottom + 8}px`;
-                panel.style.maxHeight = `${Math.max(160, window.innerHeight - rect.bottom - 16)}px`;
             }
+
+            panel.style.height = `${height}px`;
+            grid.style.top = `${header.offsetHeight}px`;
         }
 
         function open() {

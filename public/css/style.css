@@ -141,8 +141,6 @@ body {
 .emoji-picker-panel {
   position: fixed;
   z-index: 10000;
-  display: flex;
-  flex-direction: column;
   max-width: 100vw;
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -152,30 +150,32 @@ body {
 }
 
 /*
- * IMPORTANT : sans cette règle, l'attribut HTML "hidden" (posé par
- * panel.hidden = true en JS) n'a aucun effet, car la règle
- * ".emoji-picker-panel { display: flex }" ci-dessus (styles auteur)
- * l'emporte toujours sur le "display: none" du user-agent pour
- * "[hidden]" (styles UA, priorité plus faible dans la cascade,
- * peu importe la spécificité) -- le panneau restait donc affiché
- * en permanence après la première ouverture, impossible à fermer.
+ * Garde-fou : si une règle "display" est un jour ajoutée sur
+ * .emoji-picker-panel, elle l'emporterait sinon sur le
+ * "display: none" du user-agent pour "[hidden]" (styles UA,
+ * priorité plus faible dans la cascade, peu importe la
+ * spécificité) -- symptôme déjà vu : le panneau reste affiché en
+ * permanence après la première ouverture, impossible à fermer.
  */
 .emoji-picker-panel[hidden] {
   display: none;
 }
 
 .emoji-picker-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-shrink: 0;
   padding: 8px 12px;
   border-bottom: 1px solid var(--border-color);
+  background: var(--bg-surface);
   color: var(--text-secondary);
   font-size: 0.8rem;
   font-weight: 600;
-  position: relative;
-  z-index: 1;
 }
 
 .emoji-picker-close {
@@ -197,17 +197,19 @@ body {
 }
 
 .emoji-picker-grid {
+  position: absolute;
+  /* "top" est complété en JS (hauteur réelle du header) */
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   align-content: start;
   justify-content: stretch;
   gap: 4px;
   padding: 10px;
-  flex: 1;
-  width: 100%;
-  min-width: 0;
-  min-height: 0;
-  overflow-y: scroll;
+  overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
 }
 
