@@ -46,6 +46,8 @@ export class VideoEditor {
         this.text = [];
         this.elements = [];
         this.crop = null;
+        this.trimStart = 0;
+        this.trimEnd = Number.isFinite(this.video.duration) ? this.video.duration : 0;
         this.cropActive = false;
         this.dragging = false;
         this.cropStart = null;
@@ -58,10 +60,18 @@ export class VideoEditor {
 
         this.video.addEventListener('timeupdate', () => {
             if (!this.active) return;
+            if (this.playing && this.trimEnd > 0 && this.video.currentTime >= this.trimEnd) {
+                this.video.currentTime = this.trimEnd;
+                this.pause();
+            }
             this.updateTimelineUI();
             this.render();
         });
-        this.video.addEventListener('durationchange', () => this.updateTimelineUI());
+        this.video.addEventListener('durationchange', () => {
+            if (!this.trimEnd || this.trimEnd > this.video.duration) this.trimEnd = Number.isFinite(this.video.duration) ? this.video.duration : 0;
+            this.updateTimelineUI();
+            this.updateTrimUI();
+        });
         this.video.addEventListener('ended', () => {
             if (!this.active) return;
             this.playing = false;
@@ -121,6 +131,8 @@ export class VideoEditor {
         this.text = [];
         this.elements = [];
         this.crop = null;
+        this.trimStart = 0;
+        this.trimEnd = Number.isFinite(this.video.duration) ? this.video.duration : 0;
         this.cropActive = false;
         this.selectedOverlay = null;
         this.overlayDrag = null;
@@ -137,7 +149,9 @@ export class VideoEditor {
             filters: { ...this.filters },
             text: structuredClone(this.text),
             elements: structuredClone(this.elements),
-            crop: this.crop ? { ...this.crop } : null
+            crop: this.crop ? { ...this.crop } : null,
+            trimStart: this.trimStart,
+            trimEnd: this.trimEnd
         };
     }
 
@@ -149,6 +163,10 @@ export class VideoEditor {
         this.text = structuredClone(state.text);
         this.elements = structuredClone(state.elements);
         this.crop = state.crop ? { ...state.crop } : null;
+        const duration = Number.isFinite(this.video.duration) ? this.video.duration : 0;
+        this.trimStart = clamp(Number(state.trimStart) || 0, 0, duration);
+        this.trimEnd = clamp(Number(state.trimEnd) || duration, this.trimStart + Math.min(0.1, Math.max(duration - this.trimStart, 0)), duration);
+        if (duration <= 0.1) this.trimEnd = duration;
         this.cropActive = false;
         this.selectedOverlay = null;
         this.overlayDrag = null;
@@ -387,12 +405,44 @@ export class VideoEditor {
         const selected = this.getSelectedItem();
         const hasSelection = Boolean(selected);
         this.el.selectedOverlayPanel?.toggleAttribute('hidden', !hasSelection);
-        if (!selected) return;
-        const color = selected.kind === 'text' ? selected.item.color : selected.item.fill;
+        if (!selected) {
+            if (this.el.selectedTextSizeRow) this.el.selectedTextSizeRow.hidden = true;
+            return;
+        }
+        const isText = selected.kind === 'text';
+        const color = isText ? selected.item.color : selected.item.fill;
         if (this.el.overlayColor) this.el.overlayColor.value = color || '#ffffff';
         if (this.el.selectedOverlayLabel) {
-            this.el.selectedOverlayLabel.textContent = selected.kind === 'text' ? 'Texte sélectionné' : 'Élément sélectionné';
+            this.el.selectedOverlayLabel.textContent = isText ? 'Texte sélectionné' : 'Élément sélectionné';
         }
+        if (this.el.selectedTextSizeRow) this.el.selectedTextSizeRow.hidden = false;
+        if (this.el.selectedTextSizeInput) {
+            this.el.selectedTextSizeInput.value = String(selected.item.size);
+            if (this.el.selectedTextSizeValue) this.el.selectedTextSizeValue.value = String(selected.item.size);
+        }
+    }
+
+    setSelectedOverlaySize(size, commit = true) {
+        const selected = this.getSelectedItem();
+        if (!selected) return;
+
+        const nextSize = clamp(Number(size) || selected.item.size, 16, 180);
+        selected.item.size = nextSize;
+
+        const box = this.getOverlayBounds(selected.kind, selected.item);
+        selected.item.x = clamp(selected.item.x, box.width / 2, this.el.canvas.width - box.width / 2);
+        selected.item.y = clamp(selected.item.y, box.height / 2, this.el.canvas.height - box.height / 2);
+
+        this.render();
+        this.updateSelectedOverlayUI();
+        if (commit) {
+            this.history.push(this.snapshot());
+            this.changed();
+        }
+    }
+
+    setSelectedTextSize(size, commit = true) {
+        this.setSelectedOverlaySize(size, commit);
     }
 
     setSelectedColor(color) {
@@ -493,6 +543,51 @@ export class VideoEditor {
         this.elements.push(item);
         this.selectedOverlay = { kind: 'element', index: this.elements.length - 1 };
         this.commit();
+    }
+
+    getTrimDuration() {
+        return Math.max(0, this.trimEnd - this.trimStart);
+    }
+
+    setTrimStart(value, commit = true) {
+        const duration = Number.isFinite(this.video.duration) ? this.video.duration : 0;
+        if (!duration) return;
+        const next = clamp(Number(value) || 0, 0, Math.max(0, this.trimEnd - 0.1));
+        this.trimStart = Math.min(next, this.trimEnd - Math.min(0.1, duration));
+        if (this.trimStart < 0) this.trimStart = 0;
+        if (this.video.currentTime < this.trimStart || this.video.currentTime > this.trimEnd) this.video.currentTime = this.trimStart;
+        this.updateTimelineUI();
+        this.updateTrimUI();
+        this.render();
+        if (commit) this.commit();
+    }
+
+    setTrimEnd(value, commit = true) {
+        const duration = Number.isFinite(this.video.duration) ? this.video.duration : 0;
+        if (!duration) return;
+        const minimum = this.trimStart + Math.min(0.1, duration);
+        const next = clamp(Number(value) || duration, minimum, duration);
+        this.trimEnd = next;
+        if (this.video.currentTime < this.trimStart || this.video.currentTime > this.trimEnd) this.video.currentTime = this.trimStart;
+        this.updateTimelineUI();
+        this.updateTrimUI();
+        this.render();
+        if (commit) this.commit();
+    }
+
+    updateTrimUI() {
+        const duration = Number.isFinite(this.video.duration) ? this.video.duration : 0;
+        if (this.el.trimStartInput) {
+            this.el.trimStartInput.max = String(duration);
+            this.el.trimStartInput.value = String(Math.min(this.trimStart, duration));
+        }
+        if (this.el.trimEndInput) {
+            this.el.trimEndInput.max = String(duration);
+            this.el.trimEndInput.value = String(Math.min(this.trimEnd || duration, duration));
+        }
+        if (this.el.trimStartValue) this.el.trimStartValue.textContent = formatTime(this.trimStart);
+        if (this.el.trimEndValue) this.el.trimEndValue.textContent = formatTime(this.trimEnd || duration);
+        if (this.el.trimDurationValue) this.el.trimDurationValue.textContent = formatTime(this.getTrimDuration());
     }
 
     startCrop() {
@@ -646,6 +741,24 @@ export class VideoEditor {
         return canvas;
     }
 
+    async seekTo(time) {
+        const duration = Number.isFinite(this.video.duration) ? this.video.duration : 0;
+        const target = clamp(Number(time) || 0, 0, duration);
+        if (Math.abs(this.video.currentTime - target) < 0.02) {
+            this.video.currentTime = target;
+            return;
+        }
+        await new Promise((resolve) => {
+            const handler = () => {
+                this.video.removeEventListener('seeked', handler);
+                resolve();
+            };
+            this.video.addEventListener('seeked', handler, { once: true });
+            this.video.currentTime = target;
+            setTimeout(handler, 1000);
+        });
+    }
+
     async exportFile() {
         if (!this.video.duration || !Number.isFinite(this.video.duration)) {
             throw new Error('La durée de la vidéo est invalide.');
@@ -655,12 +768,8 @@ export class VideoEditor {
         }
 
         this.stopPlayback();
-        this.video.currentTime = 0;
-        await new Promise(resolve => {
-            if (this.video.readyState >= 2) return resolve();
-            const handler = () => { this.video.removeEventListener('canplay', handler); resolve(); };
-            this.video.addEventListener('canplay', handler, { once: true });
-        });
+        if (this.trimEnd <= this.trimStart) throw new Error('La plage de la vidéo est invalide.');
+        await this.seekTo(this.trimStart);
 
         const canvas = document.createElement('canvas');
         canvas.width = STANDARD_WIDTH;
@@ -750,12 +859,18 @@ export class VideoEditor {
             await this.video.play();
             drawLoop();
             await new Promise(resolve => {
-                const onEnded = () => {
-                    this.video.removeEventListener('ended', onEnded);
-                    resolve();
+                const checkTrimEnd = () => {
+                    if (this.video.currentTime >= this.trimEnd || this.video.ended) {
+                        resolve();
+                        return;
+                    }
+                    requestAnimationFrame(checkTrimEnd);
                 };
-                this.video.addEventListener('ended', onEnded, { once: true });
+                checkTrimEnd();
             });
+            this.video.pause();
+            this.video.currentTime = this.trimEnd;
+            await new Promise(resolve => setTimeout(resolve, 30));
             if (raf) cancelAnimationFrame(raf);
             renderExportFrame();
             recorder.stop();
@@ -788,6 +903,15 @@ export class VideoEditor {
     }
 
     async play() {
+        if (!Number.isFinite(this.video.duration) || this.video.duration <= 0) throw new Error('La durée de la vidéo est invalide.');
+        if (this.video.currentTime < this.trimStart || this.video.currentTime >= this.trimEnd - 0.01) {
+            this.video.currentTime = this.trimStart;
+            await new Promise(resolve => {
+                const handler = () => { this.video.removeEventListener('seeked', handler); resolve(); };
+                this.video.addEventListener('seeked', handler, { once: true });
+                setTimeout(handler, 500);
+            });
+        }
         await this.video.play();
         this.playing = true;
         if (this.el.playButton) this.el.playButton.textContent = '⏸ Pause';
@@ -836,6 +960,7 @@ export class VideoEditor {
         if (this.el.timeLabel) {
             this.el.timeLabel.textContent = `${formatTime(this.video.currentTime || 0)} / ${formatTime(this.video.duration || 0)}`;
         }
+        this.updateTrimUI();
     }
 
     destroy() {

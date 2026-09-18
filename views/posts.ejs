@@ -290,6 +290,22 @@
                         <p id="crop-hint" class="editor-hint">Cliquez sur « Commencer », puis tracez une zone sur l’image.</p>
                     </div>
 
+                    <div id="video-trim-group" class="editor-tool-group" hidden>
+                        <h3>Durée de la vidéo</h3>
+                        <label class="editor-range-row">
+                            Début
+                            <span class="editor-range-value"><output id="editor-trim-start-value">00:00</output></span>
+                            <input id="editor-trim-start" type="range" min="0" max="0" step="0.1" value="0" aria-label="Début de la vidéo">
+                        </label>
+                        <label class="editor-range-row">
+                            Fin
+                            <span class="editor-range-value"><output id="editor-trim-end-value">00:00</output></span>
+                            <input id="editor-trim-end" type="range" min="0" max="0" step="0.1" value="0" aria-label="Fin de la vidéo">
+                        </label>
+                        <p class="editor-hint">Durée sélectionnée : <strong id="editor-trim-duration-value">00:00</strong></p>
+                        <p class="editor-hint">Déplacez les curseurs pour conserver uniquement la partie de la vidéo que vous souhaitez publier.</p>
+                    </div>
+
                     <div class="editor-tool-group">
                         <h3>Format de la publication</h3>
                         <p id="editor-dimensions" class="editor-standard-size">1150 × 628 px</p>
@@ -311,8 +327,30 @@
                         <h3>Texte</h3>
                         <input id="text-value" type="text" maxlength="120" placeholder="Votre texte...">
                         <label>Couleur <input id="text-color" type="color" value="#ffffff"></label>
+                        <label class="editor-range-row">
+                            Taille
+                            <span class="editor-range-value"><output id="text-size-value">58</output> px</span>
+                            <input id="text-size" type="range" min="16" max="180" step="1" value="58">
+                        </label>
+                        <div id="text-emoji-picker" class="editor-emoji-picker" aria-label="Choisir un emoji à insérer dans le texte">
+                            <span class="editor-emoji-label">Émojis</span>
+                            <button type="button" data-emoji="😀" aria-label="Insérer 😀">😀</button>
+                            <button type="button" data-emoji="😂" aria-label="Insérer 😂">😂</button>
+                            <button type="button" data-emoji="😍" aria-label="Insérer 😍">😍</button>
+                            <button type="button" data-emoji="😎" aria-label="Insérer 😎">😎</button>
+                            <button type="button" data-emoji="🥳" aria-label="Insérer 🥳">🥳</button>
+                            <button type="button" data-emoji="❤️" aria-label="Insérer ❤️">❤️</button>
+                            <button type="button" data-emoji="🔥" aria-label="Insérer 🔥">🔥</button>
+                            <button type="button" data-emoji="⭐" aria-label="Insérer ⭐">⭐</button>
+                            <button type="button" data-emoji="👍" aria-label="Insérer 👍">👍</button>
+                            <button type="button" data-emoji="🎉" aria-label="Insérer 🎉">🎉</button>
+                            <button type="button" data-emoji="🚀" aria-label="Insérer 🚀">🚀</button>
+                            <button type="button" data-emoji="💯" aria-label="Insérer 💯">💯</button>
+                            <button type="button" data-emoji="✅" aria-label="Insérer ✅">✅</button>
+                            <button type="button" data-emoji="✨" aria-label="Insérer ✨">✨</button>
+                        </div>
                         <button type="button" id="add-text">🔤 Ajouter le texte</button>
-                        <p class="editor-hint">Le texte est ajouté au centre. Cliquez dessus puis faites-le glisser pour le déplacer.</p>
+                        <p class="editor-hint">Le texte est ajouté au centre. Choisissez un emoji ci-dessus pour l'insérer dans le texte, puis cliquez sur le texte pour le déplacer ou modifier sa taille.</p>
                     </div>
 
                     <div class="editor-tool-group">
@@ -334,7 +372,12 @@
                         <h3>Élément sélectionné</h3>
                         <p id="selected-overlay-label" class="editor-hint">Texte sélectionné</p>
                         <label>Couleur <input id="overlay-color" type="color" value="#ffffff"></label>
-                        <p class="editor-hint">Vous pouvez aussi déplacer l’élément directement avec la souris ou le doigt sur l’image.</p>
+                        <label id="selected-text-size-row" class="editor-range-row" hidden>
+                            Taille
+                            <span class="editor-range-value"><output id="selected-text-size-value">58</output> px</span>
+                            <input id="selected-text-size" type="range" min="16" max="180" step="1" value="58">
+                        </label>
+                        <p class="editor-hint">Vous pouvez déplacer le texte ou l’élément directement avec la souris ou le doigt sur l’image/vidéo. La taille se règle avec le curseur ci-dessus.</p>
                     </div>
 
                     <p id="editor-message" class="editor-hint" role="status"></p>

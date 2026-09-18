@@ -139,3 +139,60 @@
         min-width: 0;
     }
 }
+
+/* Contrôles de taille du texte */
+.editor-range-row {
+    display: grid !important;
+    grid-template-columns: minmax(90px, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+}
+
+.editor-range-row input[type="range"] {
+    grid-column: 1 / -1;
+    width: 100% !important;
+}
+
+.editor-range-value {
+    color: #aaa8b8;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.editor-range-value output {
+    color: #fff;
+    font-weight: 700;
+}
+
+
+.editor-emoji-picker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+    width: 100%;
+    margin: 6px 0 4px;
+}
+
+.editor-emoji-label {
+    width: 100%;
+    color: #8f8e9d;
+    font-size: 11px;
+    margin-bottom: 2px;
+}
+
+.editor-emoji-picker button {
+    min-width: 36px;
+    min-height: 34px;
+    padding: 5px 7px;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.editor-emoji-picker button:hover {
+    transform: translateY(-1px);
+}
+
+#video-trim-group[hidden] {
+    display: none !important;
+}

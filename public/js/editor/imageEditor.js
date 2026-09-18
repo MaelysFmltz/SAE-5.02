@@ -181,10 +181,42 @@ export class ImageEditor {
         const selected = this.getSelectedItem();
         const hasSelection = Boolean(selected);
         this.el.selectedOverlayPanel?.toggleAttribute('hidden', !hasSelection);
-        if (!selected) return;
-        const color = selected.kind === 'text' ? selected.item.color : selected.item.fill;
+        if (!selected) {
+            if (this.el.selectedTextSizeRow) this.el.selectedTextSizeRow.hidden = true;
+            return;
+        }
+        const isText = selected.kind === 'text';
+        const color = isText ? selected.item.color : selected.item.fill;
         if (this.el.overlayColor) this.el.overlayColor.value = color || '#ffffff';
-        if (this.el.selectedOverlayLabel) this.el.selectedOverlayLabel.textContent = selected.kind === 'text' ? 'Texte sélectionné' : 'Élément sélectionné';
+        if (this.el.selectedOverlayLabel) this.el.selectedOverlayLabel.textContent = isText ? 'Texte sélectionné' : 'Élément sélectionné';
+        if (this.el.selectedTextSizeRow) this.el.selectedTextSizeRow.hidden = false;
+        if (this.el.selectedTextSizeInput) {
+            this.el.selectedTextSizeInput.value = String(selected.item.size);
+            if (this.el.selectedTextSizeValue) this.el.selectedTextSizeValue.value = String(selected.item.size);
+        }
+    }
+
+    setSelectedOverlaySize(size, commit = true) {
+        const selected = this.getSelectedItem();
+        if (!selected) return;
+
+        const nextSize = clamp(Number(size) || selected.item.size, 16, 180);
+        selected.item.size = nextSize;
+
+        const box = this.getOverlayBounds(selected.kind, selected.item);
+        selected.item.x = clamp(selected.item.x, box.width / 2, this.el.canvas.width - box.width / 2);
+        selected.item.y = clamp(selected.item.y, box.height / 2, this.el.canvas.height - box.height / 2);
+
+        this.render();
+        this.updateSelectedOverlayUI();
+        if (commit) {
+            this.history.push(this.snapshot());
+            this.changed();
+        }
+    }
+
+    setSelectedTextSize(size, commit = true) {
+        this.setSelectedOverlaySize(size, commit);
     }
 
     setSelectedColor(color) {
