@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs/promises');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 
@@ -122,9 +123,8 @@ app.get('/settings', authMiddleware, (req, res) => {
 });
 
 app.get('/publication/create', authMiddleware, (req, res) => {
-  res.render('publication-create');
+  res.render('posts', { user: req.user });
 });
-
 app.get('/publication/:idPubli', authMiddleware, commentController.renderPostPage);
 
 // Modification de profil
@@ -228,6 +228,117 @@ app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
 
 // Page et API de recherche & hashtags
 app.use('/search', searchRoutes);
+
+// ============================================================
+// MÉDIAS UPLOADÉS
+// ============================================================
+
+/*
+ * IMPORTANT :
+ *
+ * On ne laisse plus express.static() déterminer
+ * automatiquement le Content-Type des fichiers utilisateurs.
+ *
+ * Le fichier doit avoir été enregistré avec une extension
+ * contrôlée par le serveur (.jpg, .png, .webp, .mp4, .webm,
+ * .ogg ou .mov).
+ *
+ * X-Content-Type-Options: nosniff empêche également le navigateur
+ * d'essayer de deviner un autre type MIME.
+ */
+
+app.get('/uploads/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+
+    /*
+     * Protection contre les chemins comme :
+     *
+     * ../fichier.html
+     *
+     * ou toute tentative de traversée.
+     */
+    if (filename !== path.basename(filename)) {
+      return res.status(400).send(
+        'Nom de fichier invalide.'
+      );
+    }
+
+    /*
+     * Extensions autorisées.
+     */
+    const contentTypes = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.webp': 'image/webp',
+
+      '.mp4': 'video/mp4',
+      '.webm': 'video/webm',
+      '.ogg': 'video/ogg',
+      '.mov': 'video/quicktime'
+    };
+
+    const extension = path.extname(filename).toLowerCase();
+
+    const contentType = contentTypes[extension];
+
+    /*
+     * Une extension inconnue ne doit jamais
+     * être servie comme HTML, SVG, PHP, etc.
+     */
+    if (!contentType) {
+      return res.status(404).send(
+        'Fichier non trouvé.'
+      );
+    }
+
+    const filePath = path.join(
+      __dirname,
+      '../uploads',
+      filename
+    );
+
+    /*
+     * Vérification que le fichier existe.
+     */
+    try {
+      await fs.access(filePath);
+    } catch {
+      return res.status(404).send(
+        'Fichier non trouvé.'
+      );
+    }
+
+    /*
+     * Empêche le navigateur de renifler
+     * un autre type MIME.
+     */
+    res.set(
+      'X-Content-Type-Options',
+      'nosniff'
+    );
+
+    /*
+     * Le navigateur peut afficher les images
+     * et vidéos normalement.
+     */
+    res.type(contentType);
+
+    return res.sendFile(
+      path.resolve(filePath)
+    );
+  } catch (error) {
+    console.error(
+      'Erreur accès média :',
+      error
+    );
+
+    return res.status(500).send(
+      'Erreur lors de la récupération du fichier.'
+    );
+  }
+});
 
 // 4. Routes API (Back)
 app.use('/api/auth', authRoutes);

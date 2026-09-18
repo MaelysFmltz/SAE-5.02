@@ -7,446 +7,615 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/profile.css?v=8">
 </head>
+
 <body>
+
   <div class="app-container">
 
     <!-- En-tête -->
     <header class="profile-header">
+
       <a href="/home" class="icon-btn" title="Retour à l'accueil">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5">
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </a>
+
       <h1 class="header-title"><%= profile.pseudo %></h1>
+
       <div class="header-spacer"></div>
+
     </header>
 
+
     <main class="profile-container">
-      
-      <!-- 1. Identité (Avatar + Noms + Rôles) -->
+
+      <!-- 1. Identité -->
       <section class="profile-identity-row">
+
         <div class="avatar-circle">
+
           <% if (profile.avatarUrl) { %>
-            <img src="<%= profile.avatarUrl %>" alt="Photo de profil" class="avatar-img">
+
+            <img
+              src="<%= profile.avatarUrl %>"
+              alt="Photo de profil"
+              class="avatar-img"
+            >
+
           <% } else { %>
+
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
             </svg>
+
           <% } %>
+
         </div>
+
 
         <div class="identity-info">
+
           <div class="pseudo-wrap">
-            <span class="profile-pseudo"><%= profile.pseudo %></span>
+
+            <span class="profile-pseudo">
+              <%= profile.pseudo %>
+            </span>
+
             <% if (profile.role === 'admin') { %>
-              <span class="badge badge-admin">Admin</span>
+
+              <span class="badge badge-admin">
+                Admin
+              </span>
+
             <% } else if (profile.role === 'moderateur' || profile.role === 'modo') { %>
-              <span class="badge badge-modo">Modo</span>
+
+              <span class="badge badge-modo">
+                Modo
+              </span>
+
             <% } %>
 
-            <span class="badge badge-friend" id="badge-friend" <%= (!isOwner && sontAmis) ? '' : 'hidden' %>>Amis</span>
+
+            <span
+              class="badge badge-friend"
+              id="badge-friend"
+              <%= (!isOwner && sontAmis) ? '' : 'hidden' %>
+            >
+              Amis
+            </span>
+
           </div>
 
+
           <% if (profile.prenom || profile.nom) { %>
-            <p class="real-name"><%= [profile.prenom, profile.nom].filter(Boolean).join(' ') %></p>
+
+            <p class="real-name">
+              <%= [profile.prenom, profile.nom].filter(Boolean).join(' ') %>
+            </p>
+
           <% } %>
+
         </div>
+
       </section>
 
-      <!-- 2. Statistiques (Abonnés / Abonnements / Amis) -->
+
+      <!-- 2. Statistiques -->
       <section class="profile-stats">
+
         <div class="stat-item">
-          <span class="stat-value" id="count-abonnes"><%= (typeof stats !== 'undefined' && stats.nbAbonnes) ? stats.nbAbonnes : 0 %></span>
-          <span class="stat-label">Abonnés</span>
+
+          <span class="stat-value" id="count-abonnes">
+            <%= (typeof stats !== 'undefined' && stats.nbAbonnes) ? stats.nbAbonnes : 0 %>
+          </span>
+
+          <span class="stat-label">
+            Abonnés
+          </span>
+
         </div>
+
+
         <div class="stat-item">
-          <span class="stat-value" id="count-abonnements"><%= (typeof stats !== 'undefined' && stats.nbAbonnements) ? stats.nbAbonnements : 0 %></span>
-          <span class="stat-label">Abonnements</span>
+
+          <span class="stat-value" id="count-abonnements">
+            <%= (typeof stats !== 'undefined' && stats.nbAbonnements) ? stats.nbAbonnements : 0 %>
+          </span>
+
+          <span class="stat-label">
+            Abonnements
+          </span>
+
         </div>
+
+
         <div class="stat-item">
-          <span class="stat-value" id="count-amis"><%= (typeof stats !== 'undefined' && stats.nbAmis) ? stats.nbAmis : 0 %></span>
-          <span class="stat-label">Amis</span>
+
+          <span class="stat-value" id="count-amis">
+            <%= (typeof stats !== 'undefined' && stats.nbAmis) ? stats.nbAmis : 0 %>
+          </span>
+
+          <span class="stat-label">
+            Amis
+          </span>
+
         </div>
+
       </section>
+
 
       <!-- 3. Biographie -->
       <section class="bio-fullwidth">
-        <span class="bio-label">À propos de moi</span>
+
+        <span class="bio-label">
+          À propos de moi
+        </span>
+
         <div class="bio-frame">
-          <p><%= profile.bio || 'Aucune biographie rédigée.' %></p>
+
+          <p>
+            <%= profile.bio || 'Aucune biographie rédigée.' %>
+          </p>
+
         </div>
+
       </section>
 
-      <!-- 4. Action principale -->
-     <% if (isOwner) { %>
 
-        <a href="/profile/edit" class="btn-edit">Modifier le profil</a>
+      <!-- 4. Action principale -->
+      <% if (isOwner) { %>
+
+        <a href="/profile/edit" class="btn-edit">
+          Modifier le profil
+        </a>
 
       <% } else { %>
 
-        <button 
-          id="btn-follow" 
+        <button
+          id="btn-follow"
           class="btn-follow <%= estAbonne ? 'following' : '' %>"
           data-target-id="<%= profile.idUser %>"
-          data-following="<%= estAbonne ? 'true' : 'false' %>">
+          data-following="<%= estAbonne ? 'true' : 'false' %>"
+        >
           <%= estAbonne ? 'Ne plus suivre' : 'Suivre' %>
         </button>
 
       <% } %>
 
+
+      <!-- Bouton Reposts -->
       <button
         type="button"
         class="profile-reposts-tab"
         onclick="toggleReposts()"
       >
+
         <svg viewBox="0 0 24 24">
+
           <path d="M17 3
-                  L21 7
-                  L17 11"></path>
+                   L21 7
+                   L17 11"></path>
 
           <path d="M21 7
-                  H8
-                  C5.8 7 4 8.8 4 11
-                  C4 13.2 5.8 15 8 15
-                  H10"></path>
+                   H8
+                   C5.8 7 4 8.8 4 11
+                   C4 13.2 5.8 15 8 15
+                   H10"></path>
 
           <path d="M7 21
-                  L3 17
-                  L7 13"></path>
+                   L3 17
+                   L7 13"></path>
 
           <path d="M3 17
-                  H16
-                  C18.2 17 20 15.2 20 13
-                  C20 10.8 18.2 9 16 9
-                  H14"></path>
+                   H16
+                   C18.2 17 20 15.2 20 13
+                   C20 10.8 18.2 9 16 9
+                   H14"></path>
+
         </svg>
 
-        <span>Reposts</span>
+        <span>
+          Reposts
+        </span>
+
       </button>
+
 
       <!-- 5. Publications -->
       <section class="posts-section">
 
         <div class="posts-title">
-          <span id="posts-title">Publications</span>
+          <span id="posts-title">
+            Publications
+          </span>
         </div>
 
+
         <!-- PUBLICATIONS ORIGINALES -->
-        <div class="profile-posts" id="profile-publications">
+        <div
+          class="profile-posts"
+          id="profile-publications"
+        >
 
           <% if (profile.publications && profile.publications.length > 0) { %>
 
             <% profile.publications.forEach(publication => { %>
 
               <article
-                  class="publication-card"
-                  data-publication-id="<%= publication.idPubli %>"
+                class="publication-card"
+                data-publication-id="<%= publication.idPubli %>"
               >
 
-                  <!-- EN-TÊTE -->
-                  <div class="publication-header">
 
-                      <strong>
-                          @<%= publication.auteurPseudo %>
-                      </strong>
+                <!-- EN-TÊTE -->
+                <div class="publication-header">
 
-                      <span class="publication-type">
-
-                          <% if (publication.typePublication === 'original') { %>
-                              Publication
-
-                          <% } else if (publication.typePublication === 'repost') { %>
-                              🔁 Repost
-
-                          <% } else if (publication.typePublication === 'duo') { %>
-                              🎭 Duo
-
-                          <% } else if (publication.typePublication === 'collage') { %>
-                              🧩 Collage
-
-                          <% } else { %>
-                              Publication
-                          <% } %>
-
-                      </span>
-
-                  </div>
+                  <strong>
+                    @<%= publication.auteurPseudo %>
+                  </strong>
 
 
-                  <!-- CONTENU -->
-                  <a
-                      href="/publication/<%= publication.idPubli %>"
-                      class="publication-main-link"
-                  >
+                  <span class="publication-type">
 
-                      <!-- MÉDIA -->
-                      <div class="publication-media">
-                          📷 Média Pixora
-                      </div>
+                    <% if (publication.typePublication === 'original') { %>
 
-                      <!-- TEXTE -->
-                      <% if (publication.contenuPub) { %>
+                      Publication
 
-                          <p class="publication-content">
-                              <%= publication.contenuPub %>
-                          </p>
+                    <% } else if (publication.typePublication === 'repost') { %>
 
-                      <% } %>
+                      🔁 Repost
 
-                  </a>
+                    <% } else if (publication.typePublication === 'duo') { %>
+
+                      🎭 Duo
+
+                    <% } else if (publication.typePublication === 'collage') { %>
+
+                      🧩 Collage
+
+                    <% } else { %>
+
+                      Publication
+
+                    <% } %>
+
+                  </span>
 
 
-                  <!-- PUBLICATION ORIGINALE -->
-                  <% if (publication.idPubliPartagee) { %>
+                  <% if (isOwner) { %>
 
-                      <div class="shared-publication">
-
-                          Cette publication est basée sur
-
-                          <strong>
-                              #<%= publication.idPubliPartagee %>
-                          </strong>
-
-                      </div>
+                    <button
+                      type="button"
+                      class="delete-post"
+                      data-id="<%= publication.idPubli %>"
+                    >
+                      Supprimer
+                    </button>
 
                   <% } %>
 
-
-                  <!-- ACTIONS -->
-                  <div class="publication-actions">
-
-                      <!-- LIKE -->
-                      <button
-                          type="button"
-                          class="publication-action like-action"
-                          onclick="reactionPublication(<%= publication.idPubli %>, 'LIKE')"
-                          title="J'aime"
-                      >
-
-                          <svg viewBox="0 0 24 24">
-                              <path d="M20.8 8.9
-                                      C20.8 5.8 18.6 4 16 4
-                                      C14.3 4 12.8 4.9 12 6.2
-                                      C11.2 4.9 9.7 4 8 4
-                                      C5.4 4 3.2 5.8 3.2 8.9
-                                      C3.2 13.2 7.3 16.2 12 20
-                                      C16.7 16.2 20.8 13.2 20.8 8.9Z">
-                              </path>
-                          </svg>
-
-                          <span class="reaction-count">
-                              <%= publication.likes || 0 %>
-                          </span>
-
-                      </button>
+                </div>
 
 
-                      <!-- DISLIKE -->
-                      <button
-                          type="button"
-                          class="publication-action dislike-action"
-                          onclick="reactionPublication(<%= publication.idPubli %>, 'DISLIKE')"
-                          title="Je n'aime pas"
-                      >
-
-                          <svg viewBox="0 0 24 24">
-                              <path d="M20 4
-                                      L4 20
-                                      M4 4
-                                      L20 20">
-                              </path>
-                          </svg>
-
-                          <span class="reaction-count">
-                              <%= publication.dislikes || 0 %>
-                          </span>
-
-                      </button>
+                <!-- CONTENU -->
+                <a
+                  href="/publication/<%= publication.idPubli %>"
+                  class="publication-main-link"
+                >
 
 
-                      <!-- COMMENTAIRES -->
-                      <button
-                          type="button"
-                          class="publication-action"
-                          onclick="ouvrirCommentaires(<%= publication.idPubli %>)"
-                          title="Commentaires"
-                      >
+                  <!-- MÉDIA -->
+                  <div class="publication-media">
 
-                          <svg viewBox="0 0 24 24">
-                              <path d="M20 11.5
-                                      C20 15.6 16.4 19 12 19
-                                      C10.8 19 9.6 18.8 8.6 18.3
-                                      L4 20
-                                      L5.2 16.2
-                                      C4.4 14.9 4 13.3 4 11.5
-                                      C4 7.4 7.6 4 12 4
-                                      C16.4 4 20 7.4 20 11.5Z">
-                              </path>
-                          </svg>
+                    <% if (publication.nomMedia) { %>
 
-                          <span class="reaction-count">
-                              <%= publication.nombreCommentaires || 0 %>
-                          </span>
+                      <% if (publication.typeMedia === 'video') { %>
 
-                      </button>
+                        <video
+                          class="profile-post-video"
+                          controls
+                          preload="metadata"
+                        >
 
+                          <source
+                            src="/uploads/<%= publication.nomMedia %>"
+                          >
 
-                      <!-- REPOST -->
-                      <button
-                          type="button"
-                          class="publication-action"
-                          onclick="repartager(<%= publication.idPubli %>)"
-                          title="Reposter"
-                          aria-label="Reposter"
-                      >
+                          Votre navigateur ne supporte pas la lecture vidéo.
 
-                          <svg viewBox="0 0 24 24">
+                        </video>
 
-                              <path
-                                  d="M17 7H7
-                                    C5.3 7 4 8.3 4 10
-                                    C4 11.7 5.3 13 7 13
-                                    H16">
-                              </path>
+                      <% } else { %>
 
-                              <path
-                                  d="M14 10L17 7L14 4">
-                              </path>
+                        <img
+                          src="/uploads/<%= publication.nomMedia %>"
+                          alt="Publication de <%= publication.auteurPseudo %>"
+                          class="profile-post-image"
+                        >
 
-                              <path
-                                  d="M7 17H17
-                                    C18.7 17 20 15.7 20 14
-                                    C20 12.3 18.7 11 17 11
-                                    H8">
-                              </path>
+                      <% } %>
 
-                              <path
-                                  d="M10 14L7 17L10 20">
-                              </path>
+                    <% } else { %>
 
-                          </svg>
+                      📷 Média Pixora
 
-                      </button>
-
-
-                      <!-- DUO -->
-                      <button
-                          type="button"
-                          class="publication-action"
-                          onclick="creerDuo(<%= publication.idPubli %>)"
-                          title="Créer un Duo"
-                          aria-label="Créer un Duo"
-                      >
-
-                          <svg viewBox="0 0 24 24">
-
-                              <circle
-                                  cx="8"
-                                  cy="7"
-                                  r="3">
-                              </circle>
-
-                              <circle
-                                  cx="16"
-                                  cy="17"
-                                  r="3">
-                              </circle>
-
-                              <path
-                                  d="M10.5 8.5L13.5 15.5">
-                              </path>
-
-                          </svg>
-
-                      </button>
-
-
-                      <!-- COLLAGE -->
-                      <button
-                          type="button"
-                          class="publication-action"
-                          onclick="creerCollage(<%= publication.idPubli %>)"
-                          title="Créer un collage"
-                          aria-label="Créer un collage"
-                      >
-
-                          <svg viewBox="0 0 24 24">
-
-                              <rect
-                                  x="4"
-                                  y="4"
-                                  width="7"
-                                  height="7"
-                                  rx="1">
-                              </rect>
-
-                              <rect
-                                  x="13"
-                                  y="4"
-                                  width="7"
-                                  height="7"
-                                  rx="1">
-                              </rect>
-
-                              <rect
-                                  x="4"
-                                  y="13"
-                                  width="7"
-                                  height="7"
-                                  rx="1">
-                              </rect>
-
-                              <rect
-                                  x="13"
-                                  y="13"
-                                  width="7"
-                                  height="7"
-                                  rx="1">
-                              </rect>
-
-                          </svg>
-
-                      </button>
-
-
-                      <span class="action-spacer"></span>
-
-
-                      <!-- COPIER LE LIEN -->
-                      <button
-                          type="button"
-                          class="publication-action"
-                          onclick="copierLien(<%= publication.idPubli %>)"
-                          title="Copier le lien"
-                          aria-label="Copier le lien"
-                      >
-
-                          <svg viewBox="0 0 24 24">
-
-                              <path
-                                  d="M10 13
-                                    C8.3 14.7 8.3 17.3 10 19
-                                    C11.7 20.7 14.3 20.7 16 19
-                                    L19 16
-                                    C20.7 14.3 20.7 11.7 19 10
-                                    C17.3 8.3 14.7 8.3 13 10">
-                              </path>
-
-                              <path
-                                  d="M14 11
-                                    C15.7 9.3 15.7 6.7 14 5
-                                    C12.3 3.3 9.7 3.3 8 5
-                                    L5 8
-                                    C3.3 9.7 3.3 12.3 5 14
-                                    C6.7 15.7 9.3 15.7 11 14">
-                              </path>
-
-                          </svg>
-
-                      </button>
+                    <% } %>
 
                   </div>
+
+
+                  <!-- TEXTE -->
+                  <% if (publication.contenuPub) { %>
+
+                    <p class="publication-content">
+                      <%= publication.contenuPub %>
+                    </p>
+
+                  <% } %>
+
+                </a>
+
+
+                <!-- PUBLICATION ORIGINALE -->
+                <% if (publication.idPubliPartagee) { %>
+
+                  <div class="shared-publication">
+
+                    Cette publication est basée sur
+
+                    <strong>
+                      #<%= publication.idPubliPartagee %>
+                    </strong>
+
+                  </div>
+
+                <% } %>
+
+
+                <!-- ACTIONS -->
+                <div class="publication-actions">
+
+
+                  <!-- LIKE -->
+                  <button
+                    type="button"
+                    class="publication-action like-action"
+                    onclick="reactionPublication(<%= publication.idPubli %>, 'LIKE')"
+                    title="J'aime"
+                  >
+
+                    <svg viewBox="0 0 24 24">
+
+                      <path d="M20.8 8.9
+                               C20.8 5.8 18.6 4 16 4
+                               C14.3 4 12.8 4.9 12 6.2
+                               C11.2 4.9 9.7 4 8 4
+                               C5.4 4 3.2 5.8 3.2 8.9
+                               C3.2 13.2 7.3 16.2 12 20
+                               C16.7 16.2 20.8 13.2 20.8 8.9Z">
+                      </path>
+
+                    </svg>
+
+                    <span class="reaction-count">
+                      <%= publication.likes || 0 %>
+                    </span>
+
+                  </button>
+
+
+                  <!-- DISLIKE -->
+                  <button
+                    type="button"
+                    class="publication-action dislike-action"
+                    onclick="reactionPublication(<%= publication.idPubli %>, 'DISLIKE')"
+                    title="Je n'aime pas"
+                  >
+
+                    <svg viewBox="0 0 24 24">
+
+                      <path d="M20 4
+                               L4 20
+                               M4 4
+                               L20 20">
+                      </path>
+
+                    </svg>
+
+                    <span class="reaction-count">
+                      <%= publication.dislikes || 0 %>
+                    </span>
+
+                  </button>
+
+
+                  <!-- COMMENTAIRES -->
+                  <button
+                    type="button"
+                    class="publication-action"
+                    onclick="ouvrirCommentaires(<%= publication.idPubli %>)"
+                    title="Commentaires"
+                  >
+
+                    <svg viewBox="0 0 24 24">
+
+                      <path d="M20 11.5
+                               C20 15.6 16.4 19 12 19
+                               C10.8 19 9.6 18.8 8.6 18.3
+                               L4 20
+                               L5.2 16.2
+                               C4.4 14.9 4 13.3 4 11.5
+                               C4 7.4 7.6 4 12 4
+                               C16.4 4 20 7.4 20 11.5Z">
+                      </path>
+
+                    </svg>
+
+                    <span class="reaction-count">
+                      <%= publication.nombreCommentaires || 0 %>
+                    </span>
+
+                  </button>
+
+
+                  <!-- REPOST -->
+                  <button
+                    type="button"
+                    class="publication-action"
+                    onclick="repartager(<%= publication.idPubli %>)"
+                    title="Reposter"
+                    aria-label="Reposter"
+                  >
+
+                    <svg viewBox="0 0 24 24">
+
+                      <path
+                        d="M17 7H7
+                           C5.3 7 4 8.3 4 10
+                           C4 11.7 5.3 13 7 13
+                           H16">
+                      </path>
+
+                      <path
+                        d="M14 10L17 7L14 4">
+                      </path>
+
+                      <path
+                        d="M7 17H17
+                           C18.7 17 20 15.7 20 14
+                           C20 12.3 18.7 11 17 11
+                           H8">
+                      </path>
+
+                      <path
+                        d="M10 14L7 17L10 20">
+                      </path>
+
+                    </svg>
+
+                  </button>
+
+
+                  <!-- DUO -->
+                  <button
+                    type="button"
+                    class="publication-action"
+                    onclick="creerDuo(<%= publication.idPubli %>)"
+                    title="Créer un Duo"
+                    aria-label="Créer un Duo"
+                  >
+
+                    <svg viewBox="0 0 24 24">
+
+                      <circle
+                        cx="8"
+                        cy="7"
+                        r="3">
+                      </circle>
+
+                      <circle
+                        cx="16"
+                        cy="17"
+                        r="3">
+                      </circle>
+
+                      <path
+                        d="M10.5 8.5L13.5 15.5">
+                      </path>
+
+                    </svg>
+
+                  </button>
+
+
+                  <!-- COLLAGE -->
+                  <button
+                    type="button"
+                    class="publication-action"
+                    onclick="creerCollage(<%= publication.idPubli %>)"
+                    title="Créer un collage"
+                    aria-label="Créer un collage"
+                  >
+
+                    <svg viewBox="0 0 24 24">
+
+                      <rect
+                        x="4"
+                        y="4"
+                        width="7"
+                        height="7"
+                        rx="1">
+                      </rect>
+
+                      <rect
+                        x="13"
+                        y="4"
+                        width="7"
+                        height="7"
+                        rx="1">
+                      </rect>
+
+                      <rect
+                        x="4"
+                        y="13"
+                        width="7"
+                        height="7"
+                        rx="1">
+                      </rect>
+
+                      <rect
+                        x="13"
+                        y="13"
+                        width="7"
+                        height="7"
+                        rx="1">
+                      </rect>
+
+                    </svg>
+
+                  </button>
+
+
+                  <span class="action-spacer"></span>
+
+
+                  <!-- COPIER LE LIEN -->
+                  <button
+                    type="button"
+                    class="publication-action"
+                    onclick="copierLien(<%= publication.idPubli %>)"
+                    title="Copier le lien"
+                    aria-label="Copier le lien"
+                  >
+
+                    <svg viewBox="0 0 24 24">
+
+                      <path
+                        d="M10 13
+                           C8.3 14.7 8.3 17.3 10 19
+                           C11.7 20.7 14.3 20.7 16 19
+                           L19 16
+                           C20.7 14.3 20.7 11.7 19 10
+                           C17.3 8.3 14.7 8.3 13 10">
+                      </path>
+
+                      <path
+                        d="M14 11
+                           C15.7 9.3 15.7 6.7 14 5
+                           C12.3 3.3 9.7 3.3 8 5
+                           L5 8
+                           C3.3 9.7 3.3 12.3 5 14
+                           C6.7 15.7 9.3 15.7 11 14">
+                      </path>
+
+                    </svg>
+
+                  </button>
+
+                </div>
 
               </article>
 
@@ -455,15 +624,19 @@
           <% } else { %>
 
             <div class="empty-posts">
+
               <div class="empty-posts-icon">
                 ✦
               </div>
 
-              <h3>Aucune publication</h3>
+              <h3>
+                Aucune publication
+              </h3>
 
               <p>
                 Les publications que vous créez apparaîtront ici.
               </p>
+
             </div>
 
           <% } %>
@@ -508,14 +681,25 @@
                   <div class="publication-content">
 
                     <% if (publication.typePublication === 'repost') { %>
-                      <strong>Repost</strong>
+
+                      <strong>
+                        Repost
+                      </strong>
 
                     <% } else if (publication.typePublication === 'duo') { %>
-                      <strong>Duo</strong>
+
+                      <strong>
+                        Duo
+                      </strong>
 
                     <% } else if (publication.typePublication === 'collage') { %>
-                      <strong>Collage</strong>
+
+                      <strong>
+                        Collage
+                      </strong>
+
                     <% } %>
+
 
                     <p>
                       <%= publication.contenuPub || '' %>
@@ -534,6 +718,7 @@
                         @<%= publication.auteurOriginalPseudo || '' %>
                       </strong>
 
+
                       <% if (publication.originalContenuPub) { %>
 
                         <p>
@@ -551,6 +736,7 @@
 
                 <div class="publication-actions">
 
+
                   <!-- LIKE -->
                   <button
                     type="button"
@@ -562,7 +748,9 @@
                     title="J'aime"
                   >
 
-                    <span>♡</span>
+                    <span>
+                      ♡
+                    </span>
 
                     <span class="reaction-count">
                       <%= publication.likes || 0 %>
@@ -582,7 +770,9 @@
                     title="Je n'aime pas"
                   >
 
-                    <span>♧</span>
+                    <span>
+                      ♧
+                    </span>
 
                     <span class="reaction-count">
                       <%= publication.dislikes || 0 %>
@@ -601,7 +791,9 @@
                     title="Commentaires"
                   >
 
-                    <span>💬</span>
+                    <span>
+                      💬
+                    </span>
 
                     <span class="reaction-count">
                       <%= publication.nombreCommentaires || 0 %>
@@ -623,7 +815,9 @@
                 ✦
               </div>
 
-              <h3>Aucun repost</h3>
+              <h3>
+                Aucun repost
+              </h3>
 
               <p>
                 Les publications que vous repartagez apparaîtront ici.
@@ -636,224 +830,392 @@
         </div>
 
       </section>
+
     </main>
 
+
     <%- include('navbar') %>
+
   </div>
 
+
+  <!-- SUPPRESSION DES PUBLICATIONS -->
+  <script src="/js/deletePost.js"></script>
+
+
   <% if (!isOwner) { %>
+
   <script>
-    const btnFollow = document.getElementById('btn-follow');
-    const countAbonnesEl = document.getElementById('count-abonnes');
-    const countAmisEl = document.getElementById('count-amis');
-    const badgeFriendEl = document.getElementById('badge-friend');
+
+    const btnFollow =
+      document.getElementById('btn-follow');
+
+    const countAbonnesEl =
+      document.getElementById('count-abonnes');
+
+    const countAmisEl =
+      document.getElementById('count-amis');
+
+    const badgeFriendEl =
+      document.getElementById('badge-friend');
+
 
     btnFollow.addEventListener('click', async () => {
-      const targetId = btnFollow.dataset.targetId;
-      const isFollowing = btnFollow.dataset.following === 'true';
 
-      const endpoint = `/api/friendships/${targetId}`;
-      const method = isFollowing ? 'DELETE' : 'POST';
+      const targetId =
+        btnFollow.dataset.targetId;
+
+      const isFollowing =
+        btnFollow.dataset.following === 'true';
+
+
+      const endpoint =
+        `/api/friendships/${targetId}`;
+
+      const method =
+        isFollowing ? 'DELETE' : 'POST';
+
 
       btnFollow.disabled = true;
 
+
       try {
-        const res = await fetch(endpoint, {
-          method: method,
-          headers: { 'Content-Type': 'application/json' }
-        });
+
+        const res =
+          await fetch(endpoint, {
+            method: method,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+
 
         if (!res.ok) {
-          throw new Error('Erreur lors de la requête');
+          throw new Error(
+            'Erreur lors de la requête'
+          );
         }
 
+
         // 1. Bascule de l'état du bouton
-        const nextState = !isFollowing;
-        btnFollow.dataset.following = nextState ? 'true' : 'false';
-        btnFollow.textContent = nextState ? 'Ne plus suivre' : 'Suivre';
-        btnFollow.classList.toggle('following', nextState);
+        const nextState =
+          !isFollowing;
 
-        // 2. Mise à jour directe du compteur d'abonnés
-        let currentFollowers = parseInt(countAbonnesEl.textContent, 10) || 0;
-        countAbonnesEl.textContent = nextState ? currentFollowers + 1 : Math.max(0, currentFollowers - 1);
 
-        // 3. Récupération de la liste à jour des amis pour recalculer le compteur et le badge
-        const friendsRes = await fetch(`/api/friendships/${targetId}/amis`);
+        btnFollow.dataset.following =
+          nextState ? 'true' : 'false';
+
+
+        btnFollow.textContent =
+          nextState
+            ? 'Ne plus suivre'
+            : 'Suivre';
+
+
+        btnFollow.classList.toggle(
+          'following',
+          nextState
+        );
+
+
+        // 2. Mise à jour du compteur d'abonnés
+        let currentFollowers =
+          parseInt(
+            countAbonnesEl.textContent,
+            10
+          ) || 0;
+
+
+        countAbonnesEl.textContent =
+          nextState
+            ? currentFollowers + 1
+            : Math.max(
+                0,
+                currentFollowers - 1
+              );
+
+
+        // 3. Récupération des amis
+        const friendsRes =
+          await fetch(
+            `/api/friendships/${targetId}/amis`
+          );
+
+
         if (friendsRes.ok) {
-          const friendsData = await friendsRes.json();
-          const friendsList = Array.isArray(friendsData) ? friendsData : (friendsData.amis || []);
-          
-          countAmisEl.textContent = friendsList.length;
 
-          // Détection si l'utilisateur actuel figure parmi les amis du profil cible
-          const myProfileRes = await fetch('/api/profile/me');
+          const friendsData =
+            await friendsRes.json();
+
+
+          const friendsList =
+            Array.isArray(friendsData)
+              ? friendsData
+              : (friendsData.amis || []);
+
+
+          countAmisEl.textContent =
+            friendsList.length;
+
+
+          // Détection si l'utilisateur actuel
+          // figure parmi les amis
+          const myProfileRes =
+            await fetch('/api/profile/me');
+
+
           if (myProfileRes.ok) {
-            const myData = await myProfileRes.json();
-            const amIInFriends = friendsList.some(f => f.idUser === myData.idUser);
-            badgeFriendEl.style.display = amIInFriends ? '' : 'none';
+
+            const myData =
+              await myProfileRes.json();
+
+
+            const amIInFriends =
+              friendsList.some(
+                f => f.idUser === myData.idUser
+              );
+
+
+            badgeFriendEl.style.display =
+              amIInFriends ? '' : 'none';
+
           }
+
         }
 
       } catch (err) {
+
         console.error(err);
-        alert('Impossible de modifier le statut d’abonnement.');
-      } finally {
-        btnFollow.disabled = false;
-      }
-    });
-  </script>
-  <% } %>
-
-  <script>
-  // =========================================
-  // RÉACTIONS DES PUBLICATIONS
-  // =========================================
-
-  async function reactionPublication(idPubli, type) {
-
-    try {
-
-        const response = await fetch(
-            '/api/comments/react',
-            {
-                method: 'POST',
-
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-
-                credentials: 'same-origin',
-
-                body: JSON.stringify({
-                    idPubli: idPubli,
-                    type: type
-                })
-            }
-        );
-
-        const data = await response.json();
-
-        if (response.status === 401) {
-            window.location.href = '/login';
-            return;
-        }
-
-        if (!response.ok) {
-            alert(
-                data.error ||
-                'Erreur lors de la réaction'
-            );
-            return;
-        }
-
-        const article =
-            document.querySelector(
-                `[data-publication-id="${idPubli}"]`
-            );
-
-        if (!article) {
-            return;
-        }
-
-        const likeButton =
-            article.querySelector('.like-action');
-
-        const dislikeButton =
-            article.querySelector('.dislike-action');
-
-        if (likeButton) {
-
-            const count =
-                likeButton.querySelector(
-                    '.reaction-count'
-                );
-
-            if (count) {
-                count.textContent =
-                    data.likes ?? 0;
-            }
-        }
-
-        if (dislikeButton) {
-
-            const count =
-                dislikeButton.querySelector(
-                    '.reaction-count'
-                );
-
-            if (count) {
-                count.textContent =
-                    data.dislikes ?? 0;
-            }
-        }
-
-        if (likeButton) {
-
-            likeButton.classList.toggle(
-                'active',
-                data.userReaction === 'LIKE'
-            );
-        }
-
-        if (dislikeButton) {
-
-            dislikeButton.classList.toggle(
-                'active',
-                data.userReaction === 'DISLIKE'
-            );
-        }
-
-    } catch (error) {
-
-        console.error(
-            'Erreur réaction publication :',
-            error
-        );
 
         alert(
-            'Une erreur est survenue lors de la réaction.'
+          'Impossible de modifier le statut d’abonnement.'
         );
-    }
-}
 
+      } finally {
 
-  // =========================================
-  // COMMENTAIRES
-  // =========================================
+        btnFollow.disabled = false;
 
-  function ouvrirCommentaires(idPubli) {
-    // Redirection vers la page de commentaires déjà existante.
-    window.location.href = `/api/comments/view/${idPubli}`;
-  }
-
-
-  // =========================================
-  // REPARTAGE
-  // =========================================
-
-  async function repartager(idPubli) {
-    try {
-      const response = await fetch(
-        `/api/publications/${idPubli}/repartage`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Erreur lors du repartage');
       }
 
-      alert('Publication repartagée !');
+    });
 
-    } catch (error) {
-      console.error(error);
-      alert('Impossible de repartager cette publication.');
+  </script>
+
+  <% } %>
+
+
+  <script>
+
+    // =========================================
+    // RÉACTIONS DES PUBLICATIONS
+    // =========================================
+
+    async function reactionPublication(
+      idPubli,
+      type
+    ) {
+
+      try {
+
+        const response =
+          await fetch(
+            '/api/comments/react',
+            {
+              method: 'POST',
+
+              headers: {
+                'Content-Type': 'application/json'
+              },
+
+              credentials: 'same-origin',
+
+              body: JSON.stringify({
+                idPubli: idPubli,
+                type: type
+              })
+
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        if (response.status === 401) {
+
+          window.location.href =
+            '/login';
+
+          return;
+
+        }
+
+
+        if (!response.ok) {
+
+          alert(
+            data.error ||
+            'Erreur lors de la réaction'
+          );
+
+          return;
+
+        }
+
+
+        const article =
+          document.querySelector(
+            `[data-publication-id="${idPubli}"]`
+          );
+
+
+        if (!article) {
+          return;
+        }
+
+
+        const likeButton =
+          article.querySelector(
+            '.like-action'
+          );
+
+
+        const dislikeButton =
+          article.querySelector(
+            '.dislike-action'
+          );
+
+
+        if (likeButton) {
+
+          const count =
+            likeButton.querySelector(
+              '.reaction-count'
+            );
+
+
+          if (count) {
+
+            count.textContent =
+              data.likes ?? 0;
+
+          }
+
+        }
+
+
+        if (dislikeButton) {
+
+          const count =
+            dislikeButton.querySelector(
+              '.reaction-count'
+            );
+
+
+          if (count) {
+
+            count.textContent =
+              data.dislikes ?? 0;
+
+          }
+
+        }
+
+
+        if (likeButton) {
+
+          likeButton.classList.toggle(
+            'active',
+            data.userReaction === 'LIKE'
+          );
+
+        }
+
+
+        if (dislikeButton) {
+
+          dislikeButton.classList.toggle(
+            'active',
+            data.userReaction === 'DISLIKE'
+          );
+
+        }
+
+      } catch (error) {
+
+        console.error(
+          'Erreur réaction publication :',
+          error
+        );
+
+
+        alert(
+          'Une erreur est survenue lors de la réaction.'
+        );
+
+      }
+
     }
-  }
+
+
+    // =========================================
+    // COMMENTAIRES
+    // =========================================
+
+    function ouvrirCommentaires(idPubli) {
+
+      window.location.href =
+        `/api/comments/view/${idPubli}`;
+
+    }
+
+
+    // =========================================
+    // REPARTAGE
+    // =========================================
+
+    async function repartager(idPubli) {
+
+      try {
+
+        const response =
+          await fetch(
+            `/api/publications/${idPubli}/repartage`,
+            {
+              method: 'POST',
+
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            'Erreur lors du repartage'
+          );
+
+        }
+
+
+        alert(
+          'Publication repartagée !'
+        );
+
+      } catch (error) {
+
+        console.error(error);
+
+        alert(
+          'Impossible de repartager cette publication.'
+        );
+
+      }
+
+    }
 
 
     // =========================================
@@ -861,56 +1223,102 @@
     // =========================================
 
     async function copierLien(idPubli) {
-      const url = `${window.location.origin}/publication/${idPubli}`;
+
+      const url =
+        `${window.location.origin}/publication/${idPubli}`;
+
 
       try {
+
         await navigator.clipboard.writeText(url);
-        alert('Lien copié !');
+
+        alert(
+          'Lien copié !'
+        );
+
       } catch (error) {
+
         console.error(error);
-        alert('Impossible de copier le lien.');
+
+        alert(
+          'Impossible de copier le lien.'
+        );
+
       }
+
     }
+
+
+    // =========================================
+    // AFFICHER / MASQUER LES REPOSTS
+    // =========================================
 
     function toggleReposts() {
-        const publications =
-            document.getElementById('profile-publications');
 
-        const reposts =
-            document.getElementById('profile-reposts');
+      const publications =
+        document.getElementById(
+          'profile-publications'
+        );
 
-        const title =
-            document.getElementById('posts-title');
 
-        if (!publications || !reposts) {
-            return;
+      const reposts =
+        document.getElementById(
+          'profile-reposts'
+        );
+
+
+      const title =
+        document.getElementById(
+          'posts-title'
+        );
+
+
+      if (!publications || !reposts) {
+        return;
+      }
+
+
+      const repostsVisible =
+        reposts.style.display !== 'none';
+
+
+      if (repostsVisible) {
+
+        publications.style.display =
+          '';
+
+        reposts.style.display =
+          'none';
+
+
+        if (title) {
+
+          title.textContent =
+            'Publications';
+
         }
 
-        const repostsVisible =
-            reposts.style.display !== 'none';
+      } else {
 
-        if (repostsVisible) {
+        publications.style.display =
+          'none';
 
-            publications.style.display = '';
-            reposts.style.display = 'none';
+        reposts.style.display =
+          'grid';
 
-            if (title) {
-                title.textContent = 'Publications';
-            }
 
-        } else {
+        if (title) {
 
-            publications.style.display = 'none';
-            reposts.style.display = 'grid';
-
-            if (title) {
-                title.textContent = 'Reposts';
-            }
+          title.textContent =
+            'Reposts';
 
         }
+
+      }
+
     }
-  </script>
 
+  </script>
 
 </body>
 </html>

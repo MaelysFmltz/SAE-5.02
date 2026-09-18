@@ -21,7 +21,6 @@ function validerContenuPublication(contenuPub) {
     return contenu;
 }
 
-
 // ================================
 // PARTIE 4 : VISIBILITÉ
 // ================================
@@ -82,11 +81,118 @@ function modifierVisibilite(db, idPubli, idUser, nouvelleVisibilite) {
 
     return true;
 }
+
+/**
+ * Ne garde, parmi une liste de publications, que celles visibles
+ * par idUserVisiteur.
+ *
+ * Publication publique => visible
+ * Publication de l'utilisateur => visible
+ * Publication d'un ami => visible
+ * Sinon => masquée
+ */
+function filtrerPublicationsVisibles(publications, idUserVisiteur) {
+    const visiteur = idUserVisiteur ? Number(idUserVisiteur) : null;
+
+    return publications.filter((post) => {
+        if (Number(post.visibilite) === 1) return true;
+
+        if (!visiteur) return false;
+
+        if (Number(post.idUser) === visiteur) return true;
+
+        return sontAmis(db, post.idUser, visiteur);
+    });
+}
+
+// ================================
+// PUBLICATIONS PHOTO / VIDÉO
+// ================================
+
+/**
+ * Création d'une publication contenant une photo ou une vidéo.
+ */
+function createMediaPost(
+    idUser,
+    contenuPub,
+    visibilite,
+    nomMedia,
+    typeMedia
+) {
+    return postModel.createMediaPost(
+        idUser,
+        contenuPub,
+        visibilite,
+        nomMedia,
+        typeMedia
+    );
+}
+
+/**
+ * Toutes les publications contenant un média,
+ * filtrées selon la visibilité de l'utilisateur.
+ */
+function getAllPosts(idUserVisiteur) {
+    const posts = postModel.findAllPostsWithMedia();
+
+    return filtrerPublicationsVisibles(
+        posts,
+        idUserVisiteur
+    );
+}
+
+/**
+ * Publications d'un utilisateur,
+ * filtrées selon ce que le visiteur peut voir.
+ */
+function getUserPosts(idUser, idUserVisiteur) {
+    if (!idUser) {
+        throw new Error('Identifiant utilisateur manquant');
+    }
+
+    const posts = postModel.findPostsByUserId(idUser);
+
+    return filtrerPublicationsVisibles(
+        posts,
+        idUserVisiteur
+    );
+}
+
+/**
+ * Supprime une publication appartenant à l'utilisateur.
+ */
+function deletePost(idPubli, idUser) {
+    if (!idPubli || !idUser) {
+        throw new Error('Identifiants de publication invalides');
+    }
+
+    const media = postModel.deletePostByIdAndUser(
+        idPubli,
+        idUser
+    );
+
+    if (!media) {
+        const error = new Error(
+            'Publication introuvable ou non autorisée'
+        );
+
+        error.status = 403;
+        throw error;
+    }
+
+    return media;
+}
+
 // ================================
 // PARTIE 6 : PUBLICATIONS
 // ================================
 
-function createPublication(idUser, contenuPub, visibilite = 1, idPubliPartagee = null) {
+function createPublication(
+    idUser,
+    contenuPub,
+    visibilite = 1,
+    idPubliPartagee = null
+) {
     contenuPub = validerContenuPublication(contenuPub);
 
     const user = userModel.findById(idUser);
@@ -100,7 +206,8 @@ function createPublication(idUser, contenuPub, visibilite = 1, idPubliPartagee =
     }
 
     if (idPubliPartagee !== null) {
-        const publicationOriginale = postModel.findById(idPubliPartagee);
+        const publicationOriginale =
+            postModel.findById(idPubliPartagee);
 
         if (!publicationOriginale) {
             throw new Error('Publication originale introuvable');
@@ -123,14 +230,19 @@ function createPublication(idUser, contenuPub, visibilite = 1, idPubliPartagee =
 }
 
 // Repartage classique
-function createRepost(idUser, idPubliPartagee, visibilite = 1) {
+function createRepost(
+    idUser,
+    idPubliPartagee,
+    visibilite = 1
+) {
     const user = userModel.findById(idUser);
 
     if (!user) {
         throw new Error('Utilisateur introuvable');
     }
 
-    const publicationOriginale = postModel.findById(idPubliPartagee);
+    const publicationOriginale =
+        postModel.findById(idPubliPartagee);
 
     if (!publicationOriginale) {
         throw new Error('Publication originale introuvable');
@@ -155,7 +267,8 @@ function createRepost(idUser, idPubliPartagee, visibilite = 1) {
 
 // Récupérer une publication
 function getPublication(idPubli) {
-    const publication = postModel.findWithOriginal(idPubli);
+    const publication =
+        postModel.findWithOriginal(idPubli);
 
     if (!publication) {
         throw new Error('Publication introuvable');
@@ -166,19 +279,26 @@ function getPublication(idPubli) {
 
 // Récupérer une publication accessible par un utilisateur
 function getPublicationForUser(idPubli, idUser) {
-    const publication = postModel.findWithOriginal(idPubli);
+    const publication =
+        postModel.findWithOriginal(idPubli);
 
     if (!publication) {
         throw new Error('Publication introuvable');
     }
 
     if (!peutVoirPublication(db, idPubli, idUser)) {
-        throw new Error('Vous n’avez pas accès à cette publication');
+        throw new Error(
+            'Vous n’avez pas accès à cette publication'
+        );
     }
 
     if (
         publication.originalIdPubli &&
-        !peutVoirPublication(db, publication.originalIdPubli, idUser)
+        !peutVoirPublication(
+            db,
+            publication.originalIdPubli,
+            idUser
+        )
     ) {
         return {
             ...publication,
@@ -208,7 +328,8 @@ function createDuo(
         throw new Error('Utilisateur introuvable');
     }
 
-    const publicationOriginale = postModel.findById(idPubliOriginale);
+    const publicationOriginale =
+        postModel.findById(idPubliOriginale);
 
     if (!publicationOriginale) {
         throw new Error('Publication originale introuvable');
@@ -245,7 +366,8 @@ function createCollage(
         throw new Error('Utilisateur introuvable');
     }
 
-    const publicationOriginale = postModel.findById(idPubliOriginale);
+    const publicationOriginale =
+        postModel.findById(idPubliOriginale);
 
     if (!publicationOriginale) {
         throw new Error('Publication originale introuvable');
@@ -277,8 +399,13 @@ function getRemixChainForUser(idPubli, idUser) {
         throw new Error('Publication introuvable');
     }
 
-    const chainAccessible = chain.filter(publication =>
-        peutVoirPublication(db, publication.idPubli, idUser)
+    const chainAccessible = chain.filter(
+        publication =>
+            peutVoirPublication(
+                db,
+                publication.idPubli,
+                idUser
+            )
     );
 
     if (chainAccessible.length === 0) {
@@ -290,7 +417,7 @@ function getRemixChainForUser(idPubli, idUser) {
     return chainAccessible;
 }
 
-    // Récupérer le fil d'actualité d'un utilisateur
+// Récupérer le fil d'actualité d'un utilisateur
 function getFeedForUser(idUser) {
     const publications = db.prepare(`
         SELECT
@@ -333,7 +460,11 @@ function getFeedForUser(idUser) {
 
     return publications
         .filter(publication =>
-            peutVoirPublication(db, publication.idPubli, idUser)
+            peutVoirPublication(
+                db,
+                publication.idPubli,
+                idUser
+            )
         )
         .map(publication => {
 
@@ -360,10 +491,11 @@ function getFeedForUser(idUser) {
             }
 
             // Récupération des likes / dislikes
-            const reactions = reactionModel.getPostReactions(
-                publication.idPubli,
-                idUser
-            );
+            const reactions =
+                reactionModel.getPostReactions(
+                    publication.idPubli,
+                    idUser
+                );
 
             return {
                 ...publication,
@@ -375,9 +507,12 @@ function getFeedForUser(idUser) {
 }
 
 module.exports = {
+    // Visibilité
     sontAmis,
     peutVoirPublication,
     modifierVisibilite,
+
+    // Publications classiques
     createPublication,
     createRepost,
     getPublication,
@@ -385,5 +520,11 @@ module.exports = {
     createDuo,
     createCollage,
     getRemixChainForUser,
-    getFeedForUser
+    getFeedForUser,
+
+    // Photos / vidéos
+    createMediaPost,
+    getAllPosts,
+    getUserPosts,
+    deletePost
 };

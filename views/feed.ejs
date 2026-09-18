@@ -1,11 +1,29 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pixora — Accueil</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/feed.css">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    Pixora — Accueil
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="/css/style.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="/css/feed.css"
+  >
+
   <style>
     .publication-main-link {
       display: block;
@@ -44,6 +62,7 @@
       font-weight: 600;
       transition: color 0.15s ease;
     }
+
     .hashtag-link:hover {
       color: #c4b5fd;
       text-decoration: underline;
@@ -57,6 +76,7 @@
       background: #101017;
       color: #aaa;
     }
+
     .shared-publication strong {
       color: #a78bfa;
     }
@@ -85,10 +105,12 @@
       cursor: pointer;
       transition: background 0.18s ease, transform 0.18s ease, color 0.18s ease;
     }
+
     .publication-action:hover {
       background: #242032;
       transform: scale(1.08);
     }
+
     .publication-action:active {
       transform: scale(0.92);
     }
@@ -103,13 +125,33 @@
       stroke-linejoin: round;
     }
 
-    .like-action { width: auto; min-width: 42px; }
-    .like-action.active { color: #ff1744; }
-    .like-action.active svg { fill: #ff1744; stroke: #ff1744; }
+    .like-action {
+      width: auto;
+      min-width: 42px;
+    }
 
-    .dislike-action { width: auto; min-width: 42px; }
-    .dislike-action.active { color: #263b91; }
-    .dislike-action.active svg { fill: #263b91; stroke: #263b91; }
+    .like-action.active {
+      color: #ff1744;
+    }
+
+    .like-action.active svg {
+      fill: #ff1744;
+      stroke: #ff1744;
+    }
+
+    .dislike-action {
+      width: auto;
+      min-width: 42px;
+    }
+
+    .dislike-action.active {
+      color: #263b91;
+    }
+
+    .dislike-action.active svg {
+      fill: #263b91;
+      stroke: #263b91;
+    }
 
     .reaction-count {
       min-width: 8px;
@@ -117,10 +159,18 @@
       font-weight: 500;
       color: #aaa;
     }
-    .like-action.active .reaction-count { color: #ff1744; }
-    .dislike-action.active .reaction-count { color: #263b91; }
 
-    .action-spacer { flex: 1; }
+    .like-action.active .reaction-count {
+      color: #ff1744;
+    }
+
+    .dislike-action.active .reaction-count {
+      color: #263b91;
+    }
+
+    .action-spacer {
+      flex: 1;
+    }
 
     /* Modal Commentaires */
     .comments-overlay {
@@ -132,7 +182,10 @@
       background: rgba(0, 0, 0, 0.68);
       backdrop-filter: blur(3px);
     }
-    .comments-overlay.open { display: flex; }
+
+    .comments-overlay.open {
+      display: flex;
+    }
 
     .comments-sheet {
       width: 100%;
@@ -148,8 +201,13 @@
     }
 
     @keyframes commentsSlideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
+      from {
+        transform: translateY(100%);
+      }
+
+      to {
+        transform: translateY(0);
+      }
     }
 
     .comments-handle {
@@ -168,12 +226,14 @@
       padding: 12px 20px 18px;
       border-bottom: 1px solid #292b31;
     }
+
     .comments-header h2 {
       margin: 0;
       color: #f5f5f7;
       font-size: 21px;
       font-weight: 700;
     }
+
     .comments-close {
       position: absolute;
       right: 16px;
@@ -193,14 +253,21 @@
       overflow-y: auto;
       padding: 18px;
     }
-    .comments-loading, .comments-empty {
+
+    .comments-loading,
+    .comments-empty {
       padding: 40px 10px;
       text-align: center;
       color: #858894;
       font-size: 15px;
     }
 
-    .comment-item { display: flex; gap: 12px; margin-bottom: 22px; }
+    .comment-item {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
     .comment-avatar {
       width: 40px;
       height: 40px;
@@ -213,10 +280,27 @@
       color: #fff;
       font-weight: 700;
     }
-    .comment-body { flex: 1; min-width: 0; }
-    .comment-line { line-height: 1.45; color: #e7e7eb; }
-    .comment-author { color: #f5f5f7; font-weight: 700; margin-right: 5px; }
-    .comment-text { color: #e7e7eb; word-break: break-word; }
+
+    .comment-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .comment-line {
+      line-height: 1.45;
+      color: #e7e7eb;
+    }
+
+    .comment-author {
+      color: #f5f5f7;
+      font-weight: 700;
+      margin-right: 5px;
+    }
+
+    .comment-text {
+      color: #e7e7eb;
+      word-break: break-word;
+    }
 
     .comment-form {
       display: flex;
@@ -226,6 +310,7 @@
       border-top: 1px solid #292b31;
       background: #17181c;
     }
+
     .comment-form input {
       flex: 1;
       height: 46px;
@@ -237,7 +322,11 @@
       color: #f5f5f7;
       font-size: 15px;
     }
-    .comment-form input:focus { border-color: #686b78; }
+
+    .comment-form input:focus {
+      border-color: #686b78;
+    }
+
     .comment-form button {
       width: 46px;
       height: 46px;
@@ -249,93 +338,295 @@
       cursor: pointer;
       transition: transform 0.15s ease;
     }
-    .comment-form button:hover { transform: scale(1.05); }
 
-    .discover-section { margin-top: 30px; }
+    .comment-form button:hover {
+      transform: scale(1.05);
+    }
+
+    .discover-section {
+      margin-top: 30px;
+    }
 
     @media (max-width: 600px) {
-      .publication-actions { gap: 7px; }
-      .publication-action { width: 40px; height: 40px; }
-      .publication-action svg { width: 23px; height: 23px; }
-      .reaction-count { font-size: 13px; }
-      .comments-sheet { max-height: 88vh; }
-      .comments-list { padding-left: 14px; padding-right: 14px; }
+      .publication-actions {
+        gap: 7px;
+      }
+
+      .publication-action {
+        width: 40px;
+        height: 40px;
+      }
+
+      .publication-action svg {
+        width: 23px;
+        height: 23px;
+      }
+
+      .reaction-count {
+        font-size: 13px;
+      }
+
+      .comments-sheet {
+        max-height: 88vh;
+      }
+
+      .comments-list {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
     }
   </style>
+
 </head>
+
+
 <body>
+
 <div class="app-container">
 
-  <!-- Header -->
+
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
+
   <header class="navbar">
+
     <div class="nav-brand">
-      <img src="/images/logo.jpg" alt="Pixora Logo" class="nav-logo">
-      <span class="nav-title">PIXORA</span>
-    </div>
-    <div class="nav-user">
-      <span class="user-greeting">
-        Bonjour, <strong>@<%= user.pseudo %></strong>
+
+      <img
+        src="/images/logo.jpg"
+        alt="Pixora Logo"
+        class="nav-logo"
+      >
+
+      <span class="nav-title">
+        PIXORA
       </span>
-      <form action="/api/auth/logout" method="POST">
-        <button type="submit" class="btn-logout">Déconnexion</button>
-      </form>
+
     </div>
+
+
+    <div class="nav-user">
+
+      <span class="user-greeting">
+
+        Bonjour,
+        <strong>@<%= user.pseudo %></strong>
+
+      </span>
+
+
+      <form
+        action="/api/auth/logout"
+        method="POST"
+      >
+
+        <button
+          type="submit"
+          class="btn-logout"
+        >
+          Déconnexion
+        </button>
+
+      </form>
+
+    </div>
+
   </header>
 
-  <!-- Fil d'actualité -->
+
+  <!-- =====================================================
+       FEED
+  ====================================================== -->
+
   <main class="feed-container">
+
     <div class="card">
-      <h2>Fil d'actualité</h2>
-      <p>Découvre les dernières publications de Pixora.</p>
+
+      <h2>
+        Fil d'actualité
+      </h2>
+
+      <p>
+        Découvre les dernières publications de Pixora.
+      </p>
+
     </div>
 
-    <!-- Liste des publications -->
+
+    <!-- =====================================================
+         LISTE DES PUBLICATIONS
+    ====================================================== -->
+
     <% if (typeof publications !== 'undefined' && publications && publications.length > 0) { %>
+
       <% publications.forEach(publication => { %>
-        <article class="publication-card" data-publication-id="<%= publication.idPubli %>">
-          
+
+        <article
+          class="publication-card"
+          data-publication-id="<%= publication.idPubli %>"
+        >
+
+
+          <!-- =================================================
+               AUTEUR + TYPE + SUPPRESSION
+          ================================================== -->
+
           <div class="publication-header">
-            <a href="/profile/<%= encodeURIComponent(publication.auteurPseudo) %>" style="color: inherit; text-decoration: none;">
-              <strong>@<%= publication.auteurPseudo %></strong>
+
+            <a
+              href="/profile/<%= encodeURIComponent(publication.auteurPseudo) %>"
+              style="color: inherit; text-decoration: none;"
+            >
+
+              <strong>
+                @<%= publication.auteurPseudo %>
+              </strong>
+
             </a>
+
+
             <span class="publication-type">
+
               <% if (publication.typePublication === 'repost') { %>
+
                 🔁 Repost
+
               <% } else if (publication.typePublication === 'duo') { %>
+
                 🎭 Duo
+
               <% } else if (publication.typePublication === 'collage') { %>
+
                 🧩 Collage
+
               <% } else { %>
+
                 Publication
+
               <% } %>
+
             </span>
+
+
+            <% if (user && Number(user.idUser) === Number(publication.idUser)) { %>
+
+              <button
+                type="button"
+                class="delete-post"
+                data-id="<%= publication.idPubli %>"
+              >
+                Supprimer
+              </button>
+
+            <% } %>
+
           </div>
 
-          <!-- Média cliquable menant au profil -->
-          <a href="/profile/<%= encodeURIComponent(publication.auteurPseudo) %>" class="publication-main-link">
-            <div class="publication-media">📷 Média Pixora</div>
+
+          <!-- =================================================
+               MÉDIA
+          ================================================== -->
+
+          <a
+            href="/profile/<%= encodeURIComponent(publication.auteurPseudo) %>"
+            class="publication-main-link"
+          >
+
+            <div class="publication-media">
+
+              <% if (publication.nomMedia) { %>
+
+
+                <% if (publication.typeMedia === 'video') { %>
+
+                  <video
+                    class="feed-post-video"
+                    controls
+                    preload="metadata"
+                  >
+
+                    <source
+                      src="/uploads/<%= publication.nomMedia %>"
+                    >
+
+                    Votre navigateur ne supporte pas la lecture vidéo.
+
+                  </video>
+
+
+                <% } else { %>
+
+                  <img
+                    src="/uploads/<%= publication.nomMedia %>"
+                    alt="Photo publiée par <%= publication.auteurPseudo %>"
+                    class="feed-post-image"
+                  >
+
+                <% } %>
+
+
+              <% } else { %>
+
+                📷 Média Pixora
+
+              <% } %>
+
+            </div>
+
           </a>
 
-          <!-- Texte avec hashtags cliquables (séparé du lien média) -->
+
+          <!-- =================================================
+               DESCRIPTION / HASHTAGS
+          ================================================== -->
+
           <% if (publication.contenuPub) { %>
+
             <p class="publication-content">
+
               <% if (typeof linkifyHashtags === 'function') { %>
+
                 <%- linkifyHashtags(publication.contenuPub) %>
+
               <% } else { %>
+
                 <%= publication.contenuPub %>
+
               <% } %>
+
             </p>
+
           <% } %>
+
+
+          <!-- =================================================
+               PUBLICATION PARTAGÉE
+          ================================================== -->
 
           <% if (publication.idPubliPartagee) { %>
+
             <div class="shared-publication">
-              Cette publication est basée sur <strong>#<%= publication.idPubliPartagee %></strong>
+
+              Cette publication est basée sur
+              <strong>
+                #<%= publication.idPubliPartagee %>
+              </strong>
+
             </div>
+
           <% } %>
 
-          <!-- Actions -->
+
+          <!-- =================================================
+               ACTIONS
+          ================================================== -->
+
           <div class="publication-actions">
+
+
             <!-- Like -->
+
             <button
               type="button"
               class="publication-action reaction-action like-action <%= publication.userReaction === 'LIKE' ? 'active' : '' %>"
@@ -343,13 +634,22 @@
               title="J'aime"
               aria-label="J'aime"
             >
+
               <svg viewBox="0 0 24 24">
+
                 <path d="M20.8 8.8 C20.8 5.8 18.5 4 15.9 4 C14.1 4 12.7 5 12 6.3 C11.3 5 9.9 4 8.1 4 C5.5 4 3.2 5.8 3.2 8.8 C3.2 13.1 7.4 16.1 12 20 C16.6 16.1 20.8 13.1 20.8 8.8Z"></path>
+
               </svg>
-              <span class="reaction-count"><%= publication.likes || 0 %></span>
+
+              <span class="reaction-count">
+                <%= publication.likes || 0 %>
+              </span>
+
             </button>
 
+
             <!-- Dislike -->
+
             <button
               type="button"
               class="publication-action reaction-action dislike-action <%= publication.userReaction === 'DISLIKE' ? 'active' : '' %>"
@@ -357,15 +657,26 @@
               title="Je n'aime pas"
               aria-label="Je n'aime pas"
             >
+
               <svg viewBox="0 0 24 24">
+
                 <path d="M20.5 8.7 C20.5 5.9 18.3 4.2 15.8 4.2 C14.1 4.2 12.8 5.1 12 6.4"></path>
+
                 <path d="M12 6.4 L10.6 8.5 L13.3 11.2 L11.1 13.6 L13.8 16.3 L12 19.8"></path>
+
                 <path d="M12 6.4 C11.2 5.1 9.9 4.2 8.2 4.2 C5.7 4.2 3.5 5.9 3.5 8.7 C3.5 11.5 5.1 13.7 7.3 15.7"></path>
+
               </svg>
-              <span class="reaction-count"><%= publication.dislikes || 0 %></span>
+
+              <span class="reaction-count">
+                <%= publication.dislikes || 0 %>
+              </span>
+
             </button>
 
+
             <!-- Commentaires -->
+
             <button
               type="button"
               class="publication-action"
@@ -373,13 +684,22 @@
               title="Commentaires"
               aria-label="Commentaires"
             >
+
               <svg viewBox="0 0 24 24">
+
                 <path d="M20 11.5 C20 15.6 16.4 19 12 19 C10.8 19 9.6 18.8 8.6 18.3 L4 20 L5.2 16.2 C4.4 14.9 4 13.3 4 11.5 C4 7.4 7.6 4 12 4 C16.4 4 20 7.4 20 11.5Z"></path>
+
               </svg>
-              <span class="reaction-count"><%= publication.nombreCommentaires || 0 %></span>
+
+              <span class="reaction-count">
+                <%= publication.nombreCommentaires || 0 %>
+              </span>
+
             </button>
 
+
             <!-- Repost -->
+
             <button
               type="button"
               class="publication-action"
@@ -387,15 +707,24 @@
               title="Reposter"
               aria-label="Reposter"
             >
+
               <svg viewBox="0 0 24 24">
+
                 <path d="M17 7H7 C5.3 7 4 8.3 4 10 C4 11.7 5.3 13 7 13 H16"></path>
+
                 <path d="M14 10L17 7L14 4"></path>
+
                 <path d="M7 17H17 C18.7 17 20 15.7 20 14 C20 12.3 18.7 11 17 11 H8"></path>
+
                 <path d="M10 14L7 17L10 20"></path>
+
               </svg>
+
             </button>
 
+
             <!-- Duo -->
+
             <button
               type="button"
               class="publication-action"
@@ -403,14 +732,22 @@
               title="Créer un Duo"
               aria-label="Créer un Duo"
             >
+
               <svg viewBox="0 0 24 24">
+
                 <circle cx="8" cy="7" r="3"></circle>
+
                 <circle cx="16" cy="17" r="3"></circle>
+
                 <path d="M10.5 8.5L13.5 15.5"></path>
+
               </svg>
+
             </button>
 
+
             <!-- Collage -->
+
             <button
               type="button"
               class="publication-action"
@@ -418,17 +755,27 @@
               title="Créer un collage"
               aria-label="Créer un collage"
             >
+
               <svg viewBox="0 0 24 24">
+
                 <rect x="4" y="4" width="7" height="7" rx="1"></rect>
+
                 <rect x="13" y="4" width="7" height="7" rx="1"></rect>
+
                 <rect x="4" y="13" width="7" height="7" rx="1"></rect>
+
                 <rect x="13" y="13" width="7" height="7" rx="1"></rect>
+
               </svg>
+
             </button>
+
 
             <span class="action-spacer"></span>
 
+
             <!-- Copier le lien -->
+
             <button
               type="button"
               class="publication-action"
@@ -436,448 +783,1591 @@
               title="Copier le lien"
               aria-label="Copier le lien"
             >
+
               <svg viewBox="0 0 24 24">
+
                 <path d="M10 13 C8.3 14.7 8.3 17.3 10 19 C11.7 20.7 14.3 20.7 16 19 L19 16 C20.7 14.3 20.7 11.7 19 10 C17.3 8.3 14.7 8.3 13 10"></path>
+
                 <path d="M14 11 C15.7 9.3 15.7 6.7 14 5 C12.3 3.3 9.7 3.3 8 5 L5 8 C3.3 9.7 3.3 12.3 5 14 C6.7 15.7 9.3 15.7 11 14"></path>
+
               </svg>
+
             </button>
+
           </div>
+
+
         </article>
+
       <% }); %>
+
+
     <% } else { %>
+
       <div class="card">
-        <p>Aucune publication pour le moment.</p>
+
+        <p>
+          Aucune publication pour le moment.
+        </p>
+
       </div>
+
     <% } %>
 
-    <!-- Découvrir des membres -->
+
+    <!-- =====================================================
+         DÉCOUVRIR DES MEMBRES
+    ====================================================== -->
+
     <section class="discover-section">
-      <h4 class="section-title">Découvrir des membres</h4>
+
+      <h4 class="section-title">
+        Découvrir des membres
+      </h4>
+
       <div class="user-list">
+
         <% if (typeof suggestions !== 'undefined' && suggestions && suggestions.length > 0) { %>
+
           <% suggestions.forEach(function(u) { %>
-            <a href="/profile/<%= u.pseudo %>" class="user-card-link">
+
+            <a
+              href="/profile/<%= u.pseudo %>"
+              class="user-card-link"
+            >
+
               <div class="user-mini-avatar">
-                <svg viewBox="0 0 24 24" fill="currentColor">
+
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+
                   <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+
                 </svg>
+
               </div>
+
+
               <div class="user-info">
-                <span class="user-pseudo">@<%= u.pseudo %></span>
+
+                <span class="user-pseudo">
+                  @<%= u.pseudo %>
+                </span>
+
                 <% if (u.bio) { %>
-                  <span class="user-bio"><%= u.bio.slice(0, 45) %><%= u.bio.length > 45 ? '...' : '' %></span>
+
+                  <span class="user-bio">
+                    <%= u.bio.slice(0, 45) %><%= u.bio.length > 45 ? '...' : '' %>
+                  </span>
+
                 <% } %>
+
               </div>
-              <span class="view-arrow">›</span>
+
+
+              <span class="view-arrow">
+                ›
+              </span>
+
             </a>
+
           <% }); %>
+
+
         <% } else { %>
-          <p class="empty-users">Aucun autre membre inscrit pour le moment.</p>
+
+          <p class="empty-users">
+            Aucun autre membre inscrit pour le moment.
+          </p>
+
         <% } %>
+
       </div>
+
     </section>
+
+
   </main>
 
+
+  <!-- Navigation -->
+
   <%- include('navbar') %>
+
+
 </div>
 
-<!-- Modal Commentaires -->
-<div id="comments-overlay" class="comments-overlay" onclick="fermerCommentaires(event)">
-  <div class="comments-sheet" onclick="event.stopPropagation()">
+
+<!-- =====================================================
+     MODAL COMMENTAIRES
+====================================================== -->
+
+<div
+  id="comments-overlay"
+  class="comments-overlay"
+  onclick="fermerCommentaires(event)"
+>
+
+  <div
+    class="comments-sheet"
+    onclick="event.stopPropagation()"
+  >
+
     <div class="comments-handle"></div>
+
+
     <div class="comments-header">
-      <h2>Commentaires</h2>
-      <button type="button" class="comments-close" onclick="fermerCommentaires()" aria-label="Fermer">×</button>
+
+      <h2>
+        Commentaires
+      </h2>
+
+      <button
+        type="button"
+        class="comments-close"
+        onclick="fermerCommentaires()"
+        aria-label="Fermer"
+      >
+        ×
+      </button>
+
     </div>
-    <div id="comments-list" class="comments-list">
-      <div class="comments-loading">Chargement des commentaires...</div>
+
+
+    <div
+      id="comments-list"
+      class="comments-list"
+    >
+
+      <div class="comments-loading">
+        Chargement des commentaires...
+      </div>
+
     </div>
-    <form id="comment-form" class="comment-form">
-      <input type="hidden" id="comment-publication-id">
-      <input type="text" id="comment-input" placeholder="Ajoutez un commentaire..." maxlength="500" autocomplete="off">
-      <button type="submit" title="Publier" aria-label="Publier">➤</button>
+
+
+    <form
+      id="comment-form"
+      class="comment-form"
+    >
+
+      <input
+        type="hidden"
+        id="comment-publication-id"
+      >
+
+      <input
+        type="text"
+        id="comment-input"
+        placeholder="Ajoutez un commentaire..."
+        maxlength="500"
+        autocomplete="off"
+      >
+
+      <button
+        type="submit"
+        title="Publier"
+        aria-label="Publier"
+      >
+        ➤
+      </button>
+
     </form>
+
   </div>
+
 </div>
+
+
+<!-- =====================================================
+     JAVASCRIPT
+====================================================== -->
 
 <script>
-  // Script Like/Dislike
-  async function reactionPublication(idPubli, type) {
-    try {
-      const response = await fetch('/api/comments/react', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ idPubli, type })
-      });
-      const data = await response.json();
-      if (response.status === 401) return window.location.href = '/login';
-      if (!response.ok) return alert(data.error || 'Erreur lors de la réaction');
 
-      const article = document.querySelector(`[data-publication-id="${idPubli}"]`);
+  // =====================================================
+  // LIKE / DISLIKE PUBLICATION
+  // =====================================================
+
+  async function reactionPublication(idPubli, type) {
+
+    try {
+
+      const response = await fetch('/api/comments/react', {
+
+        method: 'POST',
+
+        headers: {
+          'Content-Type': 'application/json'
+        },
+
+        credentials: 'same-origin',
+
+        body: JSON.stringify({
+          idPubli,
+          type
+        })
+
+      });
+
+
+      const data = await response.json();
+
+
+      if (response.status === 401) {
+        return window.location.href = '/login';
+      }
+
+
+      if (!response.ok) {
+        return alert(data.error || 'Erreur lors de la réaction');
+      }
+
+
+      const article = document.querySelector(
+        `[data-publication-id="${idPubli}"]`
+      );
+
+
       if (!article) return;
 
+
       const likeButton = article.querySelector('.like-action');
+
       const dislikeButton = article.querySelector('.dislike-action');
 
+
       if (likeButton) {
+
         const count = likeButton.querySelector('.reaction-count');
-        if (count) count.textContent = data.likes ?? 0;
-        likeButton.classList.toggle('active', data.userReaction === 'LIKE');
+
+        if (count) {
+          count.textContent = data.likes ?? 0;
+        }
+
+        likeButton.classList.toggle(
+          'active',
+          data.userReaction === 'LIKE'
+        );
+
       }
+
+
       if (dislikeButton) {
+
         const count = dislikeButton.querySelector('.reaction-count');
-        if (count) count.textContent = data.dislikes ?? 0;
-        dislikeButton.classList.toggle('active', data.userReaction === 'DISLIKE');
+
+        if (count) {
+          count.textContent = data.dislikes ?? 0;
+        }
+
+        dislikeButton.classList.toggle(
+          'active',
+          data.userReaction === 'DISLIKE'
+        );
+
       }
+
+
     } catch (error) {
-      console.error('Erreur réaction publication :', error);
-      alert('Une erreur est survenue lors de la réaction.');
+
+      console.error(
+        'Erreur réaction publication :',
+        error
+      );
+
+      alert(
+        'Une erreur est survenue lors de la réaction.'
+      );
+
     }
+
   }
 
-  // Commentaires
+
+  // =====================================================
+  // COMMENTAIRES
+  // =====================================================
+
   async function ouvrirCommentaires(idPubli) {
-    const overlay = document.getElementById('comments-overlay');
-    const list = document.getElementById('comments-list');
-    const publicationInput = document.getElementById('comment-publication-id');
+
+    const overlay =
+      document.getElementById('comments-overlay');
+
+    const list =
+      document.getElementById('comments-list');
+
+    const publicationInput =
+      document.getElementById('comment-publication-id');
+
 
     publicationInput.value = idPubli;
+
     overlay.classList.add('open');
+
     document.body.style.overflow = 'hidden';
-    list.innerHTML = `<div class="comments-loading">Chargement des commentaires...</div>`;
+
+
+    list.innerHTML =
+      `<div class="comments-loading">Chargement des commentaires...</div>`;
+
 
     try {
-      const response = await fetch(`/api/comments/${idPubli}`, { credentials: 'same-origin' });
+
+      const response = await fetch(
+        `/api/comments/${idPubli}`,
+        {
+          credentials: 'same-origin'
+        }
+      );
+
+
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Impossible de charger les commentaires');
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          data.error ||
+          'Impossible de charger les commentaires'
+        );
+
+      }
+
+
       afficherCommentaires(data);
+
+
     } catch (error) {
-      console.error('Erreur commentaires :', error);
-      list.innerHTML = `<div class="comments-empty">Impossible de charger les commentaires.</div>`;
+
+      console.error(
+        'Erreur commentaires :',
+        error
+      );
+
+
+      list.innerHTML =
+        `<div class="comments-empty">Impossible de charger les commentaires.</div>`;
+
     }
+
   }
+
 
   function fermerCommentaires(event) {
-    if (event && event.target !== event.currentTarget) return;
-    document.getElementById('comments-overlay').classList.remove('open');
-    document.body.style.overflow = '';
-  }
 
-  const currentUserId = <%- JSON.stringify(user.idUser) %>;
-  const currentUserPseudo = <%- JSON.stringify(user.pseudo) %>;
-
-  function afficherCommentaires(comments) {
-    const list = document.getElementById('comments-list');
-    if (!Array.isArray(comments) || comments.length === 0) {
-      list.innerHTML = `<div class="comments-empty">Aucun commentaire pour le moment.</div>`;
+    if (
+      event &&
+      event.target !== event.currentTarget
+    ) {
       return;
     }
-    list.innerHTML = comments.map(comment => afficherCommentaire(comment, 0)).join('');
+
+
+    document
+      .getElementById('comments-overlay')
+      .classList.remove('open');
+
+
+    document.body.style.overflow = '';
+
   }
+
+
+  const currentUserId =
+    <%- JSON.stringify(user.idUser) %>;
+
+
+  const currentUserPseudo =
+    <%- JSON.stringify(user.pseudo) %>;
+
+
+  function afficherCommentaires(comments) {
+
+    const list =
+      document.getElementById('comments-list');
+
+
+    if (
+      !Array.isArray(comments) ||
+      comments.length === 0
+    ) {
+
+      list.innerHTML =
+        `<div class="comments-empty">Aucun commentaire pour le moment.</div>`;
+
+      return;
+
+    }
+
+
+    list.innerHTML =
+      comments
+        .map(comment => afficherCommentaire(comment, 0))
+        .join('');
+
+  }
+
 
   function afficherReponses(replies) {
-    if (!Array.isArray(replies) || replies.length === 0) return '';
-    return replies.map(reply => afficherCommentaire(reply, 1, true)).join('');
+
+    if (
+      !Array.isArray(replies) ||
+      replies.length === 0
+    ) {
+      return '';
+    }
+
+
+    return replies
+      .map(reply =>
+        afficherCommentaire(
+          reply,
+          1,
+          true
+        )
+      )
+      .join('');
+
   }
 
-  function afficherCommentaire(comment, niveau = 0, estReponse = false) {
-    const pseudo = comment.pseudo || 'Utilisateur';
-    const contenu = comment.contenuCom || '';
-    const estMonCommentaire = Number(comment.idUser) === Number(currentUserId) || pseudo === currentUserPseudo;
-    const reactions = comment.reactions || { likes: 0, dislikes: 0, userReaction: null };
-    const likeActive = reactions.userReaction === 'LIKE' ? 'active' : '';
-    const dislikeActive = reactions.userReaction === 'DISLIKE' ? 'active' : '';
-    const marge = estReponse ? 38 : 0;
+
+  function afficherCommentaire(
+    comment,
+    niveau = 0,
+    estReponse = false
+  ) {
+
+    const pseudo =
+      comment.pseudo || 'Utilisateur';
+
+
+    const contenu =
+      comment.contenuCom || '';
+
+
+    const estMonCommentaire =
+      Number(comment.idUser) === Number(currentUserId) ||
+      pseudo === currentUserPseudo;
+
+
+    const reactions =
+      comment.reactions || {
+        likes: 0,
+        dislikes: 0,
+        userReaction: null
+      };
+
+
+    const likeActive =
+      reactions.userReaction === 'LIKE'
+        ? 'active'
+        : '';
+
+
+    const dislikeActive =
+      reactions.userReaction === 'DISLIKE'
+        ? 'active'
+        : '';
+
+
+    const marge =
+      estReponse ? 38 : 0;
+
 
     let html = `
-      <div class="comment-item" data-comment-id="${comment.idComm}" style="margin-left: ${marge}px">
-        <div class="comment-avatar">${escapeHtml(pseudo.charAt(0).toUpperCase())}</div>
-        <div class="comment-body">
-          <div class="comment-line">
-            <span class="comment-author">@${escapeHtml(pseudo)}</span>
-            <span class="comment-text">${escapeHtml(contenu)}</span>
-          </div>
-          <div class="comment-actions">
-            <button type="button" class="comment-reaction comment-like ${likeActive}" onclick="reactionCommentaire(${comment.idComm}, 'LIKE')">
-              <svg viewBox="0 0 24 24"><path d="M20.8 8.8 C20.8 5.8 18.5 4 15.9 4 C14.1 4 12.7 5 12 6.3 C11.3 5 9.9 4 8.1 4 C5.5 4 3.2 5.8 3.2 8.8 C3.2 13.1 7.4 16.1 12 20 C16.6 16.1 20.8 13.1 20.8 8.8Z"></path></svg>
-              <span>${reactions.likes}</span>
-            </button>
-            <button type="button" class="comment-reaction comment-dislike ${dislikeActive}" onclick="reactionCommentaire(${comment.idComm}, 'DISLIKE')">
-              <svg viewBox="0 0 24 24">
-                <path d="M20.5 8.7 C20.5 5.9 18.3 4.2 15.8 4.2 C14.1 4.2 12.8 5.1 12 6.4"></path>
-                <path d="M12 6.4 L10.6 8.5 L13.3 11.2 L11.1 13.6 L13.8 16.3 L12 19.8"></path>
-                <path d="M12 6.4 C11.2 5.1 9.9 4.2 8.2 4.2 C5.7 4.2 3.5 5.9 3.5 8.7 C3.5 11.5 5.1 13.7 7.3 15.7"></path>
-              </svg>
-              <span>${reactions.dislikes}</span>
-            </button>
-            <button type="button" class="reply-button" onclick="repondreACommentaire(${comment.idComm}, '${escapeJs(pseudo)}')">Répondre</button>
-            ${estMonCommentaire ? `
-              <button type="button" class="comment-edit-button" title="Modifier" onclick="modifierCommentaire(${comment.idComm})">✎</button>
-              <button type="button" class="comment-delete-button" title="Supprimer" onclick="supprimerCommentaire(${comment.idComm})">🗑</button>
-            ` : ''}
-          </div>
+
+      <div
+        class="comment-item"
+        data-comment-id="${comment.idComm}"
+        style="margin-left: ${marge}px"
+      >
+
+        <div class="comment-avatar">
+          ${escapeHtml(
+            pseudo.charAt(0).toUpperCase()
+          )}
         </div>
+
+
+        <div class="comment-body">
+
+
+          <div class="comment-line">
+
+            <span class="comment-author">
+              @${escapeHtml(pseudo)}
+            </span>
+
+            <span class="comment-text">
+              ${escapeHtml(contenu)}
+            </span>
+
+          </div>
+
+
+          <div class="comment-actions">
+
+
+            <!-- Like commentaire -->
+
+            <button
+              type="button"
+              class="comment-reaction comment-like ${likeActive}"
+              onclick="reactionCommentaire(${comment.idComm}, 'LIKE')"
+            >
+
+              <svg viewBox="0 0 24 24">
+
+                <path d="M20.8 8.8 C20.8 5.8 18.5 4 15.9 4 C14.1 4 12.7 5 12 6.3 C11.3 5 9.9 4 8.1 4 C5.5 4 3.2 5.8 3.2 8.8 C3.2 13.1 7.4 16.1 12 20 C16.6 16.1 20.8 13.1 20.8 8.8Z"></path>
+
+              </svg>
+
+              <span>
+                ${reactions.likes}
+              </span>
+
+            </button>
+
+
+            <!-- Dislike commentaire -->
+
+            <button
+              type="button"
+              class="comment-reaction comment-dislike ${dislikeActive}"
+              onclick="reactionCommentaire(${comment.idComm}, 'DISLIKE')"
+            >
+
+              <svg viewBox="0 0 24 24">
+
+                <path d="M20.5 8.7 C20.5 5.9 18.3 4.2 15.8 4.2 C14.1 4.2 12.8 5.1 12 6.4"></path>
+
+                <path d="M12 6.4 L10.6 8.5 L13.3 11.2 L11.1 13.6 L13.8 16.3 L12 19.8"></path>
+
+                <path d="M12 6.4 C11.2 5.1 9.9 4.2 8.2 4.2 C5.7 4.2 3.5 5.9 3.5 8.7 C3.5 11.5 5.1 13.7 7.3 15.7"></path>
+
+              </svg>
+
+              <span>
+                ${reactions.dislikes}
+              </span>
+
+            </button>
+
+
+            <!-- Répondre -->
+
+            <button
+              type="button"
+              class="reply-button"
+              onclick="repondreACommentaire(${comment.idComm}, '${escapeJs(pseudo)}')"
+            >
+              Répondre
+            </button>
+
+
+            <!-- Modifier / supprimer -->
+
+            ${estMonCommentaire ? `
+
+              <button
+                type="button"
+                class="comment-edit-button"
+                title="Modifier"
+                onclick="modifierCommentaire(${comment.idComm})"
+              >
+                ✎
+              </button>
+
+
+              <button
+                type="button"
+                class="comment-delete-button"
+                title="Supprimer"
+                onclick="supprimerCommentaire(${comment.idComm})"
+              >
+                🗑
+              </button>
+
+            ` : ''}
+
+
+          </div>
+
+        </div>
+
       </div>
+
     `;
 
-    if (!estReponse && Array.isArray(comment.replies) && comment.replies.length > 0) {
-      const nombreReponses = comment.replies.length;
-      const texteReponses = nombreReponses === 1 ? 'Voir la réponse' : `Voir les ${nombreReponses} réponses`;
+
+    if (
+      !estReponse &&
+      Array.isArray(comment.replies) &&
+      comment.replies.length > 0
+    ) {
+
+      const nombreReponses =
+        comment.replies.length;
+
+
+      const texteReponses =
+        nombreReponses === 1
+          ? 'Voir la réponse'
+          : `Voir les ${nombreReponses} réponses`;
+
+
       html += `
-        <button type="button" class="toggle-replies-btn" data-parent-id="${comment.idComm}" onclick="toggleReponses(${comment.idComm}, this)">
+
+        <button
+          type="button"
+          class="toggle-replies-btn"
+          data-parent-id="${comment.idComm}"
+          onclick="toggleReponses(${comment.idComm}, this)"
+        >
           ${texteReponses}
         </button>
-        <div id="replies-${comment.idComm}" class="replies-container" style="display: none;">
+
+
+        <div
+          id="replies-${comment.idComm}"
+          class="replies-container"
+          style="display: none;"
+        >
+
           ${afficherReponses(comment.replies)}
+
         </div>
+
       `;
+
     }
+
 
     return html;
+
   }
+
 
   function toggleReponses(idComm, btn) {
-    const container = document.getElementById('replies-' + idComm);
+
+    const container =
+      document.getElementById(
+        'replies-' + idComm
+      );
+
+
     if (!container || !btn) return;
-    const isHidden = container.style.display === 'none' || container.style.display === '';
-    container.style.display = isHidden ? 'block' : 'none';
-    const nb = container.children.length;
-    btn.textContent = isHidden ? 'Masquer les réponses' : (nb === 1 ? 'Voir la réponse' : `Voir les ${nb} réponses`);
+
+
+    const isHidden =
+      container.style.display === 'none' ||
+      container.style.display === '';
+
+
+    container.style.display =
+      isHidden ? 'block' : 'none';
+
+
+    const nb =
+      container.children.length;
+
+
+    btn.textContent =
+      isHidden
+        ? 'Masquer les réponses'
+        : (
+            nb === 1
+              ? 'Voir la réponse'
+              : `Voir les ${nb} réponses`
+          );
+
   }
+
 
   function escapeHtml(value) {
+
     return String(value)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
+
+      .replaceAll(
+        '&',
+        '&amp;'
+      )
+
+      .replaceAll(
+        '<',
+        '&lt;'
+      )
+
+      .replaceAll(
+        '>',
+        '&gt;'
+      )
+
+      .replaceAll(
+        '"',
+        '&quot;'
+      )
+
+      .replaceAll(
+        "'",
+        '&#039;'
+      );
+
   }
+
 
   function escapeJs(value) {
+
     return String(value)
-      .replace(/\\/g, '\\\\')
-      .replace(/'/g, "\\'")
-      .replace(/"/g, '\\"')
-      .replace(/\r?\n/g, '\\n');
+
+      .replace(
+        /\\/g,
+        '\\\\'
+      )
+
+      .replace(
+        /'/g,
+        "\\'"
+      )
+
+      .replace(
+        /"/g,
+        '\\"'
+      )
+
+      .replace(
+        /\r?\n/g,
+        '\\n'
+      );
+
   }
 
-  function repondreACommentaire(idComm, pseudo) {
-    const input = document.getElementById('comment-input');
+
+  function repondreACommentaire(
+    idComm,
+    pseudo
+  ) {
+
+    const input =
+      document.getElementById(
+        'comment-input'
+      );
+
+
     if (!input) return;
-    input.dataset.parentId = String(idComm);
-    input.value = `@${pseudo} `;
-    input.placeholder = `Répondre à @${pseudo}...`;
+
+
+    input.dataset.parentId =
+      String(idComm);
+
+
+    input.value =
+      `@${pseudo} `;
+
+
+    input.placeholder =
+      `Répondre à @${pseudo}...`;
+
+
     input.focus();
+
   }
+
+
+  // =====================================================
+  // MODIFIER COMMENTAIRE
+  // =====================================================
 
   async function modifierCommentaire(idComm) {
-    const commentElement = document.querySelector(`[data-comment-id="${idComm}"]`);
+
+    const commentElement =
+      document.querySelector(
+        `[data-comment-id="${idComm}"]`
+      );
+
+
     if (!commentElement) return;
-    const textElement = commentElement.querySelector('.comment-text');
+
+
+    const textElement =
+      commentElement.querySelector(
+        '.comment-text'
+      );
+
+
     if (!textElement) return;
 
-    const nouveauTexte = prompt('Modifier votre commentaire :', textElement.textContent.trim());
+
+    const nouveauTexte =
+      prompt(
+        'Modifier votre commentaire :',
+        textElement.textContent.trim()
+      );
+
+
     if (nouveauTexte === null) return;
-    const contenuCom = nouveauTexte.trim();
-    if (!contenuCom) return alert('Le commentaire ne peut pas être vide.');
+
+
+    const contenuCom =
+      nouveauTexte.trim();
+
+
+    if (!contenuCom) {
+
+      return alert(
+        'Le commentaire ne peut pas être vide.'
+      );
+
+    }
+
 
     try {
-      const response = await fetch(`/api/comments/${idComm}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ contenuCom })
-      });
-      const data = await response.json();
-      if (response.status === 401) return window.location.href = '/login';
-      if (!response.ok) return alert(data.error || 'Impossible de modifier le commentaire.');
-      textElement.textContent = contenuCom;
+
+      const response =
+        await fetch(
+          `/api/comments/${idComm}`,
+          {
+            method: 'PUT',
+
+            headers: {
+              'Content-Type': 'application/json'
+            },
+
+            credentials: 'same-origin',
+
+            body: JSON.stringify({
+              contenuCom
+            })
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if (response.status === 401) {
+
+        return window.location.href =
+          '/login';
+
+      }
+
+
+      if (!response.ok) {
+
+        return alert(
+          data.error ||
+          'Impossible de modifier le commentaire.'
+        );
+
+      }
+
+
+      textElement.textContent =
+        contenuCom;
+
+
     } catch (error) {
-      console.error('Erreur modification commentaire :', error);
-      alert('Une erreur est survenue lors de la modification.');
+
+      console.error(
+        'Erreur modification commentaire :',
+        error
+      );
+
+
+      alert(
+        'Une erreur est survenue lors de la modification.'
+      );
+
     }
+
   }
+
+
+  // =====================================================
+  // SUPPRIMER COMMENTAIRE
+  // =====================================================
 
   async function supprimerCommentaire(idComm) {
-    if (!confirm('Voulez-vous vraiment supprimer ce commentaire ?')) return;
-    try {
-      const response = await fetch(`/api/comments/${idComm}`, {
-        method: 'DELETE',
-        credentials: 'same-origin'
-      });
-      if (response.status === 401) return window.location.href = '/login';
-      if (!response.ok) return alert('Impossible de supprimer le commentaire.');
 
-      const idPubli = document.getElementById('comment-publication-id').value;
-      const commentsResponse = await fetch(`/api/comments/${idPubli}`, { credentials: 'same-origin' });
-      const comments = await commentsResponse.json();
-      if (Array.isArray(comments)) afficherCommentaires(comments);
-    } catch (error) {
-      console.error('Erreur suppression commentaire :', error);
-      alert('Une erreur est survenue lors de la suppression.');
+    if (
+      !confirm(
+        'Voulez-vous vraiment supprimer ce commentaire ?'
+      )
+    ) {
+      return;
     }
+
+
+    try {
+
+      const response =
+        await fetch(
+          `/api/comments/${idComm}`,
+          {
+            method: 'DELETE',
+            credentials: 'same-origin'
+          }
+        );
+
+
+      if (response.status === 401) {
+
+        return window.location.href =
+          '/login';
+
+      }
+
+
+      if (!response.ok) {
+
+        return alert(
+          'Impossible de supprimer le commentaire.'
+        );
+
+      }
+
+
+      const idPubli =
+        document.getElementById(
+          'comment-publication-id'
+        ).value;
+
+
+      const commentsResponse =
+        await fetch(
+          `/api/comments/${idPubli}`,
+          {
+            credentials: 'same-origin'
+          }
+        );
+
+
+      const comments =
+        await commentsResponse.json();
+
+
+      if (Array.isArray(comments)) {
+
+        afficherCommentaires(
+          comments
+        );
+
+      }
+
+
+    } catch (error) {
+
+      console.error(
+        'Erreur suppression commentaire :',
+        error
+      );
+
+
+      alert(
+        'Une erreur est survenue lors de la suppression.'
+      );
+
+    }
+
   }
 
-  async function reactionCommentaire(idComm, type) {
-    try {
-      const response = await fetch(`/api/comments/${idComm}/react`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ type })
-      });
-      const data = await response.json();
-      if (response.status === 401) return window.location.href = '/login';
-      if (!response.ok) return alert(data.error || 'Impossible d’enregistrer la réaction.');
 
-      const commentElement = document.querySelector(`[data-comment-id="${idComm}"]`);
+  // =====================================================
+  // LIKE / DISLIKE COMMENTAIRE
+  // =====================================================
+
+  async function reactionCommentaire(
+    idComm,
+    type
+  ) {
+
+    try {
+
+      const response =
+        await fetch(
+          `/api/comments/${idComm}/react`,
+          {
+            method: 'POST',
+
+            headers: {
+              'Content-Type': 'application/json'
+            },
+
+            credentials: 'same-origin',
+
+            body: JSON.stringify({
+              type
+            })
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if (response.status === 401) {
+
+        return window.location.href =
+          '/login';
+
+      }
+
+
+      if (!response.ok) {
+
+        return alert(
+          data.error ||
+          'Impossible d’enregistrer la réaction.'
+        );
+
+      }
+
+
+      const commentElement =
+        document.querySelector(
+          `[data-comment-id="${idComm}"]`
+        );
+
+
       if (!commentElement) return;
 
-      const likeBtn = commentElement.querySelector('.comment-like');
+
+      const likeBtn =
+        commentElement.querySelector(
+          '.comment-like'
+        );
+
+
       if (likeBtn) {
-        const count = likeBtn.querySelector('span');
-        if (count) count.textContent = data.likes ?? 0;
-        likeBtn.classList.toggle('active', data.userReaction === 'LIKE');
+
+        const count =
+          likeBtn.querySelector('span');
+
+
+        if (count) {
+
+          count.textContent =
+            data.likes ?? 0;
+
+        }
+
+
+        likeBtn.classList.toggle(
+          'active',
+          data.userReaction === 'LIKE'
+        );
+
       }
-      const dislikeBtn = commentElement.querySelector('.comment-dislike');
+
+
+      const dislikeBtn =
+        commentElement.querySelector(
+          '.comment-dislike'
+        );
+
+
       if (dislikeBtn) {
-        const count = dislikeBtn.querySelector('span');
-        if (count) count.textContent = data.dislikes ?? 0;
-        dislikeBtn.classList.toggle('active', data.userReaction === 'DISLIKE');
+
+        const count =
+          dislikeBtn.querySelector('span');
+
+
+        if (count) {
+
+          count.textContent =
+            data.dislikes ?? 0;
+
+        }
+
+
+        dislikeBtn.classList.toggle(
+          'active',
+          data.userReaction === 'DISLIKE'
+        );
+
       }
+
+
     } catch (error) {
-      console.error('Erreur réaction commentaire :', error);
-      alert('Une erreur est survenue lors de la réaction.');
+
+      console.error(
+        'Erreur réaction commentaire :',
+        error
+      );
+
+
+      alert(
+        'Une erreur est survenue lors de la réaction.'
+      );
+
     }
+
   }
 
-  document.getElementById('comment-form').addEventListener('submit', async function(event) {
-    event.preventDefault();
-    const input = document.getElementById('comment-input');
-    const idPubli = document.getElementById('comment-publication-id').value;
-    const contenuCom = input.value.trim();
-    const parentId = input.dataset.parentId || null;
-    if (!contenuCom) return;
 
-    try {
-      const response = await fetch('/api/comments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ idPubli, contenuCom, idParent: parentId })
-      });
-      const data = await response.json();
-      if (!response.ok) return alert(data.error || 'Impossible d’ajouter le commentaire.');
+  // =====================================================
+  // AJOUTER COMMENTAIRE
+  // =====================================================
 
-      input.value = '';
-      delete input.dataset.parentId;
-      input.placeholder = 'Ajoutez un commentaire...';
+  document
+    .getElementById('comment-form')
+    .addEventListener(
+      'submit',
+      async function(event) {
 
-      const commentsResponse = await fetch(`/api/comments/${idPubli}`, { credentials: 'same-origin' });
-      const comments = await commentsResponse.json();
-      if (Array.isArray(comments)) {
-        afficherCommentaires(comments);
-        if (parentId) {
-          const btn = document.querySelector(`.toggle-replies-btn[data-parent-id="${parentId}"]`);
-          if (btn) toggleReponses(parentId, btn);
+        event.preventDefault();
+
+
+        const input =
+          document.getElementById(
+            'comment-input'
+          );
+
+
+        const idPubli =
+          document.getElementById(
+            'comment-publication-id'
+          ).value;
+
+
+        const contenuCom =
+          input.value.trim();
+
+
+        const parentId =
+          input.dataset.parentId ||
+          null;
+
+
+        if (!contenuCom) return;
+
+
+        try {
+
+          const response =
+            await fetch(
+              '/api/comments',
+              {
+                method: 'POST',
+
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+
+                credentials: 'same-origin',
+
+                body: JSON.stringify({
+                  idPubli,
+                  contenuCom,
+                  idParent: parentId
+                })
+              }
+            );
+
+
+          const data =
+            await response.json();
+
+
+          if (!response.ok) {
+
+            return alert(
+              data.error ||
+              'Impossible d’ajouter le commentaire.'
+            );
+
+          }
+
+
+          input.value = '';
+
+          delete input.dataset.parentId;
+
+          input.placeholder =
+            'Ajoutez un commentaire...';
+
+
+          const commentsResponse =
+            await fetch(
+              `/api/comments/${idPubli}`,
+              {
+                credentials: 'same-origin'
+              }
+            );
+
+
+          const comments =
+            await commentsResponse.json();
+
+
+          if (Array.isArray(comments)) {
+
+            afficherCommentaires(
+              comments
+            );
+
+
+            if (parentId) {
+
+              const btn =
+                document.querySelector(
+                  `.toggle-replies-btn[data-parent-id="${parentId}"]`
+                );
+
+
+              if (btn) {
+
+                toggleReponses(
+                  parentId,
+                  btn
+                );
+
+              }
+
+            }
+
+          }
+
+
+        } catch (error) {
+
+          console.error(
+            'Erreur ajout commentaire :',
+            error
+          );
+
+
+          alert(
+            'Une erreur est survenue.'
+          );
+
         }
+
       }
-    } catch (error) {
-      console.error('Erreur ajout commentaire :', error);
-      alert('Une erreur est survenue.');
-    }
-  });
+    );
+
+
+  // =====================================================
+  // REPOST
+  // =====================================================
 
   async function repartager(idPubli) {
+
     try {
-      const response = await fetch(`/api/publications/${idPubli}/repartage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ visibilite: 1 })
-      });
-      const data = await response.json();
+
+      const response =
+        await fetch(
+          `/api/publications/${idPubli}/repartage`,
+          {
+            method: 'POST',
+
+            headers: {
+              'Content-Type': 'application/json'
+            },
+
+            credentials: 'same-origin',
+
+            body: JSON.stringify({
+              visibilite: 1
+            })
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
       if (response.ok) {
-        alert('Publication repartagée !');
+
+        alert(
+          'Publication repartagée !'
+        );
+
+
         location.reload();
+
+
       } else {
-        alert(data.error || 'Erreur lors du repartage');
+
+        alert(
+          data.error ||
+          'Erreur lors du repartage'
+        );
+
       }
+
+
     } catch (error) {
-      console.error('Erreur repost :', error);
-      alert('Une erreur est survenue.');
+
+      console.error(
+        'Erreur repost :',
+        error
+      );
+
+
+      alert(
+        'Une erreur est survenue.'
+      );
+
     }
+
   }
+
+
+  // =====================================================
+  // DUO
+  // =====================================================
 
   async function creerDuo(idPubli) {
-    const contenuPub = prompt('Ajoute une description pour ton Duo :');
+
+    const contenuPub =
+      prompt(
+        'Ajoute une description pour ton Duo :'
+      );
+
+
     if (contenuPub === null) return;
+
+
     try {
-      const response = await fetch(`/api/publications/${idPubli}/duo`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ contenuPub, visibilite: 1 })
-      });
-      const data = await response.json();
+
+      const response =
+        await fetch(
+          `/api/publications/${idPubli}/duo`,
+          {
+            method: 'POST',
+
+            headers: {
+              'Content-Type': 'application/json'
+            },
+
+            credentials: 'same-origin',
+
+            body: JSON.stringify({
+              contenuPub,
+              visibilite: 1
+            })
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
       if (response.ok) {
-        alert('Duo créé !');
+
+        alert(
+          'Duo créé !'
+        );
+
+
         location.reload();
+
+
       } else {
-        alert(data.error || 'Erreur lors de la création du Duo');
+
+        alert(
+          data.error ||
+          'Erreur lors de la création du Duo'
+        );
+
       }
+
+
     } catch (error) {
-      console.error('Erreur Duo :', error);
-      alert('Une erreur est survenue.');
+
+      console.error(
+        'Erreur Duo :',
+        error
+      );
+
+
+      alert(
+        'Une erreur est survenue.'
+      );
+
     }
+
   }
+
+
+  // =====================================================
+  // COLLAGE
+  // =====================================================
 
   async function creerCollage(idPubli) {
-    const contenuPub = prompt('Ajoute une description pour ton collage :');
+
+    const contenuPub =
+      prompt(
+        'Ajoute une description pour ton collage :'
+      );
+
+
     if (contenuPub === null) return;
+
+
     try {
-      const response = await fetch(`/api/publications/${idPubli}/collage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ contenuPub, visibilite: 1 })
-      });
-      const data = await response.json();
+
+      const response =
+        await fetch(
+          `/api/publications/${idPubli}/collage`,
+          {
+            method: 'POST',
+
+            headers: {
+              'Content-Type': 'application/json'
+            },
+
+            credentials: 'same-origin',
+
+            body: JSON.stringify({
+              contenuPub,
+              visibilite: 1
+            })
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
       if (response.ok) {
-        alert('Collage créé !');
+
+        alert(
+          'Collage créé !'
+        );
+
+
         location.reload();
+
+
       } else {
-        alert(data.error || 'Erreur lors de la création du collage');
+
+        alert(
+          data.error ||
+          'Erreur lors de la création du collage'
+        );
+
       }
+
+
     } catch (error) {
-      console.error('Erreur collage :', error);
-      alert('Une erreur est survenue.');
+
+      console.error(
+        'Erreur collage :',
+        error
+      );
+
+
+      alert(
+        'Une erreur est survenue.'
+      );
+
     }
+
   }
+
+
+  // =====================================================
+  // COPIER LE LIEN
+  // =====================================================
 
   async function copierLien(idPubli) {
+
     try {
-      const response = await fetch(`/api/publications/${idPubli}/partager`, { credentials: 'same-origin' });
-      const data = await response.json();
+
+      const response =
+        await fetch(
+          `/api/publications/${idPubli}/partager`,
+          {
+            credentials: 'same-origin'
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
       if (response.ok) {
-        await navigator.clipboard.writeText(data.url);
-        alert('Lien copié !');
+
+        await navigator.clipboard.writeText(
+          data.url
+        );
+
+
+        alert(
+          'Lien copié !'
+        );
+
+
       } else if (response.status === 401) {
-        window.location.href = '/login';
+
+        window.location.href =
+          '/login';
+
+
       } else {
-        alert(data.error || 'Impossible de récupérer le lien');
+
+        alert(
+          data.error ||
+          'Impossible de récupérer le lien'
+        );
+
       }
+
+
     } catch (error) {
-      console.error('Erreur copier lien :', error);
-      alert('Impossible de copier le lien.');
+
+      console.error(
+        'Erreur copier lien :',
+        error
+      );
+
+
+      alert(
+        'Impossible de copier le lien.'
+      );
+
     }
+
   }
 
-  document.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') fermerCommentaires();
-  });
+
+  // =====================================================
+  // FERMETURE MODAL AVEC ESC
+  // =====================================================
+
+  document.addEventListener(
+    'keydown',
+    function(event) {
+
+      if (event.key === 'Escape') {
+
+        fermerCommentaires();
+
+      }
+
+    }
+  );
+
 </script>
+
+
+<!-- Suppression des publications -->
+
+<script src="/js/deletePost.js"></script>
+
+
 </body>
+
 </html>

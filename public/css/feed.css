@@ -85,6 +85,21 @@
     box-sizing: border-box;
 }
 
+.feed-title {
+    margin-bottom: 1.5rem;
+}
+
+.feed-title h1 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.feed-posts {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
 /* ==========================================
    CARTE D'ACCUEIL
 ========================================== */
@@ -105,10 +120,16 @@
     font-size: 22px;
 }
 
+.card h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+}
+
 .card p {
     margin: 0;
     color: var(--text-secondary, #9691aa);
     line-height: 1.5;
+    font-size: 0.95rem;
 }
 
 /* ==========================================
@@ -273,6 +294,77 @@
     border-color: #2d4738;
 }
 
+/* ============================================================
+   PUBLICATIONS PHOTO / VIDÉO
+============================================================ */
+
+.feed-post {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.feed-post-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.post-author {
+    color: var(--text-primary);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.post-author:hover {
+    text-decoration: underline;
+}
+
+.post-date {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.feed-post-image {
+    display: block;
+    width: 100%;
+    max-height: 650px;
+    object-fit: contain;
+    background: #08080d;
+}
+
+.feed-post-video {
+    display: block;
+    width: 100%;
+    max-height: 650px;
+    background: #08080d;
+    object-fit: contain;
+}
+
+.feed-post-content {
+    padding: 1rem 1.2rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+
+.empty-feed {
+    text-align: center;
+}
+
+.empty-feed h3 {
+    margin-bottom: 0.5rem;
+}
+
+.empty-feed p {
+    margin: 0;
+}
+
 /* ==========================================
    DÉCOUVERTE / SUGGESTIONS
 ========================================== */
@@ -356,6 +448,122 @@
     color: #686e82;
 }
 
+/* ==========================================================
+   ACTIONS COMMENTAIRES
+========================================================== */
+
+.comment-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.comment-reaction {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: none;
+    background: transparent;
+    color: #8f929d;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 3px 5px;
+    border-radius: 8px;
+    transition:
+        color 0.15s ease,
+        background 0.15s ease;
+}
+
+.comment-reaction:hover {
+    background: #25262d;
+}
+
+.comment-reaction svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* ==========================================
+   LIKE
+========================================== */
+
+.comment-like.active {
+    color: #ff1744;
+}
+
+.comment-like.active svg {
+    fill: #ff1744;
+    stroke: #ff1744;
+}
+
+/* ==========================================
+   DISLIKE
+========================================== */
+
+.comment-dislike.active {
+    color: #263b91;
+}
+
+.comment-dislike.active svg {
+    fill: #263b91;
+    stroke: #263b91;
+}
+
+/* ==========================================
+   RÉPONDRE
+========================================== */
+
+.reply-button {
+    border: none;
+    background: transparent;
+    color: #9295a0;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 5px;
+}
+
+.reply-button:hover {
+    color: #ffffff;
+}
+
+/* ==========================================
+   COMMENTAIRES ENFANTS
+========================================== */
+
+.comment-item {
+    transition: margin-left 0.2s ease;
+}
+
+/* ==========================================
+   MODIFIER / SUPPRIMER COMMENTAIRE
+========================================== */
+
+.comment-edit-button,
+.comment-delete-button {
+    border: none;
+    background: transparent;
+    color: #8b8b98;
+    cursor: pointer;
+    padding: 2px 4px;
+    font-size: 15px;
+    transition: color 0.2s ease;
+}
+
+.comment-edit-button:hover {
+    color: #ffffff;
+}
+
+.comment-delete-button:hover {
+    color: #d94b5b;
+}
+
 /* ==========================================
    RESPONSIVE
 ========================================== */
@@ -401,157 +609,4 @@
     .share-btn {
         width: 100%;
     }
-}
-
-/* ==========================================================
-   ACTIONS COMMENTAIRES
-   ========================================================== */
-
-.comment-actions {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 12px;
-
-    margin-top: 8px;
-}
-
-
-.comment-reaction {
-
-    display: inline-flex;
-
-    align-items: center;
-
-    gap: 4px;
-
-    border: none;
-
-    background: transparent;
-
-    color: #8f929d;
-
-    cursor: pointer;
-
-    font-size: 12px;
-
-    padding: 3px 5px;
-
-    border-radius: 8px;
-
-    transition:
-        color 0.15s ease,
-        background 0.15s ease;
-}
-
-
-.comment-reaction:hover {
-
-    background: #25262d;
-}
-
-
-.comment-reaction svg {
-
-    width: 18px;
-
-    height: 18px;
-
-    fill: none;
-
-    stroke: currentColor;
-
-    stroke-width: 2;
-
-    stroke-linecap: round;
-
-    stroke-linejoin: round;
-}
-
-
-/* LIKE */
-
-.comment-like.active {
-
-    color: #ff1744;
-}
-
-
-.comment-like.active svg {
-
-    fill: #ff1744;
-
-    stroke: #ff1744;
-}
-
-
-/* DISLIKE */
-
-.comment-dislike.active {
-
-    color: #263b91;
-}
-
-
-.comment-dislike.active svg {
-
-    fill: #263b91;
-
-    stroke: #263b91;
-}
-
-
-/* RÉPONDRE */
-
-.reply-button {
-
-    border: none;
-
-    background: transparent;
-
-    color: #9295a0;
-
-    font-size: 13px;
-
-    font-weight: 600;
-
-    cursor: pointer;
-
-    padding: 4px 5px;
-}
-
-
-.reply-button:hover {
-
-    color: #ffffff;
-}
-
-
-/* COMMENTAIRES ENFANTS */
-
-.comment-item {
-
-    transition:
-        margin-left 0.2s ease;
-}
-
-.comment-edit-button,
-.comment-delete-button {
-    border: none;
-    background: transparent;
-    color: #8b8b98;
-    cursor: pointer;
-    padding: 2px 4px;
-    font-size: 15px;
-    transition: color 0.2s ease;
-}
-
-.comment-edit-button:hover {
-    color: #ffffff;
-}
-
-.comment-delete-button:hover {
-    color: #d94b5b;
 }

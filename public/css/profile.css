@@ -1,435 +1,488 @@
-/* Variables thématiques */
+/* ==========================================
+   VARIABLES THÉMATIQUES
+========================================== */
+
 :root {
-  --profile-card-bg: #14161f;
-  --profile-box-bg: #1b1e2a;
-  --profile-border: #282c3c;
-  --profile-border-subtle: #373c50;
-  --profile-accent: #9046eb;
-  --profile-text-bright: #ffffff;
-  --profile-text-muted: #8b92a5;
-  --profile-text-dimmed: #686e82;
+    --profile-card-bg: #14161f;
+    --profile-box-bg: #1b1e2a;
+    --profile-border: #282c3c;
+    --profile-border-subtle: #373c50;
+    --profile-accent: #9046eb;
+    --profile-text-bright: #ffffff;
+    --profile-text-muted: #8b92a5;
+    --profile-text-dimmed: #686e82;
 }
 
-/* Centrage global sur 430px */
+/* ==========================================
+   CENTRAGE GLOBAL
+========================================== */
+
 .profile-header,
 .profile-container {
-  width: 100%;
-  max-width: 430px;
-  margin: 0 auto;
-  box-sizing: border-box;
+    width: 100%;
+    max-width: 430px;
+    margin: 0 auto;
+    box-sizing: border-box;
 }
 
-/* En-tête */
+/* ==========================================
+   EN-TÊTE
+========================================== */
+
 .profile-header {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--profile-border);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--profile-border);
 }
 
 .header-title {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  margin: 0;
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--profile-text-bright);
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--profile-text-bright);
 }
 
 .icon-btn {
-  color: var(--profile-text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--profile-card-bg);
-  border: 1px solid var(--profile-border);
-  text-decoration: none;
-  z-index: 2;
-  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+    color: var(--profile-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--profile-card-bg);
+    border: 1px solid var(--profile-border);
+    text-decoration: none;
+    z-index: 2;
+    transition:
+        color 0.2s,
+        border-color 0.2s,
+        background-color 0.2s;
 }
 
 .icon-btn:hover {
-  color: var(--profile-text-bright);
-  border-color: var(--profile-border-subtle);
-  background: var(--profile-box-bg);
+    color: var(--profile-text-bright);
+    border-color: var(--profile-border-subtle);
+    background: var(--profile-box-bg);
 }
 
 .header-spacer {
-  width: 36px;
+    width: 36px;
 }
 
-/* Conteneur principal */
+/* ==========================================
+   CONTENEUR PRINCIPAL
+========================================== */
+
 .profile-container {
-  padding: 24px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
-/* Ligne identité : Avatar à gauche + Titre/Nom à droite */
+/* ==========================================
+   IDENTITÉ
+========================================== */
+
 .profile-identity-row {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
 }
 
-/* Avatar circulaire */
+/* ==========================================
+   AVATAR
+========================================== */
+
 .avatar-circle {
-  width: 90px;
-  height: 90px;
-  min-width: 90px;
-  border-radius: 50%;
-  background: linear-gradient(145deg, #1b1e2a 0%, #11131a 100%);
-  border: 2px solid var(--profile-border-subtle);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--profile-text-dimmed);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  overflow: hidden;
+    width: 90px;
+    height: 90px;
+    min-width: 90px;
+    border-radius: 50%;
+    background: linear-gradient(
+        145deg,
+        #1b1e2a 0%,
+        #11131a 100%
+    );
+    border: 2px solid var(--profile-border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--profile-text-dimmed);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
 }
 
 .avatar-circle svg {
-  width: 48px;
-  height: 48px;
+    width: 48px;
+    height: 48px;
 }
 
 .avatar-img {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
-/* Bloc pseudo + nom aligné à côté de la photo */
+/* ==========================================
+   INFORMATIONS D'IDENTITÉ
+========================================== */
+
 .identity-info {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-  flex: 1;
-  min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
 }
 
 .pseudo-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .profile-pseudo {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--profile-text-bright);
-  line-height: 1.2;
-  word-break: break-word;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--profile-text-bright);
+    line-height: 1.2;
+    word-break: break-word;
 }
 
-/* Badges */
+/* ==========================================
+   BADGES
+========================================== */
+
 .badge {
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 9999px;
-  text-transform: uppercase;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    text-transform: uppercase;
 }
 
 .badge-admin {
-  background-color: rgba(239, 68, 68, 0.15);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.35);
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
 .badge-modo {
-  background-color: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.35);
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
-/* Prénom et Nom : même ligne ou sous le pseudo, en grisé */
+.badge-friend {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+/* ==========================================
+   NOM RÉEL
+========================================== */
+
 .real-name {
-  font-size: 0.95rem;
-  color: var(--profile-text-dimmed);
-  margin: 0;
+    font-size: 0.95rem;
+    color: var(--profile-text-dimmed);
+    margin: 0;
 }
 
-/* 2. Biographie en pleine largeur sous la photo */
+/* ==========================================
+   BIOGRAPHIE
+========================================== */
+
 .bio-fullwidth {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
 }
 
 .bio-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--profile-accent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--profile-accent);
 }
 
 .bio-frame {
-  background-color: var(--profile-box-bg);
-  border: 1px solid var(--profile-border);
-  border-radius: 12px;
-  padding: 14px 16px;
-  width: 100%;
-  box-sizing: border-box;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25);
+    background-color: var(--profile-box-bg);
+    border: 1px solid var(--profile-border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    width: 100%;
+    box-sizing: border-box;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 .bio-frame p {
-  font-size: 0.92rem;
-  line-height: 1.5;
-  color: #e2e4ec;
-  margin: 0;
-  word-break: break-word;
-  white-space: pre-wrap;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: #e2e4ec;
+    margin: 0;
+    word-break: break-word;
+    white-space: pre-wrap;
 }
 
-/* 3. Bouton Modifier le profil */
+/* ==========================================
+   BOUTON MODIFIER LE PROFIL
+========================================== */
+
 .btn-edit {
-  display: block;
-  width: 100%;
-  text-align: center;
-  text-decoration: none;
-  background-color: var(--profile-card-bg);
-  color: var(--profile-text-bright);
-  border: 1px solid var(--profile-border);
-  padding: 11px 0;
-  border-radius: 10px;
-  font-size: 0.92rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
+    display: block;
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+    background-color: var(--profile-card-bg);
+    color: var(--profile-text-bright);
+    border: 1px solid var(--profile-border);
+    padding: 11px 0;
+    border-radius: 10px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        background-color 0.2s,
+        border-color 0.2s;
 }
 
 .btn-edit:hover {
-  background-color: var(--profile-box-bg);
-  border-color: var(--profile-accent);
+    background-color: var(--profile-box-bg);
+    border-color: var(--profile-accent);
 }
 
-/* Bouton Reposts */
+/* ==========================================
+   BOUTON REPOSTS
+========================================== */
+
 .profile-reposts-tab {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-
-  width: 100%;
-  height: 44px;
-
-  padding: 0;
-
-  background-color: var(--profile-card-bg);
-  color: var(--profile-text-bright);
-
-  border: 1px solid var(--profile-border);
-  border-radius: 10px;
-
-  font-size: 0.92rem;
-  font-weight: 600;
-
-  cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 44px;
+    padding: 0;
+    background-color: var(--profile-card-bg);
+    color: var(--profile-text-bright);
+    border: 1px solid var(--profile-border);
+    border-radius: 10px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        background-color 0.2s,
+        border-color 0.2s;
 }
 
 .profile-reposts-tab:hover {
-  background-color: var(--profile-box-bg);
-  border-color: var(--profile-accent);
+    background-color: var(--profile-box-bg);
+    border-color: var(--profile-accent);
 }
 
 .profile-reposts-tab svg {
-  width: 20px;
-  height: 20px;
-
-  flex-shrink: 0;
-
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
 }
 
+/* ==========================================
+   STATISTIQUES
+========================================== */
 
-/* 4. Section publications */
+.profile-stats {
+    display: flex;
+    justify-content: space-around;
+    background-color: var(--profile-box-bg);
+    border: 1px solid var(--profile-border);
+    border-radius: 12px;
+    padding: 12px 0;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.stat-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--profile-text-bright);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--profile-text-dimmed);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ==========================================
+   SUIVRE / NE PLUS SUIVRE
+========================================== */
+
+.btn-follow {
+    display: block;
+    width: 100%;
+    border: none;
+    background-color: var(--profile-accent);
+    color: var(--profile-text-bright);
+    padding: 12px 0;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        background-color 0.2s,
+        border-color 0.2s,
+        color 0.2s;
+}
+
+.btn-follow:hover {
+    background-color: var(--profile-accent-hover);
+}
+
+.btn-follow.following {
+    background-color: var(--profile-card-bg);
+    border: 1px solid var(--profile-border-subtle);
+    color: var(--profile-text-muted);
+}
+
+.btn-follow.following:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* ==========================================
+   SECTION PUBLICATIONS
+========================================== */
+
 .posts-section {
-  border-top: 1px solid var(--profile-border);
-  padding-top: 28px;
+    border-top: 1px solid var(--profile-border);
+    padding-top: 28px;
+}
+
+.posts-title {
+    margin: 0 0 18px;
+    color: var(--profile-text-bright);
+    font-size: 1.1rem;
+    font-weight: 700;
 }
 
 .empty-posts {
-  text-align: center;
-  color: var(--profile-text-dimmed);
-  font-size: 0.9rem;
-  margin: 10px 0;
+    text-align: center;
+    color: var(--profile-text-dimmed);
+    font-size: 0.9rem;
+    margin: 10px 0;
 }
 
-/* Formulaire d'édition (editProfile.ejs) */
+/* ==========================================
+   FORMULAIRE D'ÉDITION
+========================================== */
+
 .edit-form {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: 100%;
 }
 
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .form-group label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--profile-text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--profile-text-muted);
 }
 
 .form-group input,
 .form-group textarea {
-  background-color: var(--profile-box-bg);
-  border: 1px solid var(--profile-border);
-  border-radius: 10px;
-  padding: 12px 14px;
-  color: var(--profile-text-bright);
-  font-size: 0.95rem;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.2s;
+    background-color: var(--profile-box-bg);
+    border: 1px solid var(--profile-border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--profile-text-bright);
+    font-size: 0.95rem;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
 }
 
 .form-group input:focus,
 .form-group textarea:focus {
-  border-color: var(--profile-accent);
+    border-color: var(--profile-accent);
 }
 
 .form-group textarea {
-  resize: vertical;
-  min-height: 90px;
+    resize: vertical;
+    min-height: 90px;
 }
 
-
-/* Statistiques d'abonnements */
-.profile-stats {
-  display: flex;
-  justify-content: space-around;
-  background-color: var(--profile-box-bg);
-  border: 1px solid var(--profile-border);
-  border-radius: 12px;
-  padding: 12px 0;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.stat-value {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--profile-text-bright);
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  color: var(--profile-text-dimmed);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* Pastille Amis */
-.badge-friend {
-  background-color: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.35);
-}
-
-/* Bouton Suivre / Ne plus suivre */
-.btn-follow {
-  display: block;
-  width: 100%;
-  border: none;
-  background-color: var(--profile-accent);
-  color: var(--profile-text-bright);
-  padding: 12px 0;
-  border-radius: 10px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
-}
-
-.btn-follow:hover {
-  background-color: var(--profile-accent-hover);
-}
-
-.btn-follow.following {
-  background-color: var(--profile-card-bg);
-  border: 1px solid var(--profile-border-subtle);
-  color: var(--profile-text-muted);
-}
-
-.btn-follow.following:hover {
-  border-color: #ef4444;
-  color: #ef4444;
-  background-color: rgba(239, 68, 68, 0.1);
-}
-
-
-/* Icônes SVG */
+/* ==========================================
+   ACTIONS DES PUBLICATIONS
+========================================== */
 
 .profile-post .post-action svg {
-  width: 15px;
-  height: 15px;
-
-  flex-shrink: 0;
-
-  display: block;
-  stroke: currentColor;
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    display: block;
+    stroke: currentColor;
 }
 
 .profile-post .comment-action svg {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
 }
 
 .profile-post .reaction-count {
-  font-size: 0.68rem;
-  color: var(--profile-text-muted);
-  line-height: 1;
+    font-size: 0.68rem;
+    color: var(--profile-text-muted);
+    line-height: 1;
 }
 
-/* Réaction active */
-
 .profile-post .post-action.active {
-  color: var(--profile-accent);
+    color: var(--profile-accent);
 }
 
 .profile-post .post-action.active .reaction-count {
-  color: var(--profile-accent);
+    color: var(--profile-accent);
 }
-
-/* Espace avant le bouton lien */
 
 .profile-post .post-action-spacer {
-  flex: 1;
+    flex: 1;
 }
 
-/* ==========================================================
+/* ==========================================
    PUBLICATIONS DU PROFIL
-   Surcharge du CSS du feed pour la grille 3 colonnes
-   ========================================================== */
+   GRILLE 3 COLONNES
+========================================== */
 
 .profile-posts {
     display: grid;
@@ -438,7 +491,7 @@
     width: 100%;
 }
 
-/* On utilise les cartes du feed dans le profil */
+/* Cartes Publications */
 .profile-posts .publication-card {
     width: 100%;
     min-width: 0;
@@ -449,7 +502,8 @@
     overflow: hidden;
 }
 
-/* Empêche le media-query du feed de mettre les actions en colonne */
+/* Empêche le media-query du feed
+   de mettre les actions en colonne */
 .profile-posts .publication-actions {
     display: flex;
     flex-direction: row;
@@ -461,36 +515,36 @@
     width: 100%;
 }
 
-/* Les boutons restent petits mais propres */
+/* Boutons d'action */
 .profile-posts .publication-action {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 2px;
-
     width: auto;
     min-width: 22px;
     height: 26px;
-
     padding: 2px;
-
     border: none;
     background: transparent;
     color: #8f929d;
-
     cursor: pointer;
     flex-shrink: 0;
+}
+
+.profile-posts .publication-action:hover {
+    color: #ffffff;
+    background: #211f30;
+    border-radius: 6px;
 }
 
 /* SVG */
 .profile-posts .publication-action svg {
     width: 14px;
     height: 14px;
-
     fill: none;
     stroke: currentColor;
     stroke-width: 1.8;
-
     flex-shrink: 0;
 }
 
@@ -505,17 +559,20 @@
     color: #9046eb;
 }
 
+/* Espace */
 .profile-posts .action-spacer {
     flex: 1;
 }
 
-/* En-tête */
+/* ==========================================
+   EN-TÊTE DES PUBLICATIONS DU PROFIL
+========================================== */
+
 .profile-posts .publication-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 4px;
-
     margin-bottom: 8px;
 }
 
@@ -533,61 +590,109 @@
     white-space: nowrap;
 }
 
-/* Contenu */
+/* ==========================================
+   CONTENU DES PUBLICATIONS DU PROFIL
+========================================== */
+
 .profile-posts .publication-content {
     font-size: 12px;
     line-height: 1.4;
     margin: 6px 0 8px;
-
     color: #e8e5ef;
-
     word-break: break-word;
 }
 
-/* Lien principal : surtout pas bleu */
+/* Lien principal */
 .profile-posts .publication-main-link {
     display: block;
     color: inherit;
     text-decoration: none;
 }
 
-/* Média */
+/* ==========================================
+   MÉDIA DANS LE PROFIL
+========================================== */
+
 .profile-posts .publication-media {
     width: 100%;
     min-height: 55px;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     margin: 5px 0;
-
     border-radius: 8px;
-
     background: #100f17;
     color: #686e82;
-
     font-size: 10px;
-
     overflow: hidden;
 }
 
-/* Publication repartagée */
+.profile-posts .publication-media img,
+.profile-posts .publication-media video {
+    width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+}
+
+/* ==========================================
+   ANCIENS STYLES PROFILE-POST
+   Conservés pour les vues média de main
+========================================== */
+
+.profile-post {
+    width: 100%;
+    background-color: var(--profile-card-bg);
+    border: 1px solid var(--profile-border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.profile-post-header {
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--profile-border);
+}
+
+.profile-post-date {
+    color: var(--profile-text-dimmed);
+    font-size: 0.75rem;
+}
+
+.profile-post-image {
+    display: block;
+    width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+    background-color: #08080d;
+}
+
+.profile-post-video {
+    display: block;
+    width: 100%;
+    max-height: 500px;
+    background: #08080d;
+    object-fit: contain;
+}
+
+.profile-post-content {
+    padding: 14px 16px;
+    color: #e2e4ec;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+
+/* ==========================================
+   PUBLICATION REPARTAGÉE
+========================================== */
+
 .profile-posts .shared-publication {
     margin: 6px 0 8px;
     padding: 6px 7px;
-
     border-radius: 7px;
-
     font-size: 9px;
     line-height: 1.3;
-
     word-break: break-word;
-}
-
-/* Hover */
-.profile-posts .publication-action:hover {
-    color: #ffffff;
-    background: #211f30;
-    border-radius: 6px;
 }

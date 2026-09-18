@@ -1,6 +1,8 @@
 const db = require('../config/database');
 
-// Créer une publication
+/**
+ * Crée une publication classique.
+ */
 function createPublication(
     idUser,
     contenuPub,
@@ -25,7 +27,106 @@ function createPublication(
     return findById(result.lastInsertRowid);
 }
 
-// Récupérer une publication par son ID
+/**
+ * Crée une publication avec un média.
+ *
+ * typeMedia :
+ * - image
+ * - video
+ */
+function createMediaPost(
+    idUser,
+    contenuPub,
+    visibilite,
+    nomMedia,
+    typeMedia
+) {
+    const transaction = db.transaction(() => {
+        const publicationResult = db.prepare(`
+            INSERT INTO Publication (
+                idUser,
+                contenuPub,
+                visibilite
+            )
+            VALUES (?, ?, ?)
+        `).run(
+            idUser,
+            contenuPub || null,
+            visibilite
+        );
+
+        const idPubli = publicationResult.lastInsertRowid;
+
+        db.prepare(`
+            INSERT INTO Media (
+                idPubli,
+                nomMedia,
+                typeMedia
+            )
+            VALUES (?, ?, ?)
+        `).run(
+            idPubli,
+            nomMedia,
+            typeMedia
+        );
+
+        return idPubli;
+    });
+
+    const idPubli = transaction();
+
+    return findPostById(idPubli);
+}
+
+/**
+ * Supprime une publication contenant un média
+ * uniquement si elle appartient à l'utilisateur.
+ */
+function deletePostByIdAndUser(idPubli, idUser) {
+    const transaction = db.transaction(() => {
+        const media = db.prepare(`
+            SELECT
+                m.idMedia,
+                m.nomMedia
+            FROM Media m
+            INNER JOIN Publication p
+                ON p.idPubli = m.idPubli
+            WHERE p.idPubli = ?
+            AND p.idUser = ?
+        `).get(
+            idPubli,
+            idUser
+        );
+
+        // Publication inexistante ou utilisateur
+        // qui n'est pas propriétaire.
+        if (!media) {
+            return null;
+        }
+
+        db.prepare(`
+            DELETE FROM Media
+            WHERE idPubli = ?
+        `).run(idPubli);
+
+        db.prepare(`
+            DELETE FROM Publication
+            WHERE idPubli = ?
+            AND idUser = ?
+        `).run(
+            idPubli,
+            idUser
+        );
+
+        return media;
+    });
+
+    return transaction();
+}
+
+/**
+ * Récupérer une publication par son ID.
+ */
 function findById(idPubli) {
     return db.prepare(`
         SELECT *
@@ -34,7 +135,9 @@ function findById(idPubli) {
     `).get(idPubli);
 }
 
-// Récupérer l'auteur d'une publication
+/**
+ * Récupérer l'auteur d'une publication.
+ */
 function findAuthor(idPubli) {
     return db.prepare(`
         SELECT
@@ -47,7 +150,9 @@ function findAuthor(idPubli) {
     `).get(idPubli);
 }
 
-// Récupérer une publication avec les informations de son original
+/**
+ * Récupérer une publication avec les informations de son original.
+ */
 function findWithOriginal(idPubli) {
     return db.prepare(`
         SELECT
@@ -84,7 +189,9 @@ function findWithOriginal(idPubli) {
     `).get(idPubli);
 }
 
-// Créer un repartage classique
+/**
+ * Créer un repartage classique.
+ */
 function createRepost(
     idUser,
     idPubliPartagee,
@@ -105,7 +212,9 @@ function createRepost(
     return findById(result.lastInsertRowid);
 }
 
-// Créer une publication Duo
+/**
+ * Créer une publication Duo.
+ */
 function createDuo(
     idUser,
     idPubliOriginale,
@@ -128,7 +237,9 @@ function createDuo(
     return findById(result.lastInsertRowid);
 }
 
-// Créer un collage
+/**
+ * Créer un collage.
+ */
 function createCollage(
     idUser,
     idPubliOriginale,
@@ -150,7 +261,10 @@ function createCollage(
 
     return findById(result.lastInsertRowid);
 }
-// Récupérer la chaîne complète des publications parentes
+
+/**
+ * Récupérer la chaîne complète des publications parentes.
+ */
 function findRemixChain(idPubli) {
     const chain = [];
     const visitedIds = new Set();
@@ -158,8 +272,7 @@ function findRemixChain(idPubli) {
     let currentId = idPubli;
 
     while (currentId !== null) {
-
-        // Protection contre les boucles dans la chaîne
+        // Protection contre les boucles dans la chaîne.
         if (visitedIds.has(currentId)) {
             throw new Error(
                 'Chaîne de remixes invalide : boucle détectée'
@@ -193,7 +306,10 @@ function findRemixChain(idPubli) {
     return chain;
 }
 
-// Récupérer les publications d'un utilisateur
+/**
+ * Récupérer les publications d'un utilisateur
+ * avec les informations de leur original.
+ */
 function findByUserId(idUser) {
     return db.prepare(`
         SELECT
@@ -239,16 +355,126 @@ function findByUserId(idUser) {
     `).all(idUser);
 }
 
+// ================================
+// PHOTOS / VIDÉOS
+// ================================
 
+/**
+ * Toutes les publications contenant un média.
+ */
+function findAllPostsWithMedia() {
+    return db.prepare(`
+        SELECT
+            p.idPubli,
+            p.idUser,
+            p.contenuPub,
+            p.visibilite,
+            p.datePubli,
+
+            m.idMedia,
+            m.nomMedia,
+            m.typeMedia,
+            m.duree,
+            m.dateUpload,
+
+            u.pseudo
+
+        FROM Publication p
+
+        INNER JOIN Media m
+            ON m.idPubli = p.idPubli
+
+        INNER JOIN Utilisateur u
+            ON u.idUser = p.idUser
+
+        ORDER BY p.datePubli DESC
+    `).all();
+}
+
+/**
+ * Publications média d'un utilisateur.
+ */
+function findPostsByUserId(idUser) {
+    return db.prepare(`
+        SELECT
+            p.idPubli,
+            p.idUser,
+            p.contenuPub,
+            p.visibilite,
+            p.datePubli,
+
+            m.idMedia,
+            m.nomMedia,
+            m.typeMedia,
+            m.duree,
+            m.dateUpload,
+
+            u.pseudo
+
+        FROM Publication p
+
+        INNER JOIN Media m
+            ON m.idPubli = p.idPubli
+
+        INNER JOIN Utilisateur u
+            ON u.idUser = p.idUser
+
+        WHERE p.idUser = ?
+
+        ORDER BY p.datePubli DESC
+    `).all(idUser);
+}
+
+/**
+ * Une publication contenant un média.
+ */
+function findPostById(idPubli) {
+    return db.prepare(`
+        SELECT
+            p.idPubli,
+            p.idUser,
+            p.contenuPub,
+            p.visibilite,
+            p.datePubli,
+
+            m.idMedia,
+            m.nomMedia,
+            m.typeMedia,
+            m.duree,
+            m.dateUpload,
+
+            u.pseudo
+
+        FROM Publication p
+
+        INNER JOIN Media m
+            ON m.idPubli = p.idPubli
+
+        INNER JOIN Utilisateur u
+            ON u.idUser = p.idUser
+
+        WHERE p.idPubli = ?
+    `).get(idPubli);
+}
 
 module.exports = {
+    // Publications
     createPublication,
     createRepost,
     createDuo,
     createCollage,
+
+    // Recherche publications
     findById,
     findAuthor,
     findWithOriginal,
     findRemixChain,
-    findByUserId
+    findByUserId,
+
+    // Photos / vidéos
+    createMediaPost,
+    findAllPostsWithMedia,
+    findPostsByUserId,
+    findPostById,
+    deletePostByIdAndUser
 };

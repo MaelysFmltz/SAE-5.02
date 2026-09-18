@@ -1,7 +1,13 @@
 const db = require('../config/database');
 const postModel = require('../models/postModel');
 const hashtagModel = require('../models/hashtagModel');
-const { extractHashtags } = require('../utils/hashtagUtils');
+const {
+    extractHashtags
+} = require('../utils/hashtagUtils');
+
+const {
+    modifierVisibilite: modifierVisibiliteService
+} = require('../services/postService');
 
 function creerPublication(req, res) {
     const idUser = req.user.idUser;
@@ -26,14 +32,22 @@ function creerPublication(req, res) {
 
         // Détection et enregistrement des hashtags dans PubliHashtag
         const hashtags = extractHashtags(contenuPub);
+
         if (hashtags.length > 0) {
-            hashtagModel.associerHashtagsPubli(db, publication.idPubli, hashtags);
+            hashtagModel.associerHashtagsPubli(
+                db,
+                publication.idPubli,
+                hashtags
+            );
         }
 
         return res.status(201).json(publication);
 
     } catch (error) {
-        console.error('Erreur création publication :', error);
+        console.error(
+            'Erreur création publication :',
+            error
+        );
 
         return res.status(500).json({
             error: 'Impossible de créer la publication'
@@ -70,6 +84,18 @@ function modifierVisibilite(req, res) {
     const idUser = req.user.idUser;
     const visibilite = Number(req.body.visibilite);
 
+    if (!Number.isInteger(idPubli)) {
+        return res.status(400).json({
+            error: 'Identifiant de publication invalide'
+        });
+    }
+
+    if (visibilite !== 0 && visibilite !== 1) {
+        return res.status(400).json({
+            error: 'Visibilité invalide'
+        });
+    }
+
     const publication = db.prepare(`
         SELECT idUser
         FROM Publication
@@ -88,17 +114,12 @@ function modifierVisibilite(req, res) {
         });
     }
 
-    if (visibilite !== 0 && visibilite !== 1) {
-        return res.status(400).json({
-            error: 'Visibilité invalide'
-        });
-    }
-
-    db.prepare(`
-        UPDATE Publication
-        SET visibilite = ?
-        WHERE idPubli = ?
-    `).run(visibilite, idPubli);
+    modifierVisibiliteService(
+        db,
+        idPubli,
+        idUser,
+        visibilite
+    );
 
     return res.status(200).json({
         message: 'Visibilité modifiée'

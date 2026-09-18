@@ -12,8 +12,6 @@ if (!process.env.JWT_SECRET) {
   process.exit(1);
 }
 
-app.listen(PORT, () => {
-  console.log(
-    `Serveur lancé sur http://localhost:${PORT}`
-  );
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Serveur lancé sur le port ${PORT}`);
 });
