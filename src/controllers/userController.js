@@ -96,6 +96,7 @@ async function changeUserRoleAdmin(req, res) {
     const { idUser, role } = req.body;
     const targetId = Number(idUser);
 
+    // Seuls les rôles user et moderator peuvent être assignés depuis l'admin panel
     const allowedRoles = ['user', 'moderator'];
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({ error: 'Rôle invalide ou non assignable depuis le panneau.' });
@@ -106,10 +107,12 @@ async function changeUserRoleAdmin(req, res) {
       return res.status(404).json({ error: 'Utilisateur introuvable.' });
     }
 
+    // Interdiction de modifier son propre compte
     if (targetId === req.user.idUser) {
       return res.status(400).json({ error: 'Vous ne pouvez pas modifier votre propre rôle.' });
     }
 
+    // Interdiction de toucher à un autre administrateur
     if (targetUser.role === 'admin') {
       return res.status(403).json({ error: 'Impossible de modifier le rôle d’un administrateur.' });
     }

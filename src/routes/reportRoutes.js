@@ -32,4 +32,10 @@ router.get(
     reportController.obtenirSignalement
 );
 
+router.get(
+    '/mes-signalements',
+    authMiddleware,
+    reportController.obtenirMesSignalements
+);
+
 module.exports = router;

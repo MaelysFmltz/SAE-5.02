@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixora - Administration</title>
+    <title>Pixora - Panel Administration & Modération</title>
 
     <style>
         * {
@@ -13,74 +13,118 @@
         }
 
         body {
-            font-family: Arial, sans-serif;
-            background: #f4f4f8;
-            color: #222;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #0f0f12;
+            color: #e5e5e5;
             padding: 30px;
         }
 
         header {
-            background: #222;
-            color: white;
-            padding: 20px 30px;
-            border-radius: 15px;
+            background: #18181f;
+            border: 1px solid #272732;
+            padding: 24px 30px;
+            border-radius: 12px;
             margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         header h1 {
-            margin-bottom: 5px;
+            font-size: 22px;
+            color: #fff;
+            margin-bottom: 4px;
         }
 
+        header p {
+            color: #9ca3af;
+            font-size: 14px;
+        }
+
+        .back-link {
+            color: #3b82f6;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover { text-decoration: underline; }
+
         .section {
-            background: white;
+            background: #18181f;
+            border: 1px solid #272732;
             padding: 25px;
-            border-radius: 15px;
+            border-radius: 12px;
             margin-bottom: 25px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
         .section h2 {
+            font-size: 18px;
             margin-bottom: 20px;
+            border-bottom: 1px solid #272732;
+            padding-bottom: 10px;
+            color: #f3f4f6;
         }
 
         .item {
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 12px;
+            background: #111116;
+            border: 1px solid #2a2a38;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 14px;
         }
 
         .item p {
+            font-size: 14px;
             margin-bottom: 6px;
+            color: #d1d5db;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-en_attente { background: #854d0e; color: #fef08a; }
+        .badge-traite { background: #166534; color: #bbf7d0; }
+        .badge-rejete { background: #991b1b; color: #fecaca; }
+        .badge-actif { background: #166534; color: #bbf7d0; }
+        .badge-suspendu { background: #9a3412; color: #fed7aa; }
+        .badge-banni { background: #7f1d1d; color: #fecaca; }
+        .badge-supprime { background: #374151; color: #9ca3af; }
+
+        .actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         button {
             border: none;
-            border-radius: 8px;
-            padding: 8px 14px;
+            border-radius: 6px;
+            padding: 7px 12px;
             cursor: pointer;
-            margin-right: 8px;
-            margin-top: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: opacity 0.15s;
         }
+        button:hover { opacity: 0.85; }
 
-        .suspendre {
-            background: #e67e22;
-            color: white;
-        }
+        .btn-traiter { background: #2563eb; color: white; }
+        .btn-rejeter { background: #4b5563; color: white; }
+        .btn-suspendre { background: #ea580c; color: white; }
+        .btn-bannir { background: #dc2626; color: white; }
+        .btn-activer { background: #16a34a; color: white; }
+        .btn-supprimer { background: #991b1b; color: white; }
+        .btn-role { background: #7c3aed; color: white; }
+        .btn-del-content { background: #be123c; color: white; }
 
-        .activer {
-            background: #27ae60;
-            color: white;
-        }
-
-        .rejeter {
-            background: #c0392b;
-            color: white;
-        }
-
-        .traiter {
-            background: #2980b9;
-            color: white;
+        .empty-text {
+            color: #6b7280;
+            font-style: italic;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -88,196 +132,214 @@
 <body>
 
 <header>
-    <h1>Administration Pixora</h1>
-    <p>Gestion des signalements et des utilisateurs</p>
+    <div>
+        <h1>Pixora - Modération & Administration</h1>
+        <p>Gestion centrale des signalements, des contenus et des comptes</p>
+    </div>
+    <a href="/home" class="back-link">← Retour au fil</a>
 </header>
 
 <section class="section">
-    <h2>📋 Signalements</h2>
-
-    <div id="signalements">
-        Chargement des signalements...
-    </div>
+    <h2>📋 File de modération (Signalements)</h2>
+    <div id="signalements">Chargement des signalements...</div>
 </section>
 
 <section class="section">
-    <h2>👥 Utilisateurs</h2>
-
-    <div id="utilisateurs">
-        Chargement des utilisateurs...
-    </div>
+    <h2>👥 Gestion des comptes utilisateurs</h2>
+    <div id="utilisateurs">Chargement des utilisateurs...</div>
 </section>
 
 <script>
     const token = localStorage.getItem('token');
 
+    function getHeaders() {
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        return headers;
+    }
+
     async function chargerSignalements() {
-        const response = await fetch('/api/signalements', {
-            headers: {
-                Authorization: `Bearer ${token}`
+        try {
+            const response = await fetch('/api/signalements', { headers: getHeaders() });
+            if (!response.ok) throw new Error('Impossible de charger les signalements');
+
+            const signalements = await response.json();
+            const container = document.getElementById('signalements');
+            container.innerHTML = '';
+
+            if (!signalements || signalements.length === 0) {
+                container.innerHTML = '<p class="empty-text">Aucun signalement en attente.</p>';
+                return;
             }
-        });
 
-        const signalements = await response.json();
-        const container = document.getElementById('signalements');
+            signalements.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'item';
 
-        container.textContent = '';
+                card.innerHTML = `
+                    <p><strong>Ticket #${item.idSignalement}</strong> — Date : ${new Date(item.dateSignalement).toLocaleString()}</p>
+                    <p><strong>Signalé par :</strong> ${item.auteurPseudo || 'Utilisateur #' + item.idUserAuteur}</p>
+                    <p><strong>Cible :</strong> ${item.typeContenu.toUpperCase()} (ID: ${item.idContenu})</p>
+                    <p><strong>Motif :</strong> ${item.motif}</p>
+                    <p><strong>Statut :</strong> <span class="badge badge-${item.statut}">${item.statut}</span></p>
+                `;
 
-        signalements.forEach(signalement => {
-            const element = document.createElement('div');
+                const actions = document.createElement('div');
+                actions.className = 'actions';
 
-            element.className = 'item';
+                // Action de suppression du contenu associé
+                if (['publication', 'commentaire'].includes(item.typeContenu)) {
+                    const btnDelContent = document.createElement('button');
+                    btnDelContent.className = 'btn-del-content';
+                    btnDelContent.textContent = `Supprimer ${item.typeContenu}`;
+                    btnDelContent.onclick = () => supprimerContenuSignale(item.typeContenu, item.idContenu, item.idSignalement);
+                    actions.appendChild(btnDelContent);
+                }
 
-            const informations = [
-                ['ID :', signalement.idSignalement],
-                ['Type :', signalement.typeContenu],
-                ['Contenu :', signalement.idContenu],
-                ['Motif :', signalement.motif],
-                ['Statut :', signalement.statut]
-            ];
+                if (item.statut === 'en_attente') {
+                    const btnTraiter = document.createElement('button');
+                    btnTraiter.className = 'btn-traiter';
+                    btnTraiter.textContent = 'Marquer Traité';
+                    btnTraiter.onclick = () => modifierSignalement(item.idSignalement, 'traite');
 
-            informations.forEach(([label, valeur]) => {
-                const paragraphe = document.createElement('p');
+                    const btnRejeter = document.createElement('button');
+                    btnRejeter.className = 'btn-rejeter';
+                    btnRejeter.textContent = 'Rejeter';
+                    btnRejeter.onclick = () => modifierSignalement(item.idSignalement, 'rejete');
 
-                const strong = document.createElement('strong');
-                strong.textContent = label + ' ';
+                    actions.appendChild(btnTraiter);
+                    actions.appendChild(btnRejeter);
+                }
 
-                paragraphe.appendChild(strong);
-                paragraphe.appendChild(
-                    document.createTextNode(valeur ?? '')
-                );
-
-                element.appendChild(paragraphe);
+                card.appendChild(actions);
+                container.appendChild(card);
             });
-
-            const boutonTraiter = document.createElement('button');
-
-            boutonTraiter.className = 'traiter';
-            boutonTraiter.textContent = 'Traiter';
-
-            boutonTraiter.addEventListener('click', () => {
-                modifierSignalement(
-                    signalement.idSignalement,
-                    'traite'
-                );
-            });
-
-            const boutonRejeter = document.createElement('button');
-
-            boutonRejeter.className = 'rejeter';
-            boutonRejeter.textContent = 'Rejeter';
-
-            boutonRejeter.addEventListener('click', () => {
-                modifierSignalement(
-                    signalement.idSignalement,
-                    'rejete'
-                );
-            });
-
-            element.appendChild(boutonTraiter);
-            element.appendChild(boutonRejeter);
-
-            container.appendChild(element);
-        });
+        } catch (e) {
+            document.getElementById('signalements').innerHTML = '<p class="empty-text">Erreur de chargement des signalements.</p>';
+        }
     }
 
     async function modifierSignalement(idSignalement, statut) {
-        await fetch(
-            `/api/signalements/${idSignalement}/statut`,
-            {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ statut })
-            }
-        );
-
+        await fetch(`/api/signalements/${idSignalement}/statut`, {
+            method: 'PATCH',
+            headers: getHeaders(),
+            body: JSON.stringify({ statut })
+        });
         chargerSignalements();
     }
 
-    async function chargerUtilisateurs() {
-        const response = await fetch('/api/admin/utilisateurs', {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
+    async function supprimerContenuSignale(type, idContenu, idSignalement) {
+        if (!confirm(`Confirmer la suppression de ce ${type} ?`)) return;
 
-        const utilisateurs = await response.json();
-        const container = document.getElementById('utilisateurs');
+        let url = '';
+        if (type === 'publication') url = `/api/publications/${idContenu}`;
+        if (type === 'commentaire') url = `/api/comments/${idContenu}/moderation`;
 
-        container.textContent = '';
-
-        utilisateurs.forEach(utilisateur => {
-            const element = document.createElement('div');
-
-            element.className = 'item';
-
-            const informations = [
-                ['Pseudo :', utilisateur.pseudo],
-                ['Email :', utilisateur.email],
-                ['Statut :', utilisateur.statut],
-                ['Rôle :', utilisateur.role]
-            ];
-
-            informations.forEach(([label, valeur]) => {
-                const paragraphe = document.createElement('p');
-
-                const strong = document.createElement('strong');
-                strong.textContent = label + ' ';
-
-                paragraphe.appendChild(strong);
-                paragraphe.appendChild(
-                    document.createTextNode(valeur ?? '')
-                );
-
-                element.appendChild(paragraphe);
-            });
-
-            const boutonSuspendre = document.createElement('button');
-
-            boutonSuspendre.className = 'suspendre';
-            boutonSuspendre.textContent = 'Suspendre';
-
-            boutonSuspendre.addEventListener('click', () => {
-                modifierUtilisateur(
-                    utilisateur.idUser,
-                    'suspendu'
-                );
-            });
-
-            const boutonActiver = document.createElement('button');
-
-            boutonActiver.className = 'activer';
-            boutonActiver.textContent = 'Réactiver';
-
-            boutonActiver.addEventListener('click', () => {
-                modifierUtilisateur(
-                    utilisateur.idUser,
-                    'actif'
-                );
-            });
-
-            element.appendChild(boutonSuspendre);
-            element.appendChild(boutonActiver);
-
-            container.appendChild(element);
-        });
+        const res = await fetch(url, { method: 'DELETE', headers: getHeaders() });
+        if (res.ok) {
+            alert('Contenu supprimé avec succès.');
+            modifierSignalement(idSignalement, 'traite');
+        } else {
+            const data = await res.json().catch(() => ({}));
+            alert(data.erreur || data.error || 'Erreur lors de la suppression.');
+        }
     }
 
-    async function modifierUtilisateur(idUser, statut) {
-        await fetch(
-            `/api/admin/utilisateurs/${idUser}/statut`,
-            {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ statut })
-            }
-        );
+    async function chargerUtilisateurs() {
+        try {
+            const response = await fetch('/api/admin/utilisateurs', { headers: getHeaders() });
+            if (!response.ok) throw new Error('Impossible de charger les utilisateurs');
+
+            const utilisateurs = await response.json();
+            const container = document.getElementById('utilisateurs');
+            container.innerHTML = '';
+
+            utilisateurs.forEach(user => {
+                const card = document.createElement('div');
+                card.className = 'item';
+
+                card.innerHTML = `
+                    <p><strong>${user.pseudo}</strong> (${user.email}) — ID : ${user.idUser}</p>
+                    <p><strong>Rôle :</strong> ${user.role} | <strong>Statut :</strong> <span class="badge badge-${user.statut}">${user.statut}</span></p>
+                `;
+
+                const actions = document.createElement('div');
+                actions.className = 'actions';
+
+                if (user.statut === 'actif') {
+                    const btnSuspendre = document.createElement('button');
+                    btnSuspendre.className = 'btn-suspendre';
+                    btnSuspendre.textContent = 'Suspendre';
+                    btnSuspendre.onclick = () => changerStatutUser(user.idUser, 'suspendu');
+                    actions.appendChild(btnSuspendre);
+
+                    const btnBannir = document.createElement('button');
+                    btnBannir.className = 'btn-bannir';
+                    btnBannir.textContent = 'Bannir';
+                    btnBannir.onclick = () => changerStatutUser(user.idUser, 'banni');
+                    actions.appendChild(btnBannir);
+                } else {
+                    const btnActiver = document.createElement('button');
+                    btnActiver.className = 'btn-activer';
+                    btnActiver.textContent = 'Réactiver';
+                    btnActiver.onclick = () => changerStatutUser(user.idUser, 'actif');
+                    actions.appendChild(btnActiver);
+                }
+
+                if (user.role === 'user') {
+                    const btnPromote = document.createElement('button');
+                    btnPromote.className = 'btn-role';
+                    btnPromote.textContent = 'Promouvoir Modérateur';
+                    btnPromote.onclick = () => changerRoleUser(user.idUser, 'moderator');
+                    actions.appendChild(btnPromote);
+                }
+
+                const btnDelete = document.createElement('button');
+                btnDelete.className = 'btn-supprimer';
+                btnDelete.textContent = 'Supprimer le compte';
+                btnDelete.onclick = () => changerStatutUser(user.idUser, 'supprime');
+                actions.appendChild(btnDelete);
+
+                card.appendChild(actions);
+                container.appendChild(card);
+            });
+        } catch (e) {
+            document.getElementById('utilisateurs').innerHTML = '<p class="empty-text">Erreur de chargement des utilisateurs.</p>';
+        }
+    }
+
+    async function changerStatutUser(idUser, statut) {
+        if (statut === 'supprime' && !confirm('Supprimer définitivement ce compte ?')) return;
+
+        const res = await fetch(`/api/admin/utilisateurs/${idUser}/statut`, {
+            method: 'PATCH',
+            headers: getHeaders(),
+            body: JSON.stringify({ statut })
+        });
+
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.erreur || 'Action impossible sur cet utilisateur.');
+        }
+
+        chargerUtilisateurs();
+    }
+
+    async function changerRoleUser(idUser, role) {
+        if (!confirm(`Attribuer le rôle ${role} à cet utilisateur ?`)) return;
+
+        const res = await fetch(`/api/admin/utilisateurs/${idUser}/role`, {
+            method: 'PATCH',
+            headers: getHeaders(),
+            body: JSON.stringify({ role })
+        });
+
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.erreur || 'Action refusée.');
+        }
 
         chargerUtilisateurs();
     }

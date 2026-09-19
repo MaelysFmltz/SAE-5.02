@@ -52,6 +52,15 @@ function obtenirSignalements(req, res) {
     return res.status(200).json(signalements);
 }
 
+function obtenirMesSignalements(req, res) {
+    const mesSignalements = reportService.obtenirMesSignalements(
+        db,
+        req.user?.idUser
+    );
+
+    return res.status(200).json(mesSignalements);
+}
+
 function modifierStatutSignalement(req, res) {
     const idSignalement = Number(req.params.idSignalement);
     const { statut } = req.body;
@@ -74,10 +83,10 @@ function modifierStatutSignalement(req, res) {
     });
 }
 
-
 module.exports = {
     creerSignalement,
     obtenirSignalement,
     obtenirSignalements,
+    obtenirMesSignalements,
     modifierStatutSignalement
 };
