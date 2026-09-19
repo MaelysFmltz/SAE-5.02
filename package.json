@@ -45,5 +45,9 @@
   "homepage": "https://github.com/MaelysFmltz/SAE-5.02#readme",
   "jest": {
     "testEnvironment": "node"
+  },
+  "allowScripts": {
+    "bcrypt@6.0.0": true,
+    "better-sqlite3@13.0.3": true
   }
 }

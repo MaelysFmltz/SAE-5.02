@@ -69,6 +69,16 @@ body {
   padding-bottom: 70px;
 }
 
+/* Pages sans barre de navigation basse (ex : conversation de messagerie) :
+   la page doit tenir exactement dans l'écran, sans réserver de place pour
+   une bottom-nav absente ni forcer de scroll pour voir le bas du contenu. */
+.app-container.no-bottom-nav {
+  height: 100vh;
+  min-height: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
 /* Barre de navigation basse : traverse tout l'écran */
 .bottom-nav {
   position: fixed;

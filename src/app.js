@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
 const fs = require('fs/promises');
@@ -18,6 +20,10 @@ const commentController = require('./controllers/commentController');
 const authMiddleware = require('./middlewares/authMiddleware');
 const profileService = require('./services/profileService');
 const friendshipModel = require('./models/friendshipModel');
+const conversationRoutes = require('./routes/conversationRoutes');
+const messageRoutes = require('./routes/messageRoutes');
+const conversationService = require('./services/conversationService');
+const messageService = require('./services/messageService');
 const postService = require('./services/postService');
 const db = require('./config/database');
 const { linkifyHashtags } = require('./utils/hashtagUtils');
@@ -74,6 +80,74 @@ app.get('/home', authMiddleware, (req, res) => {
     });
   }
 });
+
+// ============================================================
+// MESSAGERIE
+// ============================================================
+
+// Affichage de la liste des conversations
+app.get('/messages', authMiddleware, async (req, res) => {
+  try {
+    const conversations = await conversationService.getMyConversations(req.user.idUser);
+    res.render('messages', {
+      user: req.user,
+      conversations: conversations || [],
+      activeTab: 'messages'
+    });
+  } catch (err) {
+    console.error('Erreur GET /messages :', err);
+    res.render('messages', {
+      user: req.user,
+      conversations: [],
+      activeTab: 'messages'
+    });
+  }
+});
+
+// Affichage d'une discussion ouverte spécifique
+app.get('/messages/:idConversation', authMiddleware, async (req, res) => {
+  try {
+    const idConversation = Number(req.params.idConversation);
+
+    if (!Number.isInteger(idConversation) || idConversation <= 0) {
+      return res.redirect('/messages');
+    }
+
+    const messages = await messageService.getMessages(idConversation, req.user.idUser);
+
+    // Ouvrir la conversation marque les messages reçus comme lus
+    await messageService.markAsRead(idConversation, req.user.idUser);
+
+    const membres = await conversationService.getConversationMembers(idConversation, req.user.idUser);
+
+    // Récupération des informations de la conversation pour le titre
+    const conversations = await conversationService.getMyConversations(req.user.idUser);
+    const conv = conversations ? conversations.find(c => c.idConversation === idConversation) : null;
+
+    const estCreateurCourant = (membres || []).some(
+      (m) => m.idUser === req.user.idUser && !!m.estCreateur
+    );
+
+    res.render('conversation', {
+      idConversation,
+      titreConversation: conv ? (conv.titreGroupe || conv.autrePseudo || 'Discussion') : 'Discussion',
+      estGroupe: !!(conv && conv.titreGroupe),
+      estCreateurCourant,
+      membres: membres || [],
+      messages: messages || [],
+      idUserCourant: req.user.idUser,
+      user: req.user,
+      activeTab: 'messages'
+    });
+  } catch (err) {
+    console.error('Erreur GET /messages/:idConversation :', err);
+    res.redirect('/messages');
+  }
+});
+
+// ============================================================
+// MON PROFIL
+// ============================================================
 
 // Affichage de son propre profil
 app.get('/profile', authMiddleware, async (req, res) => {
@@ -351,5 +425,7 @@ app.use('/api/friendships', friendshipRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/conversations', conversationRoutes);
+app.use('/api/conversations', messageRoutes);
 
 module.exports = app;

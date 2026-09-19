@@ -85,6 +85,20 @@
     box-sizing: border-box;
 }
 
+.btn-notif-header {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: var(--profile-text-dimmed, #8b92a5);
+  cursor: not-allowed;
+  padding: 6px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
 .feed-title {
     margin-bottom: 1.5rem;
 }
