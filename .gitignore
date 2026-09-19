@@ -6,11 +6,14 @@ node_modules/
 .env.*
 !.env.example
 
-
 # Base de données locale
+database/database.db
 database/*.db
 database/*.sqlite
 database/*.sqlite3
+data/*.db
+data/*.db-shm
+data/*.db-wal
 
 # Fichiers uploadés par les utilisateurs
 uploads/
@@ -43,3 +46,9 @@ docs/build/
 tmp/
 temp/
 *.tmp
+
+# Certificats nginx
+nginx/certs/*.key
+nginx/certs/*.crt
+
+database/seed.db

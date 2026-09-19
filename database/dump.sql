@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS Publication (
     contenuPub TEXT,
     visibilite INTEGER NOT NULL DEFAULT 1,
     idPubliPartagee INTEGER,
+    typePublication TEXT NOT NULL DEFAULT 'original'
+        CHECK(typePublication IN ('original', 'repost', 'duo', 'collage')),
     datePubli DATETIME DEFAULT CURRENT_TIMESTAMP,
     dateModif DATETIME,
     FOREIGN KEY (idUser) REFERENCES Utilisateur(idUser) ON DELETE CASCADE,
@@ -58,14 +60,33 @@ CREATE TABLE IF NOT EXISTS Profil (
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS Commentaire (
+
     idComm INTEGER PRIMARY KEY AUTOINCREMENT,
+
     idUser INTEGER NOT NULL,
+
     idPubli INTEGER NOT NULL,
+
+    idParent INTEGER,
+
     contenuCom TEXT NOT NULL,
+
     dateCommentaire DATETIME DEFAULT CURRENT_TIMESTAMP,
+
     dateModif DATETIME,
-    FOREIGN KEY (idUser) REFERENCES Utilisateur(idUser) ON DELETE CASCADE,
-    FOREIGN KEY (idPubli) REFERENCES Publication(idPubli) ON DELETE CASCADE
+
+    FOREIGN KEY (idUser)
+        REFERENCES Utilisateur(idUser)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (idPubli)
+        REFERENCES Publication(idPubli)
+        ON DELETE CASCADE,
+
+    FOREIGN KEY (idParent)
+        REFERENCES Commentaire(idComm)
+        ON DELETE CASCADE
+
 );
 
 CREATE TABLE IF NOT EXISTS LikeDislike (
@@ -146,6 +167,7 @@ CREATE TABLE IF NOT EXISTS ConversationMembre (
     idConversation INTEGER NOT NULL,
     idUser INTEGER NOT NULL,
     dateRejoint DATETIME DEFAULT CURRENT_TIMESTAMP,
+    estCreateur INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (idConversation, idUser),
     FOREIGN KEY (idConversation) REFERENCES Conversation(idConversation) ON DELETE CASCADE,
     FOREIGN KEY (idUser) REFERENCES Utilisateur(idUser) ON DELETE CASCADE
@@ -159,6 +181,8 @@ CREATE TABLE IF NOT EXISTS Message (
     dateEnvoi DATETIME DEFAULT CURRENT_TIMESTAMP,
     lu INTEGER DEFAULT 0,
     dateLecture DATETIME,
+    dateModification DATETIME,
+    supprime INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (idConversation) REFERENCES Conversation(idConversation) ON DELETE CASCADE,
     FOREIGN KEY (idUser) REFERENCES Utilisateur(idUser) ON DELETE CASCADE
 );

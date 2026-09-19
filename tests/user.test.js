@@ -89,9 +89,7 @@ describe('Gestion des utilisateurs', () => {
         );
 
         expect(resultat.succes).toBe(false);
-        expect(resultat.erreur).toBe(
-            'Statut utilisateur invalide'
-        );
+        expect(resultat.erreur).toBe('Statut utilisateur invalide');
     });
 
     test('refuser un utilisateur inexistant', () => {
@@ -102,9 +100,7 @@ describe('Gestion des utilisateurs', () => {
         );
 
         expect(resultat.succes).toBe(false);
-        expect(resultat.erreur).toBe(
-            'Utilisateur introuvable'
-        );
+        expect(resultat.erreur).toBe('Utilisateur introuvable');
     });
 
     test('un administrateur ne peut pas suspendre son propre compte', () => {
@@ -150,6 +146,4 @@ describe('Gestion des utilisateurs', () => {
 
         expect(utilisateur.statut).toBe('actif');
     });
-
-
 });

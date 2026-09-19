@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= profile.pseudo %> — Pixora</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/profile.css?v=11">
+  <style>
+    .profile-actions-group {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    .profile-actions-group .btn-follow {
+      flex: 1;
+      margin-bottom: 0;
+    }
+    .btn-direct-message {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      color: #f0f0f5;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background-color 0.15s, border-color 0.15s;
+    }
+    .btn-direct-message:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app-container">
+
+    <!-- En-tête -->
+    <header class="profile-header">
+
+      <a href="/home" class="icon-btn" title="Retour à l'accueil">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </a>
+
+      <h1 class="header-title"><%= profile.pseudo %></h1>
+
+      <div class="header-spacer"></div>
+
+    </header>
+
+
+    <main class="profile-container">
+
+      <!-- 1. Identité -->
+      <section class="profile-identity-row">
+
+        <div class="avatar-circle">
+
+          <% if (profile.avatarUrl) { %>
+
+            <img
+              src="<%= profile.avatarUrl %>"
+              alt="Photo de profil"
+              class="avatar-img"
+            >
+
+          <% } else { %>
+
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+
+          <% } %>
+
+        </div>
+
+
+        <div class="identity-info">
+
+          <div class="pseudo-wrap">
+
+            <span class="profile-pseudo">
+              <%= profile.pseudo %>
+            </span>
+
+            <% if (profile.role === 'admin') { %>
+
+              <span class="badge badge-admin">
+                Admin
+              </span>
+
+            <% } else if (profile.role === 'moderateur' || profile.role === 'modo') { %>
+
+              <span class="badge badge-modo">
+                Modo
+              </span>
+
+            <% } %>
+
+
+            <span
+              class="badge badge-friend"
+              id="badge-friend"
+              <%= (!isOwner && sontAmis) ? '' : 'hidden' %>
+            >
+              Amis
+            </span>
+
+          </div>
+
+
+          <% if (profile.prenom || profile.nom) { %>
+
+            <p class="real-name">
+              <%= [profile.prenom, profile.nom].filter(Boolean).join(' ') %>
+            </p>
+
+          <% } %>
+
+        </div>
+
+      </section>
+
+
+      <!-- 2. Statistiques -->
+      <section class="profile-stats">
+
+        <div class="stat-item">
+
+          <span class="stat-value" id="count-abonnes">
+            <%= (typeof stats !== 'undefined' && stats.nbAbonnes) ? stats.nbAbonnes : 0 %>
+          </span>
+
+          <span class="stat-label">
+            Abonnés
+          </span>
+
+        </div>
+
+
+        <div class="stat-item">
+
+          <span class="stat-value" id="count-abonnements">
+            <%= (typeof stats !== 'undefined' && stats.nbAbonnements) ? stats.nbAbonnements : 0 %>
+          </span>
+
+          <span class="stat-label">
+            Abonnements
+          </span>
+
+        </div>
+
+
+        <div class="stat-item">
+
+          <span class="stat-value" id="count-amis">
+            <%= (typeof stats !== 'undefined' && stats.nbAmis) ? stats.nbAmis : 0 %>
+          </span>
+
+          <span class="stat-label">
+            Amis
+          </span>
+
+        </div>
+
+      </section>
+
+
+      <!-- 3. Biographie -->
+      <section class="bio-fullwidth">
+
+        <span class="bio-label">
+          À propos de moi
+        </span>
+
+        <div class="bio-frame">
+
+          <p>
+            <%= profile.bio || 'Aucune biographie rédigée.' %>
+          </p>
+
+        </div>
+
+      </section>
+
+
+      <!-- 4. Action principale -->
+      <% if (isOwner) { %>
+
+        <a href="/profile/edit" class="btn-edit">
+          Modifier le profil
+        </a>
+
+      <% } else { %>
+
+        <div class="profile-actions-group">
+          <button
+            id="btn-follow"
+            class="btn-follow <%= estAbonne ? 'following' : '' %>"
+            data-target-id="<%= profile.idUser %>"
+            data-following="<%= estAbonne ? 'true' : 'false' %>">
+            <%= estAbonne ? 'Ne plus suivre' : 'Suivre' %>
+          </button>
+
+          <button
+            type="button"
+            id="btn-message"
+            class="btn-direct-message"
+            data-target-id="<%= profile.idUser %>">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span>Message</span>
+          </button>
+        </div>
+      <% } %>
+
+
+      <!-- Bouton Reposts -->
+      <button
+        type="button"
+        class="profile-reposts-tab"
+        onclick="toggleReposts()"
+      >
+
+        <svg viewBox="0 0 24 24">
+
+          <path d="M17 3
+                   L21 7
+                   L17 11"></path>
+
+          <path d="M21 7
+                   H8
+                   C5.8 7 4 8.8 4 11
+                   C4 13.2 5.8 15 8 15
+                   H10"></path>
+
+          <path d="M7 21
+                   L3 17
+                   L7 13"></path>
+
+          <path d="M3 17
+                   H16
+                   C18.2 17 20 15.2 20 13
+                   C20 10.8 18.2 9 16 9
+                   H14"></path>
+
+        </svg>
+
+        <span>
+          Reposts
+        </span>
+
+      </button>
+
+
+      <!-- 5. Publications -->
+      <section class="posts-section">
+
+        <div class="posts-title">
+          <span id="posts-title">
+            Publications
+          </span>
+        </div>
+
+
+        <!-- PUBLICATIONS ORIGINALES -->
+        <div
+          class="profile-posts"
+          id="profile-publications"
+        >
+
+          <% if (profile.publications && profile.publications.length > 0) { %>
+
+            <% profile.publications.forEach(publication => { %>
+
+              <%- include('partials/publicationCard', {
+                publication,
+                canDelete: !!isOwner,
+                mediaLinkHref: '/publication/' + publication.idPubli,
+                imgClass: 'profile-post-image',
+                videoClass: 'profile-post-video',
+                linkifyHashtags: typeof linkifyHashtags === 'function' ? linkifyHashtags : null
+              }) %>
+
+            <% }); %>
+
+          <% } else { %>
+
+            <div class="empty-posts">
+
+              <div class="empty-posts-icon">
+                ✦
+              </div>
+
+              <h3>
+                Aucune publication
+              </h3>
+
+              <p>
+                Les publications que vous créez apparaîtront ici.
+              </p>
+
+            </div>
+
+          <% } %>
+
+        </div>
+
+
+        <!-- REPOSTS -->
+        <div
+          class="profile-posts"
+          id="profile-reposts"
+          style="display: none;"
+        >
+
+          <% if (profile.reposts && profile.reposts.length > 0) { %>
+
+            <% profile.reposts.forEach(publication => { %>
+
+              <%- include('partials/publicationCard', {
+                publication,
+                canDelete: !!isOwner,
+                mediaLinkHref: '/publication/' + publication.idPubli,
+                imgClass: 'profile-post-image',
+                videoClass: 'profile-post-video',
+                linkifyHashtags: typeof linkifyHashtags === 'function' ? linkifyHashtags : null
+              }) %>
+
+            <% }); %>
+
+          <% } else { %>
+
+            <div class="empty-posts">
+
+              <div class="empty-posts-icon">
+                ✦
+              </div>
+
+              <h3>
+                Aucun repost
+              </h3>
+
+              <p>
+                Les publications que vous repartagez apparaîtront ici.
+              </p>
+
+            </div>
+
+          <% } %>
+
+        </div>
+
+      </section>
+
+    </main>
+
+
+    <%- include('navbar') %>
+
+  </div>
+
+
+  <!-- SUPPRESSION DES PUBLICATIONS -->
+  <script src="/js/deletePost.js"></script>
+  <script src="/js/hashtagSuggest.js"></script>
+
+
+  <% if (!isOwner) { %>
+
+  <script>
+
+    const btnFollow = document.getElementById('btn-follow');
+    const btnMessage = document.getElementById('btn-message');
+    const countAbonnesEl = document.getElementById('count-abonnes');
+    const countAmisEl = document.getElementById('count-amis');
+    const badgeFriendEl = document.getElementById('badge-friend');
+
+    // Ouverture / création de conversation directe
+    if (btnMessage) {
+      btnMessage.addEventListener('click', async () => {
+        const idUserDestinataire = Number(btnMessage.dataset.targetId);
+        btnMessage.disabled = true;
+
+        try {
+          const res = await fetch('/api/conversations/direct', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idUserDestinataire })
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            alert(err.error || 'Impossible d’ouvrir la conversation.');
+            return;
+          }
+
+          const data = await res.json();
+          window.location.href = `/messages/${data.idConversation}`;
+        } catch (err) {
+          console.error('Erreur ouverture discussion :', err);
+          alert('Erreur réseau lors de l’ouverture de la discussion.');
+        } finally {
+          btnMessage.disabled = false;
+        }
+      });
+    }
+
+    // Gestion du suivi / ami
+    if (btnFollow) {
+      btnFollow.addEventListener('click', async () => {
+        const targetId = btnFollow.dataset.targetId;
+        const isFollowing = btnFollow.dataset.following === 'true';
+
+        const endpoint = `/api/friendships/${targetId}`;
+        const method = isFollowing ? 'DELETE' : 'POST';
+
+        btnFollow.disabled = true;
+
+        try {
+          const res = await fetch(endpoint, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' }
+          });
+
+          if (!res.ok) {
+            throw new Error('Erreur lors de la requête');
+          }
+
+          const nextState = !isFollowing;
+          btnFollow.dataset.following = nextState ? 'true' : 'false';
+          btnFollow.textContent = nextState ? 'Ne plus suivre' : 'Suivre';
+          btnFollow.classList.toggle('following', nextState);
+
+          let currentFollowers = parseInt(countAbonnesEl.textContent, 10) || 0;
+          countAbonnesEl.textContent = nextState ? currentFollowers + 1 : Math.max(0, currentFollowers - 1);
+
+          const friendsRes = await fetch(`/api/friendships/${targetId}/amis`);
+          if (friendsRes.ok) {
+            const friendsData = await friendsRes.json();
+            const friendsList = Array.isArray(friendsData) ? friendsData : (friendsData.amis || []);
+            
+            countAmisEl.textContent = friendsList.length;
+
+            const myProfileRes = await fetch('/api/profile/me');
+            if (myProfileRes.ok) {
+              const myData = await myProfileRes.json();
+              const amIInFriends = friendsList.some(f => f.idUser === myData.idUser);
+              badgeFriendEl.style.display = amIInFriends ? '' : 'none';
+            }
+          }
+        } catch (err) {
+          console.error(err);
+          alert('Impossible de modifier le statut d’abonnement.');
+        } finally {
+          btnFollow.disabled = false;
+        }
+      });
+    }
+  </script>
+
+  <% } %>
+
+
+  <script>
+
+    // =========================================
+    // RÉACTIONS DES PUBLICATIONS
+    // =========================================
+
+    async function reactionPublication(
+      idPubli,
+      type
+    ) {
+
+      try {
+
+        const response =
+          await fetch(
+            '/api/comments/react',
+            {
+              method: 'POST',
+
+              headers: {
+                'Content-Type': 'application/json'
+              },
+
+              credentials: 'same-origin',
+
+              body: JSON.stringify({
+                idPubli: idPubli,
+                type: type
+              })
+
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        if (response.status === 401) {
+
+          window.location.href =
+            '/login';
+
+          return;
+
+        }
+
+
+        if (!response.ok) {
+
+          alert(
+            data.error ||
+            'Erreur lors de la réaction'
+          );
+
+          return;
+
+        }
+
+
+        const article =
+          document.querySelector(
+            `[data-publication-id="${idPubli}"]`
+          );
+
+
+        if (!article) {
+          return;
+        }
+
+
+        const likeButton =
+          article.querySelector(
+            '.like-action'
+          );
+
+
+        const dislikeButton =
+          article.querySelector(
+            '.dislike-action'
+          );
+
+
+        if (likeButton) {
+
+          const count =
+            likeButton.querySelector(
+              '.reaction-count'
+            );
+
+
+          if (count) {
+
+            count.textContent =
+              data.likes ?? 0;
+
+          }
+
+        }
+
+
+        if (dislikeButton) {
+
+          const count =
+            dislikeButton.querySelector(
+              '.reaction-count'
+            );
+
+
+          if (count) {
+
+            count.textContent =
+              data.dislikes ?? 0;
+
+          }
+
+        }
+
+
+        if (likeButton) {
+
+          likeButton.classList.toggle(
+            'active',
+            data.userReaction === 'LIKE'
+          );
+
+        }
+
+
+        if (dislikeButton) {
+
+          dislikeButton.classList.toggle(
+            'active',
+            data.userReaction === 'DISLIKE'
+          );
+
+        }
+
+      } catch (error) {
+
+        console.error(
+          'Erreur réaction publication :',
+          error
+        );
+
+
+        alert(
+          'Une erreur est survenue lors de la réaction.'
+        );
+
+      }
+
+    }
+
+
+    // =========================================
+    // COMMENTAIRES
+    // =========================================
+
+    function ouvrirCommentaires(idPubli) {
+
+      window.location.href =
+        `/api/comments/view/${idPubli}`;
+
+    }
+
+
+    // =========================================
+    // REPARTAGE
+    // =========================================
+
+    async function repartager(idPubli, button) {
+
+      try {
+
+        const response =
+          await fetch(
+            `/api/publications/${idPubli}/repartage`,
+            {
+              method: 'POST',
+
+              headers: {
+                'Content-Type': 'application/json'
+              },
+
+              body: JSON.stringify({
+                visibilite: 1
+              })
+            }
+          );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+
+          throw new Error(
+            data.error || 'Erreur lors du repartage'
+          );
+
+        }
+
+        if (button) {
+
+          button.classList.toggle(
+            'active',
+            data.reposted
+          );
+
+          button.dataset.reposted =
+            data.reposted ? 'true' : 'false';
+
+          const label =
+            data.reposted
+              ? 'Annuler le repost'
+              : 'Reposter';
+
+          button.title = label;
+          button.setAttribute('aria-label', label);
+        }
+
+      } catch (error) {
+
+        console.error(error);
+
+        alert(
+          error.message ||
+          'Impossible de repartager cette publication.'
+        );
+
+      }
+
+    }
+
+
+    // =========================================
+    // COPIER LE LIEN
+    // =========================================
+
+    async function copierLien(idPubli) {
+
+      const url =
+        `${window.location.origin}/publication/${idPubli}`;
+
+
+      try {
+
+        await navigator.clipboard.writeText(url);
+
+        alert(
+          'Lien copié !'
+        );
+
+      } catch (error) {
+
+        console.error(error);
+
+        alert(
+          'Impossible de copier le lien.'
+        );
+
+      }
+
+    }
+
+
+    // =========================================
+    // AFFICHER / MASQUER LES REPOSTS
+    // =========================================
+
+    function toggleReposts() {
+
+      const publications =
+        document.getElementById(
+          'profile-publications'
+        );
+
+
+      const reposts =
+        document.getElementById(
+          'profile-reposts'
+        );
+
+
+      const title =
+        document.getElementById(
+          'posts-title'
+        );
+
+
+      if (!publications || !reposts) {
+        return;
+      }
+
+
+      const repostsVisible =
+        reposts.style.display !== 'none';
+
+
+      if (repostsVisible) {
+
+        publications.style.display =
+          '';
+
+        reposts.style.display =
+          'none';
+
+
+        if (title) {
+
+          title.textContent =
+            'Publications';
+
+        }
+
+      } else {
+
+        publications.style.display =
+          'none';
+
+        reposts.style.display =
+          'grid';
+
+
+        if (title) {
+
+          title.textContent =
+            'Reposts';
+
+        }
+
+      }
+
+    }
+
+  </script>
+
+  <%- include('partials/remixModal') %>
+
+</body>
+</html>

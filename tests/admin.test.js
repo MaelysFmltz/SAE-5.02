@@ -85,5 +85,4 @@ describe('Droits administrateur', () => {
         });
         expect(next).not.toHaveBeenCalled();
     });
-
 });

@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pixora — Publication #<%= post.idPubli %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/feed.css">
+  <style>
+    body {
+      background-color: #000;
+      color: #f5f5f5;
+    }
+
+    .post-container { max-width: 520px; margin: 20px auto 80px auto; padding: 0 12px; }
+    .post-card { 
+      background: #121212; 
+      border: 1px solid #262626; 
+      border-radius: 12px; 
+      overflow: hidden; 
+    }
+    .post-header { 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      padding: 12px 16px; 
+      font-weight: 600; 
+      border-bottom: 1px solid #262626; 
+    }
+    .post-author { color: #f5f5f5; text-decoration: none; }
+    .post-photo {
+      width: 100%;
+      min-height: 260px;
+      background: #1c1c1c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #737373;
+      overflow: hidden;
+    }
+    .post-photo .duo-media-row,
+    .post-photo .collage-media-stack {
+      width: 100%;
+    }
+
+    /* Texte de la publication */
+    .post-caption-box {
+      padding: 12px 16px 4px 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #e7e7eb;
+      word-break: break-word;
+    }
+    .post-caption-box strong {
+      color: #f5f5f5;
+      margin-right: 6px;
+    }
+    
+    /* Liens Hashtags cliquables */
+    .hashtag-link {
+      color: #a78bfa;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.15s ease;
+    }
+    .hashtag-link:hover {
+      color: #c4b5fd;
+      text-decoration: underline;
+    }
+
+    /* Barre d'actions */
+    .interaction-bar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; }
+    
+    .icon-btn {
+      background: none;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #a8a8a8;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.15s, color 0.15s, transform 0.1s;
+    }
+    .icon-btn:hover { background: #1f1f1f; color: #f5f5f5; }
+    .icon-btn:active { transform: scale(0.92); }
+    .icon-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* États actifs des réactions */
+    .icon-btn.active-like {
+      color: #ed4956;
+    }
+    .icon-btn.active-like svg {
+      fill: #ed4956;
+      stroke: #ed4956;
+      animation: pop 0.25s ease-out;
+    }
+
+    .icon-btn.active-dislike {
+      color: #3b82f6;
+    }
+    .icon-btn.active-dislike svg {
+      fill: #3b82f6;
+      stroke: #3b82f6;
+      animation: pop 0.25s ease-out;
+    }
+
+    /* Section Commentaires */
+    .comments-section {
+      display: none;
+      padding: 12px 16px;
+      border-top: 1px solid #262626;
+      background: #121212;
+      animation: fadeIn 0.2s ease-out;
+    }
+    .comments-section.open { display: block; }
+
+    .comment-list {
+      max-height: 250px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      margin-bottom: 14px;
+      padding-right: 4px;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+      scrollbar-width: thin;
+      scrollbar-color: #363636 transparent;
+    }
+    .comment-list::-webkit-scrollbar { width: 4px; }
+    .comment-list::-webkit-scrollbar-thumb { background: #363636; border-radius: 4px; }
+
+    .comment-item { font-size: 13px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+    .comment-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .comment-avatar {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      border-radius: 50%;
+      background: #30323a;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .comment-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .comment-content { flex-grow: 1; word-break: break-word; color: #f5f5f5; line-height: 1.4; }
+    .comment-text { display: inline; color: #dbdbdb; }
+    
+    .comment-meta { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+    .btn-comment-action {
+      background: none;
+      border: none;
+      padding: 2px 4px;
+      font-size: 12px;
+      cursor: pointer;
+      color: #737373;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 4px;
+      transition: color 0.15s;
+    }
+    .btn-comment-action:hover { color: #f5f5f5; }
+    .btn-comment-action svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; }
+    
+    .btn-comment-action.active-like { color: #ed4956; }
+    .btn-comment-action.active-like svg { fill: #ed4956; stroke: #ed4956; }
+    .btn-comment-action.active-dislike { color: #3b82f6; }
+    .btn-comment-action.active-dislike svg { fill: #3b82f6; stroke: #3b82f6; }
+
+    .btn-reply-trigger {
+      background: none;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      color: #737373;
+      padding: 2px 4px;
+    }
+    .btn-reply-trigger:hover { color: #f5f5f5; }
+
+    /* Réponses imbriquées */
+    .replies-container {
+      margin-left: 24px;
+      padding-left: 10px;
+      border-left: 1.5px solid #2f2f2f;
+      margin-top: 6px;
+      display: none;
+    }
+    .toggle-replies-btn {
+      background: none;
+      border: none;
+      color: #737373;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 0 4px 24px;
+      position: relative;
+      text-align: left;
+    }
+    .toggle-replies-btn::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 16px;
+      height: 1px;
+      background: #4a4a4a;
+    }
+    .toggle-replies-btn:hover { color: #f5f5f5; }
+    
+    .actions { display: flex; gap: 2px; }
+    .btn-action-icon {
+      background: none;
+      border: none;
+      color: #737373;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .btn-action-icon svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .btn-action-icon:hover { background: #1f1f1f; color: #f5f5f5; }
+    .btn-action-icon.delete:hover { color: #ed4956; background: rgba(237, 73, 86, 0.12); }
+    
+    .edit-form { display: none; margin-top: 8px; }
+    .edit-form textarea { 
+      width: 100%; 
+      background: #1c1c1c; 
+      color: #f5f5f5; 
+      border: 1px solid #363636; 
+      border-radius: 6px; 
+      padding: 6px; 
+      font-family: inherit; 
+      box-sizing: border-box; 
+    }
+    .edit-buttons { margin-top: 5px; display: flex; gap: 8px; }
+
+    .replying-badge {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      background: #1f1f1f;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: #a8a8a8;
+      margin-bottom: 8px;
+    }
+    .replying-badge button { background: none; border: none; cursor: pointer; color: #737373; font-size: 14px; }
+    .replying-badge button:hover { color: #f5f5f5; }
+    
+    .form-comment { display: flex; flex-direction: column; border-top: 1px solid #262626; padding-top: 12px; }
+    .input-row { display: flex; align-items: center; gap: 10px; }
+    .input-row input { 
+      flex-grow: 1; 
+      background: #1f1f1f; 
+      color: #f5f5f5; 
+      border: 1px solid #363636; 
+      border-radius: 20px; 
+      padding: 8px 14px; 
+      font-size: 13px; 
+      outline: none; 
+    }
+    .input-row input::placeholder { color: #737373; }
+    .input-row input:focus { border-color: #555; }
+    .input-row button { background: none; border: none; color: #0095f6; font-weight: 600; cursor: pointer; padding: 6px 12px; }
+    .input-row button:hover { color: #1877f2; }
+    .char-counter { font-size: 11px; color: #737373; text-align: right; margin-top: 4px; padding-right: 8px; }
+
+    /* Modale Pixora */
+    .pixora-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .pixora-modal-card {
+      background: #262626;
+      border: 1px solid #363636;
+      width: 90%;
+      max-width: 320px;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+      text-align: center;
+    }
+    .pixora-modal-title { font-size: 16px; font-weight: 700; color: #f5f5f5; margin: 0 0 8px 0; }
+    .pixora-modal-text { font-size: 13px; color: #a8a8a8; margin: 0 0 18px 0; }
+    .pixora-modal-actions { display: flex; flex-direction: column; gap: 8px; }
+    .btn-modal-delete { background: #ed4956; color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
+    .btn-modal-delete:hover { background: #c62828; }
+    .btn-modal-cancel { background: #363636; color: #f5f5f5; border: none; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
+
+    @keyframes pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.28); }
+      100% { transform: scale(1); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+
+    <main class="post-container">
+      <div class="post-card" data-post-id="<%= post.idPubli %>">
+        
+        <div class="post-header">
+          <a href="/profile/<%= post.auteurPseudo %>" class="post-author">
+            <strong><%= post.auteurPseudo || 'Utilisateur #' + post.idUser %></strong>
+          </a>
+
+          <span class="publication-type">
+            <% if (post.typePublication === 'repost') { %>
+              🔁 Repost
+            <% } else if (post.typePublication === 'duo') { %>
+              🎭 Duo
+            <% } else if (post.typePublication === 'collage') { %>
+              🧩 Collage
+            <% } %>
+          </span>
+
+          <% if (typeof currentUser !== 'undefined' && currentUser && Number(currentUser.idUser) === Number(post.idUser)) { %>
+            <button
+              type="button"
+              class="delete-post"
+              data-id="<%= post.idPubli %>"
+              onclick="supprimerPublication(<%= post.idPubli %>)"
+            >
+              Supprimer
+            </button>
+          <% } %>
+        </div>
+
+        <div class="post-photo">
+          <%- include('partials/mediaBlock', {
+            publication: post,
+            imgClass: 'feed-post-image',
+            videoClass: 'feed-post-video'
+          }) %>
+        </div>
+
+        <!-- Légende et hashtags cliquables de la publication -->
+        <% if (post.contenuPub) { %>
+          <div class="post-caption-box">
+            <a href="/profile/<%= post.auteurPseudo %>" style="text-decoration: none;">
+              <strong>@<%= post.auteurPseudo %></strong>
+            </a>
+            <% if (typeof linkifyHashtags === 'function') { %>
+              <%- linkifyHashtags(post.contenuPub) %>
+            <% } else { %>
+              <%= post.contenuPub %>
+            <% } %>
+          </div>
+        <% } else if (post.idPubliPartagee && post.auteurOriginalPseudo) { %>
+          <div class="post-caption-box">
+            <% if (post.typePublication === 'repost') { %>
+              Repost de
+            <% } else { %>
+              Basé sur la publication de
+            <% } %>
+            <strong>@<%= post.auteurOriginalPseudo %></strong>
+            <% if (post.originalContenuPub) { %>
+              <p>
+                <% if (typeof linkifyHashtags === 'function') { %>
+                  <%- linkifyHashtags(post.originalContenuPub) %>
+                <% } else { %>
+                  <%= post.originalContenuPub %>
+                <% } %>
+              </p>
+            <% } %>
+          </div>
+        <% } %>
+
+        <!-- Barre d'interactions post -->
+        <div class="interaction-bar">
+          <!-- Like (mêmes icônes que le feed) -->
+          <button type="button" class="icon-btn <%= (reactions && reactions.userReaction === 'LIKE') ? 'active-like' : '' %>" id="post-like-btn" onclick="sendReaction('LIKE')" title="J'aime">
+            <svg viewBox="0 0 24 24"><path d="M20.8 8.8 C20.8 5.8 18.5 4 15.9 4 C14.1 4 12.7 5 12 6.3 C11.3 5 9.9 4 8.1 4 C5.5 4 3.2 5.8 3.2 8.8 C3.2 13.1 7.4 16.1 12 20 C16.6 16.1 20.8 13.1 20.8 8.8Z"></path></svg>
+            <span id="like-count"><%= (reactions && reactions.likes) ? reactions.likes : 0 %></span>
+          </button>
+
+          <!-- Dislike (mêmes icônes que le feed, pas un pouce) -->
+          <button type="button" class="icon-btn <%= (reactions && reactions.userReaction === 'DISLIKE') ? 'active-dislike' : '' %>" id="post-dislike-btn" onclick="sendReaction('DISLIKE')" title="Je n'aime pas">
+            <svg viewBox="0 0 24 24">
+              <path d="M20.5 8.7 C20.5 5.9 18.3 4.2 15.8 4.2 C14.1 4.2 12.8 5.1 12 6.4"></path>
+              <path d="M12 6.4 L10.6 8.5 L13.3 11.2 L11.1 13.6 L13.8 16.3 L12 19.8"></path>
+              <path d="M12 6.4 C11.2 5.1 9.9 4.2 8.2 4.2 C5.7 4.2 3.5 5.9 3.5 8.7 C3.5 11.5 5.1 13.7 7.3 15.7"></path>
+            </svg>
+            <span id="dislike-count"><%= (reactions && reactions.dislikes) ? reactions.dislikes : 0 %></span>
+          </button>
+
+          <!-- Bulle de commentaire -->
+          <button type="button" class="icon-btn" onclick="toggleCommentsSection()" title="Commentaires">
+            <svg viewBox="0 0 24 24"><path d="M20 11.5 C20 15.6 16.4 19 12 19 C10.8 19 9.6 18.8 8.6 18.3 L4 20 L5.2 16.2 C4.4 14.9 4 13.3 4 11.5 C4 7.4 7.6 4 12 4 C16.4 4 20 7.4 20 11.5Z"></path></svg>
+            <span id="comment-bubble-count"><%= typeof comments !== 'undefined' ? comments.length : 0 %></span>
+          </button>
+
+          <!-- Repost -->
+          <button type="button" class="icon-btn <%= post.dejaReposte ? 'active-like' : '' %>" id="post-repost-btn" onclick="repartagerPost()" title="<%= post.dejaReposte ? 'Annuler le repost' : 'Reposter' %>">
+            <svg viewBox="0 0 24 24">
+              <path d="M17 7H7 C5.3 7 4 8.3 4 10 C4 11.7 5.3 13 7 13 H16"></path>
+              <path d="M14 10L17 7L14 4"></path>
+              <path d="M7 17H17 C18.7 17 20 15.7 20 14 C20 12.3 18.7 11 17 11 H8"></path>
+              <path d="M10 14L7 17L10 20"></path>
+            </svg>
+          </button>
+
+          <!-- Duo -->
+          <% if (post.nomMedia || post.originalNomMedia) { %>
+            <button type="button" class="icon-btn" onclick="creerDuo(<%= post.idPubli %>)" title="Créer un Duo">
+              <svg viewBox="0 0 24 24">
+                <circle cx="8" cy="7" r="3"></circle>
+                <circle cx="16" cy="17" r="3"></circle>
+                <path d="M10.5 8.5L13.5 15.5"></path>
+              </svg>
+            </button>
+          <% } %>
+
+          <!-- Collage -->
+          <% if (post.typeMedia === 'video' || post.originalTypeMedia === 'video') { %>
+            <button type="button" class="icon-btn" onclick="creerCollage(<%= post.idPubli %>)" title="Créer un collage">
+              <svg viewBox="0 0 24 24">
+                <rect x="4" y="4" width="7" height="7" rx="1"></rect>
+                <rect x="13" y="4" width="7" height="7" rx="1"></rect>
+                <rect x="4" y="13" width="7" height="7" rx="1"></rect>
+                <rect x="13" y="13" width="7" height="7" rx="1"></rect>
+              </svg>
+            </button>
+          <% } %>
+
+          <!-- Copier le lien -->
+          <button type="button" class="icon-btn" onclick="copierLienPost()" title="Copier le lien">
+            <svg viewBox="0 0 24 24">
+              <path d="M10 13 C8.3 14.7 8.3 17.3 10 19 C11.7 20.7 14.3 20.7 16 19 L19 16 C20.7 14.3 20.7 11.7 19 10 C17.3 8.3 14.7 8.3 13 10"></path>
+              <path d="M14 11 C15.7 9.3 15.7 6.7 14 5 C12.3 3.3 9.7 3.3 8 5 L5 8 C3.3 9.7 3.3 12.3 5 14 C6.7 15.7 9.3 15.7 11 14"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Section Commentaires déroulante -->
+        <div class="comments-section" id="commentsSection">
+          <div class="comment-list">
+            <% 
+              const myId = (typeof currentUser !== 'undefined' && currentUser && currentUser.idUser !== undefined) ? Number(currentUser.idUser) : null;
+              const postOwnerId = Number(post.idUser);
+
+              function renderCommentNode(c) {
+                const commentAuthorId = Number(c.idUser);
+                const isMyComment = myId !== null && myId === commentAuthorId;
+                const isMyPost = myId !== null && myId === postOwnerId;
+                const hasReplies = c.replies && c.replies.length > 0;
+                const userReaction = c.reactions ? c.reactions.userReaction : null;
+            %>
+              <div class="comment-item" id="comm-<%= c.idComm %>">
+                <div class="comment-main">
+                  <a href="/profile/<%= c.pseudo %>" class="comment-avatar">
+                    <% if (c.avatarUrl) { %>
+                      <img src="<%= c.avatarUrl %>" alt="Photo de profil de <%= c.pseudo %>">
+                    <% } else { %>
+                      <%= c.pseudo.charAt(0).toUpperCase() %>
+                    <% } %>
+                  </a>
+                  <div class="comment-content">
+                    <a href="/profile/<%= c.pseudo %>" style="text-decoration: none; color: #f5f5f5;"><strong><%= c.pseudo %></strong></a> : 
+                    <span id="text-<%= c.idComm %>" class="comment-text">
+                      <% if (typeof linkifyHashtags === 'function') { %>
+                        <%- linkifyHashtags(c.contenuCom) %>
+                      <% } else { %>
+                        <%= c.contenuCom %>
+                      <% } %>
+                    </span>
+
+                    <div class="comment-meta">
+                      <!-- Bouton like commentaire -->
+                      <button type="button" class="btn-comment-action <%= userReaction === 'LIKE' ? 'active-like' : '' %>" id="comm-like-btn-<%= c.idComm %>" onclick="sendCommentReaction('<%= c.idComm %>', 'LIKE')">
+                        <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                        <span id="comm-like-<%= c.idComm %>"><%= (c.reactions && c.reactions.likes) ? c.reactions.likes : 0 %></span>
+                      </button>
+
+                      <!-- Bouton dislike commentaire -->
+                      <button type="button" class="btn-comment-action <%= userReaction === 'DISLIKE' ? 'active-dislike' : '' %>" id="comm-dislike-btn-<%= c.idComm %>" onclick="sendCommentReaction('<%= c.idComm %>', 'DISLIKE')">
+                        <svg viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.33 2.33 0 0 1-2.33 2H17"></path></svg>
+                        <span id="comm-dislike-<%= c.idComm %>"><%= (c.reactions && c.reactions.dislikes) ? c.reactions.dislikes : 0 %></span>
+                      </button>
+
+                      <button type="button" class="btn-reply-trigger" onclick="setReplyingTo('<%= c.idComm %>', '<%= c.pseudo %>')">
+                        Répondre
+                      </button>
+                    </div>
+
+                    <!-- Édition -->
+                    <div id="edit-box-<%= c.idComm %>" class="edit-form">
+                      <textarea id="input-edit-<%= c.idComm %>" maxlength="500" rows="2"><%= c.contenuCom %></textarea>
+                      <div class="edit-buttons">
+                        <button type="button" style="background:#0095f6; color:#fff; border:none; border-radius:4px; padding:4px 8px; font-size:12px; cursor:pointer;" onclick="submitEdit('<%= c.idComm %>')">Enregistrer</button>
+                        <button type="button" style="background:none; border:none; font-size:12px; cursor:pointer; color:#a8a8a8;" onclick="toggleEdit('<%= c.idComm %>')">Annuler</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Actions utilisateur -->
+                  <div class="actions">
+                    <% if (isMyComment) { %>
+                      <button type="button" class="btn-action-icon" onclick="toggleEdit('<%= c.idComm %>')" title="Modifier">
+                        <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                      </button>
+                    <% } %>
+                    <% if (isMyComment || isMyPost) { %>
+                      <button type="button" class="btn-action-icon delete" onclick="openDeleteModal('<%= c.idComm %>')" title="Supprimer">
+                        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                      </button>
+                    <% } %>
+                  </div>
+                </div>
+
+                <!-- Réponses imbriquées -->
+                <% if (hasReplies) { %>
+                  <button type="button" class="toggle-replies-btn" onclick="toggleReplies('<%= c.idComm %>')">
+                    Voir les <%= c.replies.length %> réponse<%= c.replies.length > 1 ? 's' : '' %>
+                  </button>
+                  <div class="replies-container" id="replies-<%= c.idComm %>">
+                    <% c.replies.forEach(function(reply) { %>
+                      <% renderCommentNode(reply); %>
+                    <% }); %>
+                  </div>
+                <% } %>
+              </div>
+            <% } %>
+
+            <% if (typeof comments !== 'undefined' && comments.length > 0) { %>
+              <% comments.forEach(function(c) { %>
+                <% renderCommentNode(c); %>
+              <% }); %>
+            <% } else { %>
+              <p id="no-comments" style="color: #737373; font-size: 13px;">Aucun commentaire pour le moment.</p>
+            <% } %>
+          </div>
+
+          <!-- Formulaire -->
+          <div class="form-comment">
+            <div id="replying-badge" class="replying-badge">
+              <span>Réponse à <strong id="replying-pseudo" style="color:#f5f5f5;">@pseudo</strong></span>
+              <button type="button" onclick="cancelReply()">✕</button>
+            </div>
+            <div class="input-row">
+              <input 
+                type="text" 
+                id="new-comment" 
+                maxlength="500" 
+                placeholder="Ajouter un commentaire..." 
+                oninput="updateCount(this)"
+                onkeydown="handleKeyDown(event)">
+              <button type="button" onclick="submitComment()">Publier</button>
+            </div>
+            <div id="char-count" class="char-counter">0 / 500</div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <%- include('navbar') %>
+  </div>
+
+  <!-- Modale Pixora Dark -->
+  <div id="deleteModal" class="pixora-modal-overlay">
+    <div class="pixora-modal-card">
+      <h3 class="pixora-modal-title">Supprimer le commentaire ?</h3>
+      <p class="pixora-modal-text">Cette action est irréversible. Les réponses associées seront également effacées.</p>
+      <div class="pixora-modal-actions">
+        <button type="button" class="btn-modal-delete" id="btnConfirmDelete">Supprimer</button>
+        <button type="button" class="btn-modal-cancel" onclick="closeDeleteModal()">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let activeReplyParentId = null;
+    let commentToDelete = null;
+
+    function getPostId() {
+      const card = document.querySelector('.post-card');
+      return card ? parseInt(card.dataset.postId, 10) : null;
+    }
+
+    function getAuthHeaders() {
+      return {
+        'Content-Type': 'application/json'
+      };
+    }
+
+    async function repartagerPost() {
+      const idPubli = getPostId();
+      const button = document.getElementById('post-repost-btn');
+
+      try {
+        const response = await fetch(`/api/publications/${idPubli}/repartage`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ visibilite: 1 })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Erreur lors du repartage');
+        }
+
+        if (button) {
+          button.classList.toggle('active-like', data.reposted);
+          button.title = data.reposted ? 'Annuler le repost' : 'Reposter';
+        }
+      } catch (error) {
+        console.error('Erreur repost :', error);
+        alert(error.message || 'Une erreur est survenue.');
+      }
+    }
+
+    function copierLienPost() {
+      const url = window.location.href;
+
+      navigator.clipboard.writeText(url).then(() => {
+        alert('Lien copié !');
+      }).catch(() => {
+        alert('Impossible de copier le lien.');
+      });
+    }
+
+    async function supprimerPublication(idPubli) {
+      if (!confirm('Voulez-vous vraiment supprimer cette publication ?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/publications/api/${idPubli}`, {
+          method: 'DELETE',
+          credentials: 'include',
+          headers: { 'Accept': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Impossible de supprimer la publication.');
+        }
+
+        window.location.href = '/home';
+      } catch (error) {
+        console.error(error);
+        alert(error.message || 'Une erreur est survenue lors de la suppression.');
+      }
+    }
+
+    function toggleCommentsSection() {
+      const section = document.getElementById('commentsSection');
+      const isOpen = section.classList.toggle('open');
+      const idPubli = getPostId();
+
+      if (isOpen) {
+        sessionStorage.setItem('keepCommentsOpen_' + idPubli, 'true');
+        document.getElementById('new-comment').focus();
+      } else {
+        sessionStorage.removeItem('keepCommentsOpen_' + idPubli);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const idPubli = getPostId();
+      if (sessionStorage.getItem('keepCommentsOpen_' + idPubli) === 'true') {
+        const section = document.getElementById('commentsSection');
+        if (section) {
+          section.classList.add('open');
+          const list = section.querySelector('.comment-list');
+          if (list) list.scrollTop = list.scrollHeight;
+        }
+      }
+    });
+
+    function setReplyingTo(idComm, pseudo) {
+      const section = document.getElementById('commentsSection');
+      if (!section.classList.contains('open')) {
+        section.classList.add('open');
+        sessionStorage.setItem('keepCommentsOpen_' + getPostId(), 'true');
+      }
+
+      activeReplyParentId = idComm;
+      document.getElementById('replying-pseudo').textContent = '@' + pseudo;
+      document.getElementById('replying-badge').style.display = 'flex';
+      
+      const input = document.getElementById('new-comment');
+      input.value = '@' + pseudo + ' ';
+      input.placeholder = 'Répondre à @' + pseudo + '...';
+      input.focus();
+      
+      const len = input.value.length;
+      input.setSelectionRange(len, len);
+      updateCount(input);
+    }
+
+    function cancelReply() {
+      activeReplyParentId = null;
+      document.getElementById('replying-badge').style.display = 'none';
+      const input = document.getElementById('new-comment');
+      input.value = '';
+      input.placeholder = 'Ajouter un commentaire...';
+      updateCount(input);
+    }
+
+    function toggleReplies(idComm) {
+      const container = document.getElementById('replies-' + idComm);
+      const btn = event.currentTarget;
+      if (!container) return;
+
+      const isHidden = container.style.display === 'none' || container.style.display === '';
+      container.style.display = isHidden ? 'block' : 'none';
+      btn.textContent = isHidden ? 'Masquer les réponses' : 'Voir les réponses';
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        submitComment();
+      }
+    }
+
+    async function submitComment() {
+      const input = document.getElementById('new-comment');
+      const contenuCom = input.value.trim();
+      const idPubli = getPostId();
+
+      if (!contenuCom || !idPubli) return;
+
+      const res = await fetch('/api/comments', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ 
+          idPubli, 
+          contenuCom,
+          idParent: activeReplyParentId 
+        })
+      });
+
+      if (res.ok) {
+        sessionStorage.setItem('keepCommentsOpen_' + idPubli, 'true');
+        window.location.reload();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        if (res.status === 401) return window.location.href = '/login';
+        alert('Erreur : ' + (err.error || 'Action impossible'));
+      }
+    }
+
+    async function submitEdit(idComm) {
+      const text = document.getElementById('input-edit-' + idComm).value.trim();
+      if (!text) return;
+
+      const res = await fetch('/api/comments/' + idComm, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ contenuCom: text })
+      });
+
+      if (res.ok) {
+        sessionStorage.setItem('keepCommentsOpen_' + getPostId(), 'true');
+        window.location.reload();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert('Erreur : ' + (err.error || 'Interdit'));
+      }
+    }
+
+    function openDeleteModal(idComm) {
+      commentToDelete = idComm;
+      document.getElementById('deleteModal').style.display = 'flex';
+    }
+
+    function closeDeleteModal() {
+      commentToDelete = null;
+      document.getElementById('deleteModal').style.display = 'none';
+    }
+
+    document.getElementById('btnConfirmDelete').addEventListener('click', async () => {
+      if (!commentToDelete) return;
+      const idComm = commentToDelete;
+      closeDeleteModal();
+
+      const res = await fetch('/api/comments/' + idComm, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (res.ok) {
+        const item = document.getElementById('comm-' + idComm);
+        if (item) {
+          const parentRepliesContainer = item.closest('.replies-container');
+          item.remove();
+
+          if (parentRepliesContainer) {
+            const parentId = parentRepliesContainer.id.replace('replies-', '');
+            const parentComment = document.getElementById('comm-' + parentId);
+            const remainingReplies = parentRepliesContainer.querySelectorAll(':scope > .comment-item').length;
+            const toggleBtn = parentComment ? parentComment.querySelector(':scope > .toggle-replies-btn') : null;
+
+            if (remainingReplies === 0) {
+              if (toggleBtn) toggleBtn.remove();
+              parentRepliesContainer.remove();
+            } else if (toggleBtn) {
+              const isOpened = parentRepliesContainer.style.display === 'block';
+              toggleBtn.textContent = isOpened 
+                ? 'Masquer les réponses' 
+                : `Voir les ${remainingReplies} réponse${remainingReplies > 1 ? 's' : ''}`;
+            }
+          }
+        }
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert('Erreur : ' + (err.error || 'Action refusée'));
+      }
+    });
+
+    // Like / Dislike post
+    async function sendReaction(type) {
+      const idPubli = getPostId();
+      if (!idPubli) return;
+
+      const res = await fetch('/api/comments/react', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify({ idPubli, type })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById('like-count').textContent = data.likes;
+        document.getElementById('dislike-count').textContent = data.dislikes;
+
+        const likeBtn = document.getElementById('post-like-btn');
+        const dislikeBtn = document.getElementById('post-dislike-btn');
+
+        likeBtn.classList.toggle('active-like', data.userReaction === 'LIKE');
+        dislikeBtn.classList.toggle('active-dislike', data.userReaction === 'DISLIKE');
+      } else if (res.status === 401) {
+        window.location.href = '/login';
+      }
+    }
+
+    // Like / Dislike commentaire
+    async function sendCommentReaction(idComm, type) {
+      const res = await fetch('/api/comments/' + idComm + '/react', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'same-origin',
+        body: JSON.stringify({ type })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById('comm-like-' + idComm).textContent = data.likes;
+        document.getElementById('comm-dislike-' + idComm).textContent = data.dislikes;
+
+        const likeBtn = document.getElementById('comm-like-btn-' + idComm);
+        const dislikeBtn = document.getElementById('comm-dislike-btn-' + idComm);
+
+        if (likeBtn) likeBtn.classList.toggle('active-like', data.userReaction === 'LIKE');
+        if (dislikeBtn) dislikeBtn.classList.toggle('active-dislike', data.userReaction === 'DISLIKE');
+      } else if (res.status === 401) {
+        window.location.href = '/login';
+      }
+    }
+
+    function toggleEdit(idComm) {
+      const box = document.getElementById('edit-box-' + idComm);
+      box.style.display = (box.style.display === 'none' || box.style.display === '') ? 'block' : 'none';
+    }
+
+    function updateCount(input) {
+      document.getElementById('char-count').textContent = input.value.length + ' / 500';
+    }
+  </script>
+
+  <!-- Clavier d'émojis + suggestions de hashtags pour le champ de commentaire -->
+  <script src="/js/emojiPicker.js"></script>
+  <script src="/js/hashtagSuggest.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const commentInput = document.getElementById('new-comment');
+      const commentSubmit = document.querySelector('.input-row button');
+
+      if (commentInput && commentSubmit) {
+        attachEmojiPicker(commentInput, commentSubmit);
+      }
+
+      if (commentInput) {
+        attachHashtagSuggest(commentInput);
+      }
+    });
+  </script>
+
+  <%- include('partials/remixModal') %>
+</body>
+</html>

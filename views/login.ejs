@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pixora — Connexion</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/auth.css">
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <!-- En-tête Pixora -->
+      <div class="brand-header">
+        <img src="/images/logo.jpg" alt="Pixora Logo" class="brand-logo">
+        <h1 class="brand-title">PIXOR<span class="gradient-letter">A</span></h1>
+        <p class="brand-tagline">SHARE YOUR WORLD</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button type="button" id="tab-login" class="tab active">Connexion</button>
+        <button type="button" id="tab-register" class="tab">Inscription</button>
+      </div>
+
+      <div id="alert-box" class="alert alert-error" style="display: none;"></div>
+
+      <!-- FORMULAIRE CONNEXION -->
+      <form id="form-login">
+        <div class="form-group">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" required placeholder="nom@exemple.com">
+        </div>
+        <div class="form-group">
+          <label for="login-password">Mot de passe</label>
+          <input type="password" id="login-password" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn-primary">Se connecter</button>
+      </form>
+
+      <!-- FORMULAIRE INSCRIPTION -->
+      <form id="form-register" style="display: none;">
+        <div class="form-group">
+          <label for="reg-pseudo">Pseudo</label>
+          <input type="text" id="reg-pseudo" required placeholder="ex: alex">
+        </div>
+        <div class="form-group">
+          <label for="reg-email">Email</label>
+          <input type="email" id="reg-email" required placeholder="nom@exemple.com">
+        </div>
+        <div class="form-group">
+          <label for="reg-birth">Date de naissance</label>
+          <input type="date" id="reg-birth">
+        </div>
+        <div class="form-group">
+          <label for="reg-password">Mot de passe</label>
+          <input type="password" id="reg-password" required minlength="6" placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn-primary">Créer un compte</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+    const formLogin = document.getElementById('form-login');
+    const formRegister = document.getElementById('form-register');
+    const alertBox = document.getElementById('alert-box');
+
+    function showError(msg) {
+      alertBox.textContent = msg;
+      alertBox.style.display = 'block';
+    }
+
+    tabLogin.addEventListener('click', () => {
+      tabLogin.classList.add('active');
+      tabRegister.classList.remove('active');
+      formLogin.style.display = 'block';
+      formRegister.style.display = 'none';
+      alertBox.style.display = 'none';
+    });
+
+    tabRegister.addEventListener('click', () => {
+      tabRegister.classList.add('active');
+      tabLogin.classList.remove('active');
+      formRegister.style.display = 'block';
+      formLogin.style.display = 'none';
+      alertBox.style.display = 'none';
+    });
+
+    formLogin.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.style.display = 'none';
+
+      const email = document.getElementById('login-email').value.trim();
+      const motDePasse = document.getElementById('login-password').value;
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, motDePasse })
+        });
+        const data = await res.json();
+
+        if (!res.ok) return showError(data.error || 'Identifiants invalides');
+        window.location.href = '/home';
+      } catch (err) {
+        showError('Erreur réseau ou serveur inaccessible.');
+      }
+    });
+
+    formRegister.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      alertBox.style.display = 'none';
+
+      const pseudo = document.getElementById('reg-pseudo').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const dateNaissance = document.getElementById('reg-birth').value;
+      const motDePasse = document.getElementById('reg-password').value;
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pseudo, email, motDePasse, dateNaissance })
+        });
+        const data = await res.json();
+
+        if (!res.ok) return showError(data.error || 'Erreur lors de la création');
+        tabLogin.click();
+        document.getElementById('login-email').value = email;
+      } catch (err) {
+        showError('Erreur réseau ou serveur inaccessible.');
+      }
+    });
+  </script>
+</body>
+</html>

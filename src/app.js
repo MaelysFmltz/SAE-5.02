@@ -1,29 +1,370 @@
+require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
-const reportRoutes = require('./routes/reportRoutes');
-const postRoutes = require('./routes/postRoutes');
-const adminRoutes = require('./routes/adminRoutes');
+const fs = require('fs/promises');
+const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
 
+// Imports des routes et services
 const authRoutes = require('./routes/authRoutes');
+const postRoutes = require('./routes/postRoutes');
+const publicationRoutes = require('./routes/publicationRoutes');
+const commentRoutes = require('./routes/commentRoutes');
+const friendshipRoutes = require('./routes/friendshipRoutes');
+const profileRoutes = require('./routes/profileRoutes');
+const userRoutes = require('./routes/userRoutes');
+const searchRoutes = require('./routes/searchRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const conversationRoutes = require('./routes/conversationRoutes');
+const messageRoutes = require('./routes/messageRoutes');
+
+const commentController = require('./controllers/commentController');
+const authMiddleware = require('./middlewares/authMiddleware');
+const profileService = require('./services/profileService');
+const friendshipModel = require('./models/friendshipModel');
+const conversationService = require('./services/conversationService');
+const messageService = require('./services/messageService');
+const postService = require('./services/postService');
+const db = require('./config/database');
+const { linkifyHashtags } = require('./utils/hashtagUtils');
 
 const app = express();
+
+// 1. Moteur de templates EJS
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../views'));
 
-// Permet de recevoir du JSON
+// 2. Middlewares globaux
 app.use(express.json());
-app.use('/api/signalements', reportRoutes);
-app.use('/api/publications', postRoutes);
-app.use('/api/admin', adminRoutes);
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, '../public')));
 
-// Route de test
+// 3. Routes d'affichage des pages (Front)
+
 app.get('/', (req, res) => {
-  res.json({
-    message: 'API Instagram fonctionne'
-  });
+  res.render('login');
 });
 
-// Routes d'authentification
+app.get('/login', (req, res) => {
+  res.render('login');
+});
+
+// ROUTE /home (Fil d'actualité avec suggestions et hashtags cliquables)
+app.get('/home', authMiddleware, (req, res) => {
+  try {
+    const publications = postService.getFeedForUser(req.user.idUser);
+
+    const suggestions = db.prepare(`
+      SELECT u.idUser, u.pseudo, u.role, p.bio
+      FROM Utilisateur u
+      LEFT JOIN Profil p ON u.idUser = p.idUser
+      WHERE u.idUser != ?
+      LIMIT 10
+    `).all(req.user.idUser);
+
+    res.render('feed', {
+      user: req.user,
+      publications,
+      suggestions,
+      linkifyHashtags
+    });
+  } catch (err) {
+    console.error('Erreur GET /home :', err);
+
+    res.render('feed', {
+      user: req.user,
+      publications: [],
+      suggestions: [],
+      linkifyHashtags
+    });
+  }
+});
+
+// ============================================================
+// MESSAGERIE
+// ============================================================
+
+// Affichage de la liste des conversations
+app.get('/messages', authMiddleware, async (req, res) => {
+  try {
+    const conversations = await conversationService.getMyConversations(req.user.idUser);
+    res.render('messages', {
+      user: req.user,
+      conversations: conversations || [],
+      activeTab: 'messages'
+    });
+  } catch (err) {
+    console.error('Erreur GET /messages :', err);
+    res.render('messages', {
+      user: req.user,
+      conversations: [],
+      activeTab: 'messages'
+    });
+  }
+});
+
+// Affichage d'une discussion ouverte spécifique
+app.get('/messages/:idConversation', authMiddleware, async (req, res) => {
+  try {
+    const idConversation = Number(req.params.idConversation);
+
+    if (!Number.isInteger(idConversation) || idConversation <= 0) {
+      return res.redirect('/messages');
+    }
+
+    const messages = await messageService.getMessages(idConversation, req.user.idUser);
+    await messageService.markAsRead(idConversation, req.user.idUser);
+
+    const membres = await conversationService.getConversationMembers(idConversation, req.user.idUser);
+    const conversations = await conversationService.getMyConversations(req.user.idUser);
+    const conv = conversations ? conversations.find(c => c.idConversation === idConversation) : null;
+
+    const estCreateurCourant = (membres || []).some(
+      (m) => m.idUser === req.user.idUser && !!m.estCreateur
+    );
+
+    res.render('conversation', {
+      idConversation,
+      titreConversation: conv ? (conv.titreGroupe || conv.autrePseudo || 'Discussion') : 'Discussion',
+      estGroupe: !!(conv && conv.titreGroupe),
+      estCreateurCourant,
+      membres: membres || [],
+      messages: messages || [],
+      idUserCourant: req.user.idUser,
+      user: req.user,
+      activeTab: 'messages'
+    });
+  } catch (err) {
+    console.error('Erreur GET /messages/:idConversation :', err);
+    res.redirect('/messages');
+  }
+});
+
+// ============================================================
+// MON PROFIL
+// ============================================================
+
+app.get('/profile', authMiddleware, async (req, res) => {
+  try {
+    const profile = await profileService.getMyProfile(req.user.idUser);
+
+    const stats = {
+      nbAbonnes: friendshipModel.listerAbonnes(db, req.user.idUser).length,
+      nbAbonnements: friendshipModel.listerAbonnements(db, req.user.idUser).length,
+      nbAmis: friendshipModel.listerAmis(db, req.user.idUser).length
+    };
+
+    res.render('profile', {
+      profile,
+      isOwner: true,
+      estAbonne: false,
+      sontAmis: false,
+      stats,
+      linkifyHashtags
+    });
+  } catch (err) {
+    console.error('Erreur GET /profile :', err);
+    res.status(500).send('Erreur lors du chargement de votre profil.');
+  }
+});
+
+// Page des Paramètres
+app.get('/settings', authMiddleware, (req, res) => {
+  try {
+    const user = db.prepare(`
+      SELECT idUser, pseudo, email, dateNaissance, role
+      FROM Utilisateur
+      WHERE idUser = ?
+    `).get(req.user.idUser);
+
+    if (!user) {
+      return res.redirect('/login');
+    }
+
+    res.render('settings', {
+      user,
+      title: 'Paramètres'
+    });
+  } catch (err) {
+    console.error('Erreur GET /settings :', err);
+    res.redirect('/profile');
+  }
+});
+
+app.get('/publication/create', authMiddleware, (req, res) => {
+  res.render('posts', { user: req.user });
+});
+
+app.get('/publication/:idPubli', authMiddleware, commentController.renderPostPage);
+
+// Modification de profil
+app.get('/profile/edit', authMiddleware, async (req, res) => {
+  try {
+    const profile = await profileService.getMyProfile(req.user.idUser);
+    res.render('editProfile', { profile });
+  } catch (err) {
+    console.error('Erreur GET /profile/edit :', err);
+    res.redirect('/profile');
+  }
+});
+
+app.post('/profile/edit', authMiddleware, async (req, res) => {
+  try {
+    const { prenom, nom, bio } = req.body;
+
+    await profileService.updateMyProfile(
+      req.user.idUser,
+      { prenom, nom, bio }
+    );
+
+    res.redirect('/profile');
+  } catch (err) {
+    console.error('Erreur POST /profile/edit :', err);
+
+    const profile = await profileService.getMyProfile(req.user.idUser);
+
+    res.render('editProfile', {
+      profile: { ...profile, ...req.body },
+      error: err.message
+    });
+  }
+});
+
+// Affichage du profil public d'un autre utilisateur
+app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
+  try {
+    const targetProfile = await profileService.getPublicProfile(
+      req.params.pseudo,
+      req.user.idUser
+    );
+
+    const isOwner = req.user.idUser === targetProfile.idUser;
+
+    let estAbonne = false;
+    let sontAmis = false;
+
+    if (!isOwner) {
+      const dejaAbonne = db.prepare(`
+        SELECT 1
+        FROM Abonnement
+        WHERE idUserAbonne = ?
+        AND idUserSuivi = ?
+      `).get(
+        req.user.idUser,
+        targetProfile.idUser
+      );
+
+      estAbonne = !!dejaAbonne;
+
+      sontAmis = friendshipModel.sontAmis(
+        db,
+        req.user.idUser,
+        targetProfile.idUser
+      );
+    }
+
+    const stats = {
+      nbAbonnes: friendshipModel.listerAbonnes(
+        db,
+        targetProfile.idUser
+      ).length,
+
+      nbAbonnements: friendshipModel.listerAbonnements(
+        db,
+        targetProfile.idUser
+      ).length,
+
+      nbAmis: friendshipModel.listerAmis(
+        db,
+        targetProfile.idUser
+      ).length
+    };
+
+    res.render('profile', {
+      profile: targetProfile,
+      isOwner,
+      estAbonne,
+      sontAmis,
+      stats,
+      linkifyHashtags
+    });
+  } catch (err) {
+    console.error(
+      `Erreur GET /profile/${req.params.pseudo} :`,
+      err.message
+    );
+
+    res.redirect('/home');
+  }
+});
+
+// Page et API de recherche & hashtags
+app.use('/search', searchRoutes);
+
+// ============================================================
+// MÉDIAS UPLOADÉS
+// ============================================================
+
+app.get('/uploads/:filename', async (req, res) => {
+  try {
+    const filename = req.params.filename;
+
+    if (filename !== path.basename(filename)) {
+      return res.status(400).send('Nom de fichier invalide.');
+    }
+
+    const contentTypes = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.webp': 'image/webp',
+      '.mp4': 'video/mp4',
+      '.webm': 'video/webm',
+      '.ogg': 'video/ogg',
+      '.mov': 'video/quicktime'
+    };
+
+    const extension = path.extname(filename).toLowerCase();
+    const contentType = contentTypes[extension];
+
+    if (!contentType) {
+      return res.status(404).send('Fichier non trouvé.');
+    }
+
+    const filePath = path.join(__dirname, '../uploads', filename);
+
+    try {
+      await fs.access(filePath);
+    } catch {
+      return res.status(404).send('Fichier non trouvé.');
+    }
+
+    res.set('X-Content-Type-Options', 'nosniff');
+    res.type(contentType);
+
+    return res.sendFile(path.resolve(filePath));
+  } catch (error) {
+    console.error('Erreur accès média :', error);
+    return res.status(500).send('Erreur lors de la récupération du fichier.');
+  }
+});
+
+// 4. Routes API (Back)
 app.use('/api/auth', authRoutes);
+app.use('/api/publications', postRoutes);
+app.use('/api/publications', publicationRoutes);
+app.use('/api/friendships', friendshipRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/comments', commentRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/conversations', conversationRoutes);
+app.use('/api/conversations', messageRoutes);
+
+// Routes Signalement & Modération
+if (reportRoutes) app.use('/api/signalements', reportRoutes);
+if (adminRoutes) app.use('/api/admin', adminRoutes);
 
 module.exports = app;

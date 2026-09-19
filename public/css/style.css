@@ -1,0 +1,283 @@
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-surface: #14141d;
+  --bg-input: #1e1e2c;
+  --border-color: #272738;
+  --border-focus: #c24095;
+  --text-primary: #ffffff;
+  --text-secondary: #9090a8;
+  --gradient-pixora: linear-gradient(135deg, #f35b6b 0%, #d83d97 50%, #7d33d9 100%);
+  --primary: #6366f1;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* Boutons et alertes génériques */
+.btn-primary {
+  width: 100%;
+  padding: 0.85rem;
+  background: var(--gradient-pixora);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.btn-primary:hover {
+  opacity: 0.92;
+}
+
+.btn-primary:active {
+  transform: scale(0.99);
+}
+
+.alert {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 1.2rem;
+}
+
+.alert-error {
+  background-color: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+/* Conteneur principal : pleine largeur */
+.app-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-bottom: 70px;
+}
+
+/* Pages sans barre de navigation basse (ex : conversation de messagerie) :
+   la page doit tenir exactement dans l'écran, sans réserver de place pour
+   une bottom-nav absente ni forcer de scroll pour voir le bas du contenu. */
+.app-container.no-bottom-nav {
+  height: 100vh;
+  min-height: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+/* Barre de navigation basse : traverse tout l'écran */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: var(--bg-surface);
+  border-top: 1px solid var(--border-color);
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Les 5 boutons : centrés et resserrés */
+.nav-container {
+  width: 100%;
+  max-width: 420px;
+  height: 100%;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 10px;
+}
+
+.nav-item {
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.nav-item:hover, .nav-item.active {
+  color: var(--text-primary);
+}
+
+.nav-item.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.nav-create {
+  background: var(--gradient-pixora);
+  color: #ffffff !important;
+  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+}
+/* ==========================================
+   CLAVIER D'ÉMOJIS (commentaires, messagerie)
+========================================== */
+
+.emoji-picker-toggle {
+  border: none;
+  background: transparent;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 8px 10px;
+  flex-shrink: 0;
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.emoji-picker-panel {
+  position: fixed;
+  z-index: 10000;
+  max-width: 100vw;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+/*
+ * Garde-fou : si une règle "display" est un jour ajoutée sur
+ * .emoji-picker-panel, elle l'emporterait sinon sur le
+ * "display: none" du user-agent pour "[hidden]" (styles UA,
+ * priorité plus faible dans la cascade, peu importe la
+ * spécificité) -- symptôme déjà vu : le panneau reste affiché en
+ * permanence après la première ouverture, impossible à fermer.
+ */
+.emoji-picker-panel[hidden] {
+  display: none;
+}
+
+.emoji-picker-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.emoji-picker-close {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 8px 12px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 6px;
+}
+
+.emoji-picker-close:hover {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+.emoji-picker-grid {
+  position: absolute;
+  /* "top" est complété en JS (hauteur réelle du header) */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-content: start;
+  justify-content: stretch;
+  gap: 4px;
+  padding: 10px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.emoji-picker-item {
+  min-width: 0;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  font-size: 1.05rem;
+  line-height: 1;
+  padding: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: clip;
+}
+
+.emoji-picker-item:hover {
+  background: var(--bg-input);
+}
+
+/* ==========================================
+   SUGGESTIONS DE HASHTAGS (publication, commentaires)
+========================================== */
+
+.hashtag-suggest-dropdown {
+  position: fixed;
+  z-index: 10000;
+  max-height: 220px;
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.hashtag-suggest-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.hashtag-suggest-item:hover {
+  background: var(--bg-input);
+}
+
+.hashtag-suggest-count {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}

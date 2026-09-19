@@ -177,83 +177,43 @@ describe('Système de signalement', () => {
         );
 
         expect(resultat.succes).toBe(false);
-        expect(resultat.erreur).toBe(
-            'Identifiant du contenu invalide'
-        );
+        expect(resultat.erreur).toBe('Identifiant du contenu invalide');
     });
 
     test('Les signalements peuvent être récupérés', () => {
-        creerSignalement(
-            db,
-            1,
-            'publication',
-            10,
-            'Premier signalement'
-        );
-
-        creerSignalement(
-            db,
-            2,
-            'commentaire',
-            1,
-            'Deuxième signalement'
-        );
+        creerSignalement(db, 1, 'publication', 10, 'Premier signalement');
+        creerSignalement(db, 2, 'commentaire', 1, 'Deuxième signalement');
 
         const signalements = obtenirSignalements(db);
-
         expect(signalements).toHaveLength(2);
     });
 
     test('Un utilisateur ne voit pas un signalement qui le concerne', () => {
-        creerSignalement(
-            db,
-            2,
-            'publication',
-            10,
-            'Signalement concernant l’utilisateur 1'
-        );
+        creerSignalement(db, 2, 'publication', 10, 'Signalement concernant l’utilisateur 1');
 
-        db.prepare(`
+        testPublicationId20 = db.prepare(`
             INSERT INTO Publication (idPubli, idUser)
             VALUES (?, ?)
         `).run(20, 2);
 
-        creerSignalement(
-            db,
-            2,
-            'publication',
-            20,
-            'Signalement concernant l’utilisateur 2'
-        );
+        creerSignalement(db, 2, 'publication', 20, 'Signalement concernant l’utilisateur 2');
 
         const signalements = obtenirSignalements(db, 1);
-
         expect(signalements).toHaveLength(1);
         expect(signalements[0].idContenu).toBe(20);
     });
 
-
     test('Un signalement inexistant retourne null', () => {
         const signalement = obtenirSignalement(db, 999);
-
         expect(signalement).toBeNull();
     });
 
     test('Un utilisateur peut signaler un commentaire', () => {
-        const resultat = creerSignalement(
-            db,
-            1,
-            'commentaire',
-            1,
-            'Commentaire inapproprié'
-        );
-
+        const resultat = creerSignalement(db, 1, 'commentaire', 1, 'Commentaire inapproprié');
         expect(resultat.succes).toBe(true);
 
         const signalement = db.prepare(`
-            SELECT *
-            FROM Signalement
-            WHERE idSignalement = ?
+            SELECT * FROM Signalement WHERE idSignalement = ?
         `).get(resultat.idSignalement);
 
         expect(signalement.typeContenu).toBe('commentaire');
@@ -262,115 +222,49 @@ describe('Système de signalement', () => {
     });
 
     test('Un commentaire inexistant ne peut pas être signalé', () => {
-        const resultat = creerSignalement(
-            db,
-            1,
-            'commentaire',
-            9999,
-            'Commentaire inapproprié'
-        );
-
+        const resultat = creerSignalement(db, 1, 'commentaire', 9999, 'Commentaire inapproprié');
         expect(resultat.succes).toBe(false);
         expect(resultat.erreur).toBe('Commentaire introuvable');
     });
 
     test('Un utilisateur inexistant ne peut pas être signalé', () => {
-        const resultat = creerSignalement(
-            db,
-            1,
-            'utilisateur',
-            999,
-            'Utilisateur problématique'
-        );
-
+        const resultat = creerSignalement(db, 1, 'utilisateur', 999, 'Utilisateur problématique');
         expect(resultat.succes).toBe(false);
         expect(resultat.erreur).toBe('Utilisateur introuvable');
     });
 
     test('Un média inexistant ne peut pas être signalé', () => {
-        const resultat = creerSignalement(
-            db,
-            1,
-            'media',
-            999,
-            'Média problématique'
-        );
-
+        const resultat = creerSignalement(db, 1, 'media', 999, 'Média problématique');
         expect(resultat.succes).toBe(false);
         expect(resultat.erreur).toBe('Media introuvable');
     });
 
     test('Un motif de plus de 500 caractères est refusé', () => {
         const motifTropLong = 'a'.repeat(501);
-
-        const resultat = creerSignalement(
-            db,
-            1,
-            'publication',
-            10,
-            motifTropLong
-        );
-
+        const resultat = creerSignalement(db, 1, 'publication', 10, motifTropLong);
         expect(resultat.succes).toBe(false);
-        expect(resultat.erreur).toBe(
-            'Le motif ne doit pas dépasser 500 caractères'
-        );
+        expect(resultat.erreur).toBe('Le motif ne doit pas dépasser 500 caractères');
     });
 
     test('Un utilisateur ne peut pas signaler deux fois le même contenu', () => {
-        const premierSignalement = creerSignalement(
-            db,
-            1,
-            'publication',
-            10,
-            'Premier signalement'
-        );
-
+        const premierSignalement = creerSignalement(db, 1, 'publication', 10, 'Premier signalement');
         expect(premierSignalement.succes).toBe(true);
 
-        const deuxiemeSignalement = creerSignalement(
-            db,
-            1,
-            'publication',
-            10,
-            'Deuxième signalement'
-        );
-
+        const deuxiemeSignalement = creerSignalement(db, 1, 'publication', 10, 'Deuxième signalement');
         expect(deuxiemeSignalement.succes).toBe(false);
-        expect(deuxiemeSignalement.erreur).toBe(
-            'Ce contenu a déjà été signalé par cet utilisateur'
-        );
+        expect(deuxiemeSignalement.erreur).toBe('Ce contenu a déjà été signalé par cet utilisateur');
     });
 
     test('Deux utilisateurs différents peuvent signaler le même contenu', () => {
-        const premierSignalement = creerSignalement(
-            db,
-            1,
-            'publication',
-            10,
-            'Premier signalement'
-        );
-
-        const deuxiemeSignalement = creerSignalement(
-            db,
-            2,
-            'publication',
-            10,
-            'Deuxième signalement'
-        );
+        const premierSignalement = creerSignalement(db, 1, 'publication', 10, 'Premier signalement');
+        const deuxiemeSignalement = creerSignalement(db, 2, 'publication', 10, 'Deuxième signalement');
 
         expect(premierSignalement.succes).toBe(true);
         expect(deuxiemeSignalement.succes).toBe(true);
     });
 
     test('Un utilisateur ne peut pas traiter un signalement qui le concerne', () => {
-        const resultatCreation = creerSignalement(
-            db,
-            2,
-            'publication',
-            10,
-            'Signalement concernant l’utilisateur 1'
-        );
+        const resultatCreation = creerSignalement(db, 2, 'publication', 10, 'Signalement concernant l’utilisateur 1');
 
         const resultat = modifierStatutSignalement(
             db,
@@ -381,17 +275,12 @@ describe('Système de signalement', () => {
 
         expect(resultat.succes).toBe(false);
         expect(resultat.code).toBe(403);
-        expect(resultat.erreur).toBe(
-            'Vous ne pouvez pas traiter un signalement qui vous concerne'
-        );
+        expect(resultat.erreur).toBe('Vous ne pouvez pas traiter un signalement qui vous concerne');
 
         const signalement = db.prepare(`
-            SELECT statut
-            FROM Signalement
-            WHERE idSignalement = ?
+            SELECT statut FROM Signalement WHERE idSignalement = ?
         `).get(resultatCreation.idSignalement);
 
         expect(signalement.statut).toBe('en_attente');
     });
-
 });
