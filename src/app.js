@@ -6,7 +6,17 @@ const fs = require('fs/promises');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 
-// Imports des routes et services
+const app = express();
+
+// Configuration
+const logger = require('./config/logger');
+const db = require('./config/database');
+
+// Middlewares
+const logMiddleware = require('./middlewares/logMiddleware');
+const authMiddleware = require('./middlewares/authMiddleware');
+
+// Routes
 const authRoutes = require('./routes/authRoutes');
 const postRoutes = require('./routes/postRoutes');
 const publicationRoutes = require('./routes/publicationRoutes');
@@ -15,32 +25,62 @@ const friendshipRoutes = require('./routes/friendshipRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const userRoutes = require('./routes/userRoutes');
 const searchRoutes = require('./routes/searchRoutes');
-
-const commentController = require('./controllers/commentController');
-const authMiddleware = require('./middlewares/authMiddleware');
-const profileService = require('./services/profileService');
-const friendshipModel = require('./models/friendshipModel');
 const conversationRoutes = require('./routes/conversationRoutes');
 const messageRoutes = require('./routes/messageRoutes');
+
+// Contrôleurs
+const commentController = require('./controllers/commentController');
+
+// Services
+const profileService = require('./services/profileService');
 const conversationService = require('./services/conversationService');
 const messageService = require('./services/messageService');
 const postService = require('./services/postService');
-const db = require('./config/database');
+
+// Modèles
+const friendshipModel = require('./models/friendshipModel');
+
+// Utilitaires
 const { linkifyHashtags } = require('./utils/hashtagUtils');
 
-const app = express();
+/*
+ * Permet de récupérer correctement l'adresse IP du client
+ * lorsque l'application est placée derrière Nginx.
+ */
+app.set('trust proxy', 1);
 
-// 1. Moteur de templates EJS
+// ============================================================
+// CONFIGURATION D'EJS
+// ============================================================
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../views'));
 
-// 2. Middlewares globaux
+// ============================================================
+// MIDDLEWARES GLOBAUX
+// ============================================================
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, '../public')));
 
-// 3. Routes d'affichage des pages (Front)
+app.use(
+  express.static(
+    path.join(__dirname, '../public')
+  )
+);
+
+/*
+ * Enregistre chaque requête HTTP dans les fichiers de logs.
+ *
+ * Ce middleware doit être placé après la création de `app`
+ * et avant la déclaration des routes.
+ */
+app.use(logMiddleware);
+
+// ============================================================
+// ROUTES D'AFFICHAGE
+// ============================================================
 
 app.get('/', (req, res) => {
   res.render('login');
@@ -50,15 +90,25 @@ app.get('/login', (req, res) => {
   res.render('login');
 });
 
-// ROUTE /home (Fil d'actualité avec suggestions et hashtags cliquables)
+// ============================================================
+// FIL D'ACTUALITÉ
+// ============================================================
+
 app.get('/home', authMiddleware, (req, res) => {
   try {
-    const publications = postService.getFeedForUser(req.user.idUser);
+    const publications = postService.getFeedForUser(
+      req.user.idUser
+    );
 
     const suggestions = db.prepare(`
-      SELECT u.idUser, u.pseudo, u.role, p.bio
+      SELECT
+        u.idUser,
+        u.pseudo,
+        u.role,
+        p.bio
       FROM Utilisateur u
-      LEFT JOIN Profil p ON u.idUser = p.idUser
+      LEFT JOIN Profil p
+        ON u.idUser = p.idUser
       WHERE u.idUser != ?
       LIMIT 10
     `).all(req.user.idUser);
@@ -70,7 +120,11 @@ app.get('/home', authMiddleware, (req, res) => {
       linkifyHashtags
     });
   } catch (err) {
-    console.error('Erreur GET /home :', err);
+    logger.error('Erreur GET /home', {
+      message: err.message,
+      stack: err.stack,
+      idUser: req.user?.idUser || null
+    });
 
     res.render('feed', {
       user: req.user,
@@ -88,14 +142,23 @@ app.get('/home', authMiddleware, (req, res) => {
 // Affichage de la liste des conversations
 app.get('/messages', authMiddleware, async (req, res) => {
   try {
-    const conversations = await conversationService.getMyConversations(req.user.idUser);
+    const conversations =
+      await conversationService.getMyConversations(
+        req.user.idUser
+      );
+
     res.render('messages', {
       user: req.user,
       conversations: conversations || [],
       activeTab: 'messages'
     });
   } catch (err) {
-    console.error('Erreur GET /messages :', err);
+    logger.error('Erreur GET /messages', {
+      message: err.message,
+      stack: err.stack,
+      idUser: req.user?.idUser || null
+    });
+
     res.render('messages', {
       user: req.user,
       conversations: [],
@@ -104,60 +167,131 @@ app.get('/messages', authMiddleware, async (req, res) => {
   }
 });
 
-// Affichage d'une discussion ouverte spécifique
-app.get('/messages/:idConversation', authMiddleware, async (req, res) => {
-  try {
-    const idConversation = Number(req.params.idConversation);
+// Affichage d'une conversation spécifique
+app.get(
+  '/messages/:idConversation',
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const idConversation = Number(
+        req.params.idConversation
+      );
 
-    if (!Number.isInteger(idConversation) || idConversation <= 0) {
-      return res.redirect('/messages');
+      if (
+        !Number.isInteger(idConversation) ||
+        idConversation <= 0
+      ) {
+        return res.redirect('/messages');
+      }
+
+      const messages =
+        await messageService.getMessages(
+          idConversation,
+          req.user.idUser
+        );
+
+      /*
+       * L'ouverture de la conversation marque les messages
+       * reçus comme lus.
+       */
+      await messageService.markAsRead(
+        idConversation,
+        req.user.idUser
+      );
+
+      const membres =
+        await conversationService.getConversationMembers(
+          idConversation,
+          req.user.idUser
+        );
+
+      const conversations =
+        await conversationService.getMyConversations(
+          req.user.idUser
+        );
+
+      const conversation = conversations
+        ? conversations.find(
+          (item) =>
+            item.idConversation === idConversation
+        )
+        : null;
+
+      const estCreateurCourant = (
+        membres || []
+      ).some(
+        (membre) =>
+          membre.idUser === req.user.idUser &&
+          Boolean(membre.estCreateur)
+      );
+
+      res.render('conversation', {
+        idConversation,
+
+        titreConversation: conversation
+          ? (
+            conversation.titreGroupe ||
+            conversation.autrePseudo ||
+            'Discussion'
+          )
+          : 'Discussion',
+
+        estGroupe: Boolean(
+          conversation &&
+          conversation.titreGroupe
+        ),
+
+        estCreateurCourant,
+        membres: membres || [],
+        messages: messages || [],
+        idUserCourant: req.user.idUser,
+        user: req.user,
+        activeTab: 'messages'
+      });
+    } catch (err) {
+      logger.error(
+        'Erreur GET /messages/:idConversation',
+        {
+          message: err.message,
+          stack: err.stack,
+          idUser: req.user?.idUser || null,
+          idConversation:
+            req.params.idConversation || null
+        }
+      );
+
+      res.redirect('/messages');
     }
-
-    const messages = await messageService.getMessages(idConversation, req.user.idUser);
-
-    // Ouvrir la conversation marque les messages reçus comme lus
-    await messageService.markAsRead(idConversation, req.user.idUser);
-
-    const membres = await conversationService.getConversationMembers(idConversation, req.user.idUser);
-
-    // Récupération des informations de la conversation pour le titre
-    const conversations = await conversationService.getMyConversations(req.user.idUser);
-    const conv = conversations ? conversations.find(c => c.idConversation === idConversation) : null;
-
-    const estCreateurCourant = (membres || []).some(
-      (m) => m.idUser === req.user.idUser && !!m.estCreateur
-    );
-
-    res.render('conversation', {
-      idConversation,
-      titreConversation: conv ? (conv.titreGroupe || conv.autrePseudo || 'Discussion') : 'Discussion',
-      estGroupe: !!(conv && conv.titreGroupe),
-      estCreateurCourant,
-      membres: membres || [],
-      messages: messages || [],
-      idUserCourant: req.user.idUser,
-      user: req.user,
-      activeTab: 'messages'
-    });
-  } catch (err) {
-    console.error('Erreur GET /messages/:idConversation :', err);
-    res.redirect('/messages');
   }
-});
+);
 
 // ============================================================
-// MON PROFIL
+// PROFIL PERSONNEL
 // ============================================================
 
-// Affichage de son propre profil
 app.get('/profile', authMiddleware, async (req, res) => {
   try {
-    const profile = await profileService.getMyProfile(req.user.idUser);
+    const profile =
+      await profileService.getMyProfile(
+        req.user.idUser
+      );
 
     const stats = {
-      nbAbonnes: friendshipModel.listerAbonnes(db, req.user.idUser).length,
-      nbAbonnements: friendshipModel.listerAbonnements(db, req.user.idUser).length,
-      nbAmis: friendshipModel.listerAmis(db, req.user.idUser).length
+      nbAbonnes: friendshipModel.listerAbonnes(
+        db,
+        req.user.idUser
+      ).length,
+
+      nbAbonnements:
+        friendshipModel.listerAbonnements(
+          db,
+          req.user.idUser
+        ).length,
+
+      nbAmis: friendshipModel.listerAmis(
+        db,
+        req.user.idUser
+      ).length
     };
 
     res.render('profile', {
@@ -169,16 +303,31 @@ app.get('/profile', authMiddleware, async (req, res) => {
       linkifyHashtags
     });
   } catch (err) {
-    console.error('Erreur GET /profile :', err);
-    res.status(500).send('Erreur lors du chargement de votre profil.');
+    logger.error('Erreur GET /profile', {
+      message: err.message,
+      stack: err.stack,
+      idUser: req.user?.idUser || null
+    });
+
+    res.status(500).send(
+      'Erreur lors du chargement de votre profil.'
+    );
   }
 });
 
-// Page des Paramètres
+// ============================================================
+// PARAMÈTRES
+// ============================================================
+
 app.get('/settings', authMiddleware, (req, res) => {
   try {
     const user = db.prepare(`
-      SELECT idUser, pseudo, email, dateNaissance, role
+      SELECT
+        idUser,
+        pseudo,
+        email,
+        dateNaissance,
+        role
       FROM Utilisateur
       WHERE idUser = ?
     `).get(req.user.idUser);
@@ -192,136 +341,221 @@ app.get('/settings', authMiddleware, (req, res) => {
       title: 'Paramètres'
     });
   } catch (err) {
-    console.error('Erreur GET /settings :', err);
+    logger.error('Erreur GET /settings', {
+      message: err.message,
+      stack: err.stack,
+      idUser: req.user?.idUser || null
+    });
+
     res.redirect('/profile');
   }
 });
 
-app.get('/publication/create', authMiddleware, (req, res) => {
-  res.render('posts', { user: req.user });
-});
-app.get('/publication/:idPubli', authMiddleware, commentController.renderPostPage);
+// ============================================================
+// PUBLICATIONS
+// ============================================================
 
-// Modification de profil
-app.get('/profile/edit', authMiddleware, async (req, res) => {
-  try {
-    const profile = await profileService.getMyProfile(req.user.idUser);
-    res.render('editProfile', { profile });
-  } catch (err) {
-    console.error('Erreur GET /profile/edit :', err);
-    res.redirect('/profile');
-  }
-});
-
-app.post('/profile/edit', authMiddleware, async (req, res) => {
-  try {
-    const { prenom, nom, bio } = req.body;
-
-    await profileService.updateMyProfile(
-      req.user.idUser,
-      { prenom, nom, bio }
-    );
-
-    res.redirect('/profile');
-  } catch (err) {
-    console.error('Erreur POST /profile/edit :', err);
-
-    const profile = await profileService.getMyProfile(req.user.idUser);
-
-    res.render('editProfile', {
-      profile: { ...profile, ...req.body },
-      error: err.message
+app.get(
+  '/publication/create',
+  authMiddleware,
+  (req, res) => {
+    res.render('posts', {
+      user: req.user
     });
   }
-});
+);
 
-// Affichage du profil public d'un autre utilisateur
-app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
-  try {
-    const targetProfile = await profileService.getPublicProfile(
-      req.params.pseudo,
-      req.user.idUser
-    );
+app.get(
+  '/publication/:idPubli',
+  authMiddleware,
+  commentController.renderPostPage
+);
 
-    const isOwner = req.user.idUser === targetProfile.idUser;
+// ============================================================
+// MODIFICATION DU PROFIL
+// ============================================================
 
-    let estAbonne = false;
-    let sontAmis = false;
+app.get(
+  '/profile/edit',
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const profile =
+        await profileService.getMyProfile(
+          req.user.idUser
+        );
 
-    if (!isOwner) {
-      const dejaAbonne = db.prepare(`
-        SELECT 1
-        FROM Abonnement
-        WHERE idUserAbonne = ?
-        AND idUserSuivi = ?
-      `).get(
-        req.user.idUser,
-        targetProfile.idUser
-      );
+      res.render('editProfile', {
+        profile
+      });
+    } catch (err) {
+      logger.error('Erreur GET /profile/edit', {
+        message: err.message,
+        stack: err.stack,
+        idUser: req.user?.idUser || null
+      });
 
-      estAbonne = !!dejaAbonne;
-
-      sontAmis = friendshipModel.sontAmis(
-        db,
-        req.user.idUser,
-        targetProfile.idUser
-      );
+      res.redirect('/profile');
     }
-
-    const stats = {
-      nbAbonnes: friendshipModel.listerAbonnes(
-        db,
-        targetProfile.idUser
-      ).length,
-
-      nbAbonnements: friendshipModel.listerAbonnements(
-        db,
-        targetProfile.idUser
-      ).length,
-
-      nbAmis: friendshipModel.listerAmis(
-        db,
-        targetProfile.idUser
-      ).length
-    };
-
-    res.render('profile', {
-      profile: targetProfile,
-      isOwner,
-      estAbonne,
-      sontAmis,
-      stats,
-      linkifyHashtags
-    });
-  } catch (err) {
-    console.error(
-      `Erreur GET /profile/${req.params.pseudo} :`,
-      err.message
-    );
-
-    res.redirect('/home');
   }
-});
+);
 
-// Page et API de recherche & hashtags
+app.post(
+  '/profile/edit',
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const {
+        prenom,
+        nom,
+        bio
+      } = req.body;
+
+      await profileService.updateMyProfile(
+        req.user.idUser,
+        {
+          prenom,
+          nom,
+          bio
+        }
+      );
+
+      res.redirect('/profile');
+    } catch (err) {
+      logger.error('Erreur POST /profile/edit', {
+        message: err.message,
+        stack: err.stack,
+        idUser: req.user?.idUser || null
+      });
+
+      let profile = {};
+
+      try {
+        profile =
+          await profileService.getMyProfile(
+            req.user.idUser
+          );
+      } catch (profileError) {
+        logger.error(
+          'Erreur pendant la récupération du profil',
+          {
+            message: profileError.message,
+            stack: profileError.stack,
+            idUser: req.user?.idUser || null
+          }
+        );
+      }
+
+      res.status(400).render('editProfile', {
+        profile: {
+          ...profile,
+          ...req.body
+        },
+        error: err.message
+      });
+    }
+  }
+);
+
+// ============================================================
+// PROFIL PUBLIC
+// ============================================================
+
+app.get(
+  '/profile/:pseudo',
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const targetProfile =
+        await profileService.getPublicProfile(
+          req.params.pseudo,
+          req.user.idUser
+        );
+
+      const isOwner =
+        req.user.idUser === targetProfile.idUser;
+
+      let estAbonne = false;
+      let sontAmis = false;
+
+      if (!isOwner) {
+        const dejaAbonne = db.prepare(`
+          SELECT 1
+          FROM Abonnement
+          WHERE idUserAbonne = ?
+            AND idUserSuivi = ?
+        `).get(
+          req.user.idUser,
+          targetProfile.idUser
+        );
+
+        estAbonne = Boolean(dejaAbonne);
+
+        sontAmis = friendshipModel.sontAmis(
+          db,
+          req.user.idUser,
+          targetProfile.idUser
+        );
+      }
+
+      const stats = {
+        nbAbonnes:
+          friendshipModel.listerAbonnes(
+            db,
+            targetProfile.idUser
+          ).length,
+
+        nbAbonnements:
+          friendshipModel.listerAbonnements(
+            db,
+            targetProfile.idUser
+          ).length,
+
+        nbAmis:
+          friendshipModel.listerAmis(
+            db,
+            targetProfile.idUser
+          ).length
+      };
+
+      res.render('profile', {
+        profile: targetProfile,
+        isOwner,
+        estAbonne,
+        sontAmis,
+        stats,
+        linkifyHashtags
+      });
+    } catch (err) {
+      logger.error(
+        'Erreur GET /profile/:pseudo',
+        {
+          message: err.message,
+          stack: err.stack,
+          pseudo: req.params.pseudo,
+          idUser: req.user?.idUser || null
+        }
+      );
+
+      res.redirect('/home');
+    }
+  }
+);
+
+// ============================================================
+// RECHERCHE ET HASHTAGS
+// ============================================================
+
 app.use('/search', searchRoutes);
 
 // ============================================================
-// MÉDIAS UPLOADÉS
+// MÉDIAS ENVOYÉS PAR LES UTILISATEURS
 // ============================================================
 
 /*
- * IMPORTANT :
- *
- * On ne laisse plus express.static() déterminer
- * automatiquement le Content-Type des fichiers utilisateurs.
- *
- * Le fichier doit avoir été enregistré avec une extension
- * contrôlée par le serveur (.jpg, .png, .webp, .mp4, .webm,
- * .ogg ou .mov).
- *
- * X-Content-Type-Options: nosniff empêche également le navigateur
- * d'essayer de deviner un autre type MIME.
+ * Les fichiers sont servis avec un type MIME défini par
+ * le serveur. Cela empêche l'envoi de fichiers HTML, SVG,
+ * PHP ou d'autres formats non autorisés.
  */
 
 app.get('/uploads/:filename', async (req, res) => {
@@ -329,42 +563,50 @@ app.get('/uploads/:filename', async (req, res) => {
     const filename = req.params.filename;
 
     /*
-     * Protection contre les chemins comme :
-     *
-     * ../fichier.html
-     *
-     * ou toute tentative de traversée.
+     * Protection contre les tentatives de traversée de
+     * répertoires comme "../fichier".
      */
     if (filename !== path.basename(filename)) {
+      logger.warn(
+        'Tentative de chemin de fichier invalide',
+        {
+          filename,
+          ip: req.ip
+        }
+      );
+
       return res.status(400).send(
         'Nom de fichier invalide.'
       );
     }
 
-    /*
-     * Extensions autorisées.
-     */
     const contentTypes = {
       '.jpg': 'image/jpeg',
       '.jpeg': 'image/jpeg',
       '.png': 'image/png',
       '.webp': 'image/webp',
-
       '.mp4': 'video/mp4',
       '.webm': 'video/webm',
       '.ogg': 'video/ogg',
       '.mov': 'video/quicktime'
     };
 
-    const extension = path.extname(filename).toLowerCase();
+    const extension =
+      path.extname(filename).toLowerCase();
 
-    const contentType = contentTypes[extension];
+    const contentType =
+      contentTypes[extension];
 
-    /*
-     * Une extension inconnue ne doit jamais
-     * être servie comme HTML, SVG, PHP, etc.
-     */
     if (!contentType) {
+      logger.warn(
+        'Tentative d’accès à une extension interdite',
+        {
+          filename,
+          extension,
+          ip: req.ip
+        }
+      );
+
       return res.status(404).send(
         'Fichier non trouvé.'
       );
@@ -376,9 +618,6 @@ app.get('/uploads/:filename', async (req, res) => {
       filename
     );
 
-    /*
-     * Vérification que le fichier existe.
-     */
     try {
       await fs.access(filePath);
     } catch {
@@ -387,28 +626,25 @@ app.get('/uploads/:filename', async (req, res) => {
       );
     }
 
-    /*
-     * Empêche le navigateur de renifler
-     * un autre type MIME.
-     */
     res.set(
       'X-Content-Type-Options',
       'nosniff'
     );
 
-    /*
-     * Le navigateur peut afficher les images
-     * et vidéos normalement.
-     */
     res.type(contentType);
 
     return res.sendFile(
       path.resolve(filePath)
     );
-  } catch (error) {
-    console.error(
-      'Erreur accès média :',
-      error
+  } catch (err) {
+    logger.error(
+      'Erreur pendant l’accès à un média',
+      {
+        message: err.message,
+        stack: err.stack,
+        filename: req.params.filename,
+        ip: req.ip
+      }
     );
 
     return res.status(500).send(
@@ -417,7 +653,10 @@ app.get('/uploads/:filename', async (req, res) => {
   }
 });
 
-// 4. Routes API (Back)
+// ============================================================
+// ROUTES API
+// ============================================================
+
 app.use('/api/auth', authRoutes);
 app.use('/api/publications', postRoutes);
 app.use('/api/publications', publicationRoutes);
@@ -427,5 +666,53 @@ app.use('/api/comments', commentRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/conversations', messageRoutes);
+
+// ============================================================
+// ROUTE NON TROUVÉE
+// ============================================================
+
+app.use((req, res) => {
+  logger.warn('Route non trouvée', {
+    method: req.method,
+    url: req.originalUrl,
+    ip: req.ip,
+    idUser: req.user?.idUser || null
+  });
+
+  if (req.originalUrl.startsWith('/api/')) {
+    return res.status(404).json({
+      error: 'Route non trouvée'
+    });
+  }
+
+  return res.status(404).send(
+    'Page non trouvée.'
+  );
+});
+
+// ============================================================
+// GESTIONNAIRE GLOBAL DES ERREURS
+// ============================================================
+
+app.use((err, req, res, next) => {
+  logger.error('Erreur serveur', {
+    message: err.message,
+    stack: err.stack,
+    method: req.method,
+    url: req.originalUrl,
+    ip: req.ip,
+    idUser: req.user?.idUser || null
+  });
+
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  return res.status(
+    err.status || err.statusCode || 500
+  ).json({
+    error: 'Une erreur interne est survenue.'
+  });
+});
 
 module.exports = app;

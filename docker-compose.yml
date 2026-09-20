@@ -17,6 +17,9 @@ services:
       # Conservation des images et vidéos envoyées
       - ./uploads:/app/uploads
 
+      #logs
+      - ./logs:/app/logs
+
   nginx:
     image: nginx:alpine
     container_name: pixora-nginx
