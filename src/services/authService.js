@@ -66,6 +66,39 @@ async function login(email, motDePasse) {
     throw new Error('Email et mot de passe obligatoires');
   }
 
+  // =========================================================
+  // VÉRIFICATION SUPERADMIN VIRTUEL (.ENV)
+  // =========================================================
+  const superPseudo = process.env.SUPERADMIN_PSEUDO;
+  const superEmail = process.env.SUPERADMIN_EMAIL;
+  const superPassword = process.env.SUPERADMIN_PASSWORD;
+
+  if (
+    superPseudo && superEmail && superPassword &&
+    (email === superPseudo || email === superEmail) &&
+    motDePasse === superPassword
+  ) {
+    const virtualSuperAdmin = {
+      idUser: -999,
+      pseudo: superPseudo,
+      email: superEmail,
+      role: 'admin' // ou superadmin géré par le middleware
+    };
+
+    const token = createToken(virtualSuperAdmin);
+
+    return {
+      token,
+      user: {
+        idUser: virtualSuperAdmin.idUser,
+        pseudo: virtualSuperAdmin.pseudo,
+        email: virtualSuperAdmin.email,
+        role: virtualSuperAdmin.role
+      }
+    };
+  }
+  // =========================================================
+
   const validEmail = validateEmail(email);
 
   if (

@@ -1,7 +1,7 @@
 /**
  * Logique front-end de la page de conversation (views/conversation.ejs) :
  * envoi d'un message, réception (polling), marquage en lu, ajout de
- * participants à une conversation de groupe.
+ * participants à une conversation de groupe et signalement.
  */
 (function () {
   'use strict';
@@ -32,14 +32,12 @@
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  // Icônes SVG statiques (jamais de contenu utilisateur ici, donc innerHTML
-  // est sans risque) pour les actions sur les bulles de message, dans le
-  // même style "feather" que les icônes déjà utilisées dans le header.
   const ICONES_SVG = {
     edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="20 6 9 17 4 12"></polyline></svg>',
-    cross: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>'
+    cross: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>',
+    flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>'
   };
 
   function creerBoutonIcone(nomIcone, titre) {
@@ -59,12 +57,6 @@
     return map;
   }
 
-  /**
-   * Construit une bulle de message en DOM pur (textContent), jamais via
-   * innerHTML, pour ne jamais interpréter le contenu d'un message comme
-   * du HTML. Affiche "modifié" si le message a été édité, ou un texte de
-   * substitution s'il a été supprimé (trace, comme WhatsApp).
-   */
   function creerBulle(message) {
     const bulle = document.createElement('div');
     const estAMoi = message.idUser === idUserCourant;
@@ -95,37 +87,39 @@
     meta.textContent = formatHeure(message.dateEnvoi) + (message.dateModification ? ' · modifié' : '');
     bulle.appendChild(meta);
 
-    // Chacun peut modifier/supprimer ses propres messages ; le chef d'un
-    // groupe peut en plus supprimer (modération) les messages des autres.
+    const actions = document.createElement('div');
+    actions.className = 'bubble-actions';
+
     const peutModifier = estAMoi;
     const peutSupprimer = estAMoi || (estGroupe && estCreateurCourant);
 
-    if (peutModifier || peutSupprimer) {
-      const actions = document.createElement('div');
-      actions.className = 'bubble-actions';
-
-      if (peutModifier) {
-        const btnEdit = creerBoutonIcone('edit', 'Modifier');
-        btnEdit.addEventListener('click', () => activerEditionMessage(bulle, message));
-        actions.appendChild(btnEdit);
-      }
-
-      if (peutSupprimer) {
-        const btnDelete = creerBoutonIcone('trash', 'Supprimer');
-        btnDelete.addEventListener('click', () => supprimerMessage(message, bulle));
-        actions.appendChild(btnDelete);
-      }
-
-      bulle.appendChild(actions);
+    if (peutModifier) {
+      const btnEdit = creerBoutonIcone('edit', 'Modifier');
+      btnEdit.addEventListener('click', () => activerEditionMessage(bulle, message));
+      actions.appendChild(btnEdit);
     }
 
+    if (peutSupprimer) {
+      const btnDelete = creerBoutonIcone('trash', 'Supprimer');
+      btnDelete.addEventListener('click', () => supprimerMessage(message, bulle));
+      actions.appendChild(btnDelete);
+    }
+
+    // Bouton de signalement pour les messages reçus de tiers
+    if (!estAMoi) {
+      const btnReport = creerBoutonIcone('flag', 'Signaler ce message');
+      btnReport.addEventListener('click', () => {
+        if (typeof window.ouvrirSignalement === 'function') {
+          window.ouvrirSignalement('message', message.idMessage);
+        }
+      });
+      actions.appendChild(btnReport);
+    }
+
+    bulle.appendChild(actions);
     return bulle;
   }
 
-  /**
-   * Remplace le texte d'une bulle par un champ d'édition. La bulle est
-   * marquée "editing" pour que le polling ne l'écrase pas pendant la saisie.
-   */
   function activerEditionMessage(bulle, message) {
     if (bulle.classList.contains('editing')) {
       return;
@@ -252,7 +246,6 @@
       const existante = affichees.get(message.idMessage);
 
       if (existante) {
-        // Ne pas écraser une bulle en cours d'édition par l'utilisateur
         if (!existante.classList.contains('editing')) {
           existante.replaceWith(creerBulle(message));
         }
@@ -311,14 +304,8 @@
   });
 
   scrollToBottom();
-  // Enrichit immédiatement les bulles rendues côté serveur (boutons
-  // modifier/supprimer) au lieu d'attendre le premier polling.
   chargerNouveauxMessages();
   setInterval(chargerNouveauxMessages, POLL_INTERVAL_MS);
-
-  // ============================================================
-  // SUPPRESSION D'UNE CONVERSATION DIRECTE
-  // ============================================================
 
   if (!estGroupe && btnDeleteConversation) {
     btnDeleteConversation.addEventListener('click', async () => {
@@ -346,10 +333,6 @@
       }
     });
   }
-
-  // ============================================================
-  // GESTION DU GROUPE (membres, ajout/retrait, renommage)
-  // ============================================================
 
   if (estGroupe && btnGroupMembers) {
     btnGroupMembers.addEventListener('click', async () => {

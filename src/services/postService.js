@@ -63,8 +63,35 @@ function supprimerPublication(dbInstance, idPubli) {
 }
 
 // ================================
-// VISIBILITÉ
+// VISIBILITÉ & BLOCAGE
 // ================================
+
+function tableExiste(database, nomTable) {
+    try {
+        const row = database.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(nomTable);
+        return !!row;
+    } catch {
+        return false;
+    }
+}
+
+function sontBloques(dbInstance, idUser1, idUser2) {
+    if (!idUser1 || !idUser2) return false;
+    const database = dbInstance || db;
+    if (!tableExiste(database, 'Blocage')) return false;
+
+    try {
+        const blocage = database.prepare(`
+            SELECT 1 FROM Blocage
+            WHERE (idUserBloqueur = ? AND idUserBloque = ?)
+               OR (idUserBloqueur = ? AND idUserBloque = ?)
+        `).get(idUser1, idUser2, idUser2, idUser1);
+
+        return !!blocage;
+    } catch {
+        return false;
+    }
+}
 
 function sontAmis(dbInstance, idUser1, idUser2) {
     const database = dbInstance || db;
@@ -90,6 +117,12 @@ function peutVoirPublication(dbInstance, idPubli, idUser) {
     `).get(idPubli);
 
     if (!publication) return false;
+
+    // Si l'un a bloqué l'autre, la publication est invisible
+    if (idUser && sontBloques(database, publication.idUser, idUser)) {
+        return false;
+    }
+
     if (publication.visibilite === 1) return true;
     if (publication.idUser === idUser) return true;
 
@@ -124,6 +157,9 @@ function filtrerPublicationsVisibles(publications, idUserVisiteur) {
     const visiteur = idUserVisiteur ? Number(idUserVisiteur) : null;
 
     return publications.filter((post) => {
+        if (visiteur && sontBloques(db, post.idUser, visiteur)) {
+            return false;
+        }
         if (Number(post.visibilite) === 1) return true;
         if (!visiteur) return false;
         if (Number(post.idUser) === visiteur) return true;
@@ -188,6 +224,10 @@ function getAllPosts(idUserVisiteur) {
 function getUserPosts(idUser, idUserVisiteur) {
     if (!idUser) {
         throw new Error('Identifiant utilisateur manquant');
+    }
+
+    if (idUserVisiteur && sontBloques(db, idUser, idUserVisiteur)) {
+        return [];
     }
 
     const posts = postModel.findPostsByUserId(idUser);
@@ -444,7 +484,16 @@ function getRemixChainForUser(idPubli, idUser) {
 }
 
 function getFeedForUser(idUser) {
-    const publications = db.prepare(`
+    const hasBlocage = tableExiste(db, 'Blocage');
+    const clauseBlocage = hasBlocage ? `
+        WHERE p.idUser NOT IN (
+            SELECT idUserBloque FROM Blocage WHERE idUserBloqueur = ?
+            UNION
+            SELECT idUserBloqueur FROM Blocage WHERE idUserBloque = ?
+        )
+    ` : '';
+
+    const sql = `
         SELECT
             p.idPubli,
             p.idUser,
@@ -492,9 +541,12 @@ function getFeedForUser(idUser) {
         LEFT JOIN Media om
             ON om.idPubli = original.idPubli
 
-        ORDER BY p.datePubli DESC
-    `).all();
+        ${clauseBlocage}
 
+        ORDER BY p.datePubli DESC
+    `;
+
+    const publications = hasBlocage ? db.prepare(sql).all(idUser, idUser) : db.prepare(sql).all();
     const idsDejaRepostes = postModel.findRepostedPubliIds(idUser);
 
     return publications

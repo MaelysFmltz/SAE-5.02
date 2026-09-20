@@ -19,14 +19,18 @@ const reportRoutes = require('./routes/reportRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const conversationRoutes = require('./routes/conversationRoutes');
 const messageRoutes = require('./routes/messageRoutes');
+const blockRoutes = require('./routes/blockRoutes');
 
 const commentController = require('./controllers/commentController');
 const authMiddleware = require('./middlewares/authMiddleware');
+const adminOrModeratorMiddleware = require('./middlewares/adminOrModeratorMiddleware');
+const superAdminMiddleware = require('./middlewares/superAdminMiddleware');
 const profileService = require('./services/profileService');
 const friendshipModel = require('./models/friendshipModel');
 const conversationService = require('./services/conversationService');
 const messageService = require('./services/messageService');
 const postService = require('./services/postService');
+const blockService = require('./services/blockService');
 const db = require('./config/database');
 const { linkifyHashtags } = require('./utils/hashtagUtils');
 
@@ -52,7 +56,13 @@ app.get('/login', (req, res) => {
   res.render('login');
 });
 
-// ROUTE /home (Fil d'actualité avec suggestions et hashtags cliquables)
+// Page pour les comptes sanctionnés
+app.get('/banned', (req, res) => {
+  const statut = req.query.statut || 'suspendu';
+  res.render('banned', { statut });
+});
+
+// Fil d'actualité
 app.get('/home', authMiddleware, (req, res) => {
   try {
     const publications = postService.getFeedForUser(req.user.idUser);
@@ -62,8 +72,13 @@ app.get('/home', authMiddleware, (req, res) => {
       FROM Utilisateur u
       LEFT JOIN Profil p ON u.idUser = p.idUser
       WHERE u.idUser != ?
+        AND u.idUser NOT IN (
+          SELECT idUserBloque FROM Blocage WHERE idUserBloqueur = ?
+          UNION
+          SELECT idUserBloqueur FROM Blocage WHERE idUserBloque = ?
+        )
       LIMIT 10
-    `).all(req.user.idUser);
+    `).all(req.user.idUser, req.user.idUser, req.user.idUser);
 
     res.render('feed', {
       user: req.user,
@@ -73,7 +88,6 @@ app.get('/home', authMiddleware, (req, res) => {
     });
   } catch (err) {
     console.error('Erreur GET /home :', err);
-
     res.render('feed', {
       user: req.user,
       publications: [],
@@ -83,11 +97,27 @@ app.get('/home', authMiddleware, (req, res) => {
   }
 });
 
-// ============================================================
-// MESSAGERIE
-// ============================================================
+// Panel d'administration & modération
+app.get('/admin', authMiddleware, adminOrModeratorMiddleware, (req, res) => {
+  try {
+    res.render('admin', { user: req.user });
+  } catch (err) {
+    console.error('Erreur GET /admin :', err);
+    res.redirect('/home');
+  }
+});
 
-// Affichage de la liste des conversations
+// Panel Super Admin (protégé par le middleware basé sur le .env)
+app.get('/super-admin', authMiddleware, superAdminMiddleware, (req, res) => {
+  try {
+    res.render('admin', { user: { ...req.user, role: 'superadmin' } });
+  } catch (err) {
+    console.error('Erreur GET /super-admin :', err);
+    res.redirect('/home');
+  }
+});
+
+// Messagerie
 app.get('/messages', authMiddleware, async (req, res) => {
   try {
     const conversations = await conversationService.getMyConversations(req.user.idUser);
@@ -106,7 +136,6 @@ app.get('/messages', authMiddleware, async (req, res) => {
   }
 });
 
-// Affichage d'une discussion ouverte spécifique
 app.get('/messages/:idConversation', authMiddleware, async (req, res) => {
   try {
     const idConversation = Number(req.params.idConversation);
@@ -143,10 +172,7 @@ app.get('/messages/:idConversation', authMiddleware, async (req, res) => {
   }
 });
 
-// ============================================================
-// MON PROFIL
-// ============================================================
-
+// Mon profil
 app.get('/profile', authMiddleware, async (req, res) => {
   try {
     const profile = await profileService.getMyProfile(req.user.idUser);
@@ -162,7 +188,10 @@ app.get('/profile', authMiddleware, async (req, res) => {
       isOwner: true,
       estAbonne: false,
       sontAmis: false,
+      jeLuiBloque: false,
+      ilMeBloque: false,
       stats,
+      user: req.user,
       linkifyHashtags
     });
   } catch (err) {
@@ -171,11 +200,11 @@ app.get('/profile', authMiddleware, async (req, res) => {
   }
 });
 
-// Page des Paramètres
+// Paramètres
 app.get('/settings', authMiddleware, (req, res) => {
   try {
     const user = db.prepare(`
-      SELECT idUser, pseudo, email, dateNaissance, role
+      SELECT idUser, pseudo, email, dateNaissance, role, statut
       FROM Utilisateur
       WHERE idUser = ?
     `).get(req.user.idUser);
@@ -194,13 +223,14 @@ app.get('/settings', authMiddleware, (req, res) => {
   }
 });
 
+// Publications (Pages Web)
 app.get('/publication/create', authMiddleware, (req, res) => {
   res.render('posts', { user: req.user });
 });
 
 app.get('/publication/:idPubli', authMiddleware, commentController.renderPostPage);
 
-// Modification de profil
+// Profil édition
 app.get('/profile/edit', authMiddleware, async (req, res) => {
   try {
     const profile = await profileService.getMyProfile(req.user.idUser);
@@ -214,18 +244,11 @@ app.get('/profile/edit', authMiddleware, async (req, res) => {
 app.post('/profile/edit', authMiddleware, async (req, res) => {
   try {
     const { prenom, nom, bio } = req.body;
-
-    await profileService.updateMyProfile(
-      req.user.idUser,
-      { prenom, nom, bio }
-    );
-
+    await profileService.updateMyProfile(req.user.idUser, { prenom, nom, bio });
     res.redirect('/profile');
   } catch (err) {
     console.error('Erreur POST /profile/edit :', err);
-
     const profile = await profileService.getMyProfile(req.user.idUser);
-
     res.render('editProfile', {
       profile: { ...profile, ...req.body },
       error: err.message
@@ -233,7 +256,7 @@ app.post('/profile/edit', authMiddleware, async (req, res) => {
   }
 });
 
-// Affichage du profil public d'un autre utilisateur
+// Profil public
 app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
   try {
     const targetProfile = await profileService.getPublicProfile(
@@ -242,45 +265,30 @@ app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
     );
 
     const isOwner = req.user.idUser === targetProfile.idUser;
-
     let estAbonne = false;
     let sontAmis = false;
+    let jeLuiBloque = false;
+    let ilMeBloque = false;
 
     if (!isOwner) {
+      const blockStatus = blockService.estBloque(req.user.idUser, targetProfile.idUser, db);
+      jeLuiBloque = blockStatus.jeLuiBloque;
+      ilMeBloque = blockStatus.ilMeBloque;
+
       const dejaAbonne = db.prepare(`
         SELECT 1
         FROM Abonnement
-        WHERE idUserAbonne = ?
-        AND idUserSuivi = ?
-      `).get(
-        req.user.idUser,
-        targetProfile.idUser
-      );
+        WHERE idUserAbonne = ? AND idUserSuivi = ?
+      `).get(req.user.idUser, targetProfile.idUser);
 
       estAbonne = !!dejaAbonne;
-
-      sontAmis = friendshipModel.sontAmis(
-        db,
-        req.user.idUser,
-        targetProfile.idUser
-      );
+      sontAmis = friendshipModel.sontAmis(db, req.user.idUser, targetProfile.idUser);
     }
 
     const stats = {
-      nbAbonnes: friendshipModel.listerAbonnes(
-        db,
-        targetProfile.idUser
-      ).length,
-
-      nbAbonnements: friendshipModel.listerAbonnements(
-        db,
-        targetProfile.idUser
-      ).length,
-
-      nbAmis: friendshipModel.listerAmis(
-        db,
-        targetProfile.idUser
-      ).length
+      nbAbonnes: friendshipModel.listerAbonnes(db, targetProfile.idUser).length,
+      nbAbonnements: friendshipModel.listerAbonnements(db, targetProfile.idUser).length,
+      nbAmis: friendshipModel.listerAmis(db, targetProfile.idUser).length
     };
 
     res.render('profile', {
@@ -288,26 +296,21 @@ app.get('/profile/:pseudo', authMiddleware, async (req, res) => {
       isOwner,
       estAbonne,
       sontAmis,
+      jeLuiBloque,
+      ilMeBloque,
       stats,
+      user: req.user,
       linkifyHashtags
     });
   } catch (err) {
-    console.error(
-      `Erreur GET /profile/${req.params.pseudo} :`,
-      err.message
-    );
-
+    console.error(`Erreur GET /profile/${req.params.pseudo} :`, err.message);
     res.redirect('/home');
   }
 });
 
-// Page et API de recherche & hashtags
 app.use('/search', searchRoutes);
 
-// ============================================================
-// MÉDIAS UPLOADÉS
-// ============================================================
-
+// Uploads
 app.get('/uploads/:filename', async (req, res) => {
   try {
     const filename = req.params.filename;
@@ -362,6 +365,7 @@ app.use('/api/comments', commentRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/conversations', messageRoutes);
+app.use('/api/blocks', blockRoutes);
 
 // Routes Signalement & Modération
 if (reportRoutes) app.use('/api/signalements', reportRoutes);

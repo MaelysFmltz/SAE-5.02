@@ -1,5 +1,6 @@
 const userService = require('../services/userService');
 const userModel = require('../models/userModel');
+const blockService = require('../services/blockService');
 
 async function updatePseudo(req, res) {
   try {
@@ -71,7 +72,7 @@ async function deleteAccount(req, res) {
 
 async function searchUsersAdmin(req, res) {
   try {
-    if (req.user.role !== 'admin') {
+    if (req.user.role !== 'admin' && req.user.role !== 'superadmin' && req.user.idUser !== -999) {
       return res.status(403).json({ error: 'Accès réservé aux administrateurs.' });
     }
 
@@ -89,17 +90,19 @@ async function searchUsersAdmin(req, res) {
 
 async function changeUserRoleAdmin(req, res) {
   try {
-    if (req.user.role !== 'admin') {
+    const isSuperAdmin = req.user.role === 'superadmin' || req.user.idUser === -999;
+    const isAdmin = req.user.role === 'admin' || isSuperAdmin;
+
+    if (!isAdmin) {
       return res.status(403).json({ error: 'Accès réservé aux administrateurs.' });
     }
 
     const { idUser, role } = req.body;
     const targetId = Number(idUser);
 
-    // Seuls les rôles user et moderator peuvent être assignés depuis l'admin panel
-    const allowedRoles = ['user', 'moderator'];
+    const allowedRoles = isSuperAdmin ? ['user', 'moderator', 'admin'] : ['user', 'moderator'];
     if (!allowedRoles.includes(role)) {
-      return res.status(400).json({ error: 'Rôle invalide ou non assignable depuis le panneau.' });
+      return res.status(400).json({ error: 'Rôle invalide ou non assignable depuis votre compte.' });
     }
 
     const targetUser = userModel.findById(targetId);
@@ -107,13 +110,11 @@ async function changeUserRoleAdmin(req, res) {
       return res.status(404).json({ error: 'Utilisateur introuvable.' });
     }
 
-    // Interdiction de modifier son propre compte
     if (targetId === req.user.idUser) {
       return res.status(400).json({ error: 'Vous ne pouvez pas modifier votre propre rôle.' });
     }
 
-    // Interdiction de toucher à un autre administrateur
-    if (targetUser.role === 'admin') {
+    if (!isSuperAdmin && targetUser.role === 'admin') {
       return res.status(403).json({ error: 'Impossible de modifier le rôle d’un administrateur.' });
     }
 
@@ -124,11 +125,65 @@ async function changeUserRoleAdmin(req, res) {
   }
 }
 
+/**
+ * Récupère la liste des comptes bloqués par l'utilisateur connecté (pour settings.ejs).
+ */
+function getBlockedUsers(req, res) {
+  try {
+    const list = blockService.listerBloques(req.user.idUser);
+    return res.status(200).json({ blockedUsers: list });
+  } catch (error) {
+    console.error('Erreur getBlockedUsers :', error);
+    return res.status(500).json({ error: 'Impossible de récupérer la liste des comptes bloqués.' });
+  }
+}
+
+/**
+ * Bloque un compte utilisateur cible.
+ */
+function blockUser(req, res) {
+  try {
+    const targetId = Number(req.params.idUser);
+    const result = blockService.bloquerUtilisateur(req.user.idUser, targetId);
+
+    if (!result.succes) {
+      return res.status(400).json({ error: result.erreur });
+    }
+
+    return res.status(200).json({ message: 'Utilisateur bloqué avec succès.' });
+  } catch (error) {
+    console.error('Erreur blockUser :', error);
+    return res.status(500).json({ error: 'Erreur lors du blocage.' });
+  }
+}
+
+/**
+ * Débloque un compte utilisateur cible.
+ */
+function unblockUser(req, res) {
+  try {
+    const targetId = Number(req.params.idUser);
+    const result = blockService.debloquerUtilisateur(req.user.idUser, targetId);
+
+    if (!result.succes) {
+      return res.status(400).json({ error: result.erreur });
+    }
+
+    return res.status(200).json({ message: 'Utilisateur débloqué avec succès.' });
+  } catch (error) {
+    console.error('Erreur unblockUser :', error);
+    return res.status(500).json({ error: 'Erreur lors du déblocage.' });
+  }
+}
+
 module.exports = {
   updatePseudo,
   updateEmail,
   updatePassword,
   deleteAccount,
   searchUsersAdmin,
-  changeUserRoleAdmin
+  changeUserRoleAdmin,
+  getBlockedUsers,
+  blockUser,
+  unblockUser
 };

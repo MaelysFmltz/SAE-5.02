@@ -2,8 +2,12 @@
  * Vérifie si une colonne existe dans une table donnée.
  */
 function colonneExiste(db, table, nomColonne) {
-    const colonnes = db.prepare(`PRAGMA table_info(${table})`).all();
-    return colonnes.some(c => c.name === nomColonne);
+    try {
+        const colonnes = db.prepare(`PRAGMA table_info(${table})`).all();
+        return colonnes.some(c => c.name === nomColonne);
+    } catch {
+        return false;
+    }
 }
 
 /**
@@ -140,32 +144,51 @@ function modifierStatutSignalement(db, idSignalement, statut, idModerateur = nul
  * Récupère l'auteur du contenu signalé selon le type d'entité.
  */
 function trouverAuteurContenu(db, typeContenu, idContenu) {
-    switch (typeContenu) {
-        case 'publication': {
-            const row = db.prepare('SELECT idUser FROM Publication WHERE idPubli = ?').get(idContenu);
-            return row ? row.idUser : null;
+    try {
+        switch (typeContenu) {
+            case 'publication': {
+                const row = db.prepare('SELECT idUser FROM Publication WHERE idPubli = ?').get(idContenu);
+                return row ? row.idUser : null;
+            }
+            case 'commentaire': {
+                const row = db.prepare('SELECT idUser FROM Commentaire WHERE idComm = ?').get(idContenu);
+                return row ? row.idUser : null;
+            }
+            case 'utilisateur':
+                return idContenu;
+            case 'media': {
+                const row = db.prepare(`
+                    SELECT p.idUser 
+                    FROM Media m 
+                    JOIN Publication p ON m.idPubli = p.idPubli 
+                    WHERE m.idMedia = ?
+                `).get(idContenu);
+                return row ? row.idUser : null;
+            }
+            case 'message': {
+                // Détection de la colonne d'expéditeur existante dans la table Message
+                const colonnes = db.prepare('PRAGMA table_info(Message)').all().map(c => c.name);
+                let colNom = null;
+
+                if (colonnes.includes('idUser')) {
+                    colNom = 'idUser';
+                } else if (colonnes.includes('idUserExpediteur')) {
+                    colNom = 'idUserExpediteur';
+                } else if (colonnes.includes('idExpediteur')) {
+                    colNom = 'idExpediteur';
+                }
+
+                if (!colNom) return null;
+
+                const row = db.prepare(`SELECT ${colNom} AS idUser FROM Message WHERE idMessage = ?`).get(idContenu);
+                return row ? row.idUser : null;
+            }
+            default:
+                return null;
         }
-        case 'commentaire': {
-            const row = db.prepare('SELECT idUser FROM Commentaire WHERE idComm = ?').get(idContenu);
-            return row ? row.idUser : null;
-        }
-        case 'utilisateur':
-            return idContenu;
-        case 'media': {
-            const row = db.prepare(`
-                SELECT p.idUser 
-                FROM Media m 
-                JOIN Publication p ON m.idPubli = p.idPubli 
-                WHERE m.idMedia = ?
-            `).get(idContenu);
-            return row ? row.idUser : null;
-        }
-        case 'message': {
-            const row = db.prepare('SELECT idUserExpediteur AS idUser FROM Message WHERE idMessage = ?').get(idContenu);
-            return row ? row.idUser : null;
-        }
-        default:
-            return null;
+    } catch (err) {
+        console.error(`Erreur lors de la récupération de l'auteur pour ${typeContenu} #${idContenu} :`, err);
+        return null;
     }
 }
 

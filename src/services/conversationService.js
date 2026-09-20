@@ -44,6 +44,20 @@ function ensureUserExists(idUser) {
   }
 }
 
+/**
+ * Vérifie si deux utilisateurs se sont bloqués mutuellement.
+ */
+function sontBloques(idUser1, idUser2) {
+  if (!idUser1 || !idUser2) return false;
+  const blocage = db.prepare(`
+    SELECT 1 FROM Blocage
+    WHERE (idUserBloqueur = ? AND idUserBloque = ?)
+       OR (idUserBloqueur = ? AND idUserBloque = ?)
+  `).get(idUser1, idUser2, idUser2, idUser1);
+
+  return !!blocage;
+}
+
 // Transaction atomique : la conversation et ses membres sont créés ensemble,
 // ou pas du tout (même logique que executeRegisterTransaction dans authService)
 const executeCreateDirectTransaction = db.transaction((idUserA, idUserB) => {
@@ -76,6 +90,10 @@ async function createDirectConversation(idUserCourant, idUserDestinataire) {
 
   ensureUserExists(idDestinataire);
 
+  if (sontBloques(idUserCourant, idDestinataire)) {
+    throw httpError('Impossible d’interagir avec cet utilisateur (compte bloqué)', 403);
+  }
+
   const existante = conversationModel.findDirectConversationBetween(
     idUserCourant,
     idDestinataire
@@ -107,9 +125,6 @@ async function createGroupConversation(idUserCourant, membres, titreGroupe) {
   idsMembres.forEach(ensureUserExists);
 
   // Un groupe a toujours un titre affichable : "Nouveau groupe" par défaut
-  // si aucun n'est fourni (évite d'afficher le pseudo arbitraire d'un
-  // membre à la place, et permet de distinguer sans ambiguïté un groupe
-  // d'une conversation directe).
   let titreNettoye = TITRE_GROUPE_DEFAUT;
 
   if (titreGroupe !== undefined && titreGroupe !== null) {
@@ -137,7 +152,6 @@ async function getMyConversations(idUser) {
 
 /**
  * Vérifie qu'un utilisateur a le droit d'agir dans une conversation.
- * Réutilisée par messageService avant chaque lecture/écriture.
  */
 function ensureIsMember(idConversation, idUser) {
   if (!conversationModel.isMember(idConversation, idUser)) {
@@ -147,9 +161,6 @@ function ensureIsMember(idConversation, idUser) {
 
 /**
  * Vérifie qu'un utilisateur est bien le créateur/chef d'une conversation.
- * À utiliser après ensureIsMember/ensureConversationDeGroupe, pour que
- * l'erreur la plus précise (pas membre, pas un groupe) soit renvoyée en
- * priorité sur celle-ci.
  */
 function ensureEstCreateur(idConversation, idUser) {
   if (!conversationModel.isCreateur(idConversation, idUser)) {
@@ -158,8 +169,7 @@ function ensureEstCreateur(idConversation, idUser) {
 }
 
 /**
- * Vérifie qu'une conversation existe et est bien une conversation de
- * groupe (pas une conversation directe à 2), retourne la conversation.
+ * Vérifie qu'une conversation existe et est bien une conversation de groupe.
  */
 function ensureConversationDeGroupe(idConversation) {
   const conversation = conversationModel.getConversationById(idConversation);
@@ -175,18 +185,11 @@ function ensureConversationDeGroupe(idConversation) {
   return conversation;
 }
 
-/**
- * Récupère les membres d'une conversation, réservé aux membres de celle-ci.
- */
 function getConversationMembers(idConversation, idUserCourant) {
   ensureIsMember(idConversation, idUserCourant);
   return conversationModel.getMembers(idConversation);
 }
 
-/**
- * Ajoute un ou plusieurs participants à une conversation de groupe existante.
- * Seul le créateur/chef du groupe peut ajouter quelqu'un.
- */
 async function addParticipants(idConversation, idUserCourant, idUsers) {
   ensureIsMember(idConversation, idUserCourant);
   ensureConversationDeGroupe(idConversation);
@@ -197,7 +200,6 @@ async function addParticipants(idConversation, idUserCourant, idUsers) {
   }
 
   const idsUniques = Array.from(new Set(idUsers.map(toValidUserId)));
-
   idsUniques.forEach(ensureUserExists);
 
   const membresActuels = new Set(
@@ -215,12 +217,6 @@ async function addParticipants(idConversation, idUserCourant, idUsers) {
   return conversationModel.getMembers(idConversation);
 }
 
-/**
- * Retire un participant d'une conversation de groupe.
- * Seul le créateur/chef du groupe peut retirer quelqu'un, et il ne peut
- * pas se retirer lui-même par cette action (pas de gestion de "groupe
- * sans chef" dans cette version).
- */
 async function removeParticipant(idConversation, idUserCourant, idUserARetirer) {
   ensureIsMember(idConversation, idUserCourant);
   ensureConversationDeGroupe(idConversation);
@@ -241,9 +237,6 @@ async function removeParticipant(idConversation, idUserCourant, idUserARetirer) 
   return conversationModel.getMembers(idConversation);
 }
 
-/**
- * Renomme une conversation de groupe. Seul le créateur/chef peut le faire.
- */
 async function renameGroup(idConversation, idUserCourant, nouveauTitre) {
   ensureIsMember(idConversation, idUserCourant);
   ensureConversationDeGroupe(idConversation);
@@ -268,13 +261,6 @@ async function renameGroup(idConversation, idUserCourant, nouveauTitre) {
   return titreNettoye;
 }
 
-/**
- * Supprime une conversation pour de bon.
- * - Conversation de groupe : réservé au créateur/chef (supprime le groupe
- *   pour tout le monde) ; les autres membres doivent utiliser leaveGroup.
- * - Conversation directe : n'importe lequel des deux membres peut la
- *   supprimer, pour de vrai, pour les deux (pas de masquage "pour soi").
- */
 async function deleteConversation(idConversation, idUserCourant) {
   ensureIsMember(idConversation, idUserCourant);
 
@@ -291,11 +277,6 @@ async function deleteConversation(idConversation, idUserCourant) {
   conversationModel.deleteConversation(idConversation);
 }
 
-/**
- * Un membre (non-chef) quitte un groupe : il est simplement retiré de la
- * conversation, qui continue d'exister pour les autres membres. Le chef ne
- * peut pas quitter par cette action (il doit supprimer le groupe).
- */
 async function leaveGroup(idConversation, idUserCourant) {
   ensureIsMember(idConversation, idUserCourant);
   ensureConversationDeGroupe(idConversation);

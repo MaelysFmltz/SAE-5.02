@@ -5,8 +5,10 @@
  * (via conversationService), marquage en lu.
  */
 const messageModel = require('../models/messageModel');
+const conversationModel = require('../models/conversationModel');
 const conversationService = require('./conversationService');
 const { sanitizeText } = require('../utils/validationUtils');
+const db = require('../config/database');
 
 const CONTENU_MAX_LENGTH = 2000;
 
@@ -17,8 +19,21 @@ function httpError(message, status) {
 }
 
 /**
- * Récupère un message et vérifie qu'il appartient bien à la conversation
- * donnée (empêche d'agir sur un message via un mauvais idConversation)
+ * Vérifie si deux utilisateurs se sont bloqués.
+ */
+function sontBloques(idUser1, idUser2) {
+  if (!idUser1 || !idUser2) return false;
+  const blocage = db.prepare(`
+    SELECT 1 FROM Blocage
+    WHERE (idUserBloqueur = ? AND idUserBloque = ?)
+       OR (idUserBloqueur = ? AND idUserBloque = ?)
+  `).get(idUser1, idUser2, idUser2, idUser1);
+
+  return !!blocage;
+}
+
+/**
+ * Récupère un message et vérifie qu'il appartient bien à la conversation.
  */
 function getMessageDeLaConversation(idConversation, idMessage) {
   const message = messageModel.getMessageById(idMessage);
@@ -51,9 +66,17 @@ function validerContenu(contenu) {
 async function sendMessage(idConversation, idUser, contenu) {
   conversationService.ensureIsMember(idConversation, idUser);
 
-  // Nettoyage AVANT le contrôle de vide : un message composé uniquement
-  // de balises ("<b></b>") ne doit pas être enregistré comme un message
-  // valide juste parce qu'il n'est pas vide avant nettoyage.
+  // Vérifier si la conversation est directe et si les membres se bloquent
+  const membres = conversationModel.getMembers(idConversation);
+  const conversation = conversationModel.getConversationById(idConversation);
+
+  if (conversation && !conversation.titreGroupe && membres && membres.length === 2) {
+    const autreMembre = membres.find(m => m.idUser !== idUser);
+    if (autreMembre && sontBloques(idUser, autreMembre.idUser)) {
+      throw httpError('Impossible d’envoyer un message : cet utilisateur est bloqué', 403);
+    }
+  }
+
   const contenuNettoye = validerContenu(contenu);
 
   return messageModel.createMessage(idConversation, idUser, contenuNettoye);
@@ -69,10 +92,6 @@ async function markAsRead(idConversation, idUser) {
   return messageModel.markConversationAsRead(idConversation, idUser);
 }
 
-/**
- * Modifie le contenu de son propre message. Un message déjà supprimé ne
- * peut plus être modifié.
- */
 async function editMessage(idConversation, idUser, idMessage, contenu) {
   conversationService.ensureIsMember(idConversation, idUser);
 
@@ -84,18 +103,13 @@ async function editMessage(idConversation, idUser, idMessage, contenu) {
 
   if (message.supprime) {
     throw httpError('Un message supprimé ne peut pas être modifié', 400);
-  }
+    }
 
   const contenuNettoye = validerContenu(contenu);
 
   return messageModel.updateContenu(idMessage, contenuNettoye);
 }
 
-/**
- * Supprime (en laissant une trace "message supprimé") un message.
- * Autorisé pour l'auteur du message, et en plus pour le chef du groupe
- * (modération) si la conversation est un groupe.
- */
 async function deleteMessage(idConversation, idUser, idMessage) {
   conversationService.ensureIsMember(idConversation, idUser);
 

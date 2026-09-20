@@ -66,4 +66,55 @@ if (messageExiste) {
   }
 }
 
+// 5. Migration Signalement (support du type 'message' et de la réponse modérateur)
+const signalementExiste = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='Signalement'").get();
+if (signalementExiste) {
+  // Vérification de la contrainte CHECK sur 'message'
+  if (!signalementExiste.sql.includes("'message'")) {
+    db.transaction(() => {
+      db.prepare(`
+        CREATE TABLE Signalement_new (
+          idSignalement INTEGER PRIMARY KEY AUTOINCREMENT,
+          idUserAuteur INTEGER NOT NULL,
+          typeContenu TEXT CHECK(typeContenu IN ('publication', 'commentaire', 'utilisateur', 'media', 'message')) NOT NULL,
+          idContenu INTEGER NOT NULL,
+          motif TEXT NOT NULL,
+          dateSignalement DATETIME DEFAULT CURRENT_TIMESTAMP,
+          statut TEXT CHECK(statut IN ('en_attente', 'traite', 'rejete')) DEFAULT 'en_attente',
+          reponseModeration TEXT,
+          FOREIGN KEY (idUserAuteur) REFERENCES Utilisateur(idUser) ON DELETE CASCADE
+        )
+      `).run();
+
+      const colonnes = db.prepare('PRAGMA table_info(Signalement)').all().map(c => c.name);
+      const hasReponse = colonnes.includes('reponseModeration');
+
+      if (hasReponse) {
+        db.prepare(`
+          INSERT INTO Signalement_new (idSignalement, idUserAuteur, typeContenu, idContenu, motif, dateSignalement, statut, reponseModeration)
+          SELECT idSignalement, idUserAuteur, typeContenu, idContenu, motif, dateSignalement, statut, reponseModeration
+          FROM Signalement
+        `).run();
+      } else {
+        db.prepare(`
+          INSERT INTO Signalement_new (idSignalement, idUserAuteur, typeContenu, idContenu, motif, dateSignalement, statut)
+          SELECT idSignalement, idUserAuteur, typeContenu, idContenu, motif, dateSignalement, statut
+          FROM Signalement
+        `).run();
+      }
+
+      db.prepare('DROP TABLE Signalement').run();
+      db.prepare('ALTER TABLE Signalement_new RENAME TO Signalement').run();
+    })();
+    console.log("Migration Signalement : contrainte CHECK mise à jour avec le type 'message'.");
+  } else {
+    // Si la table gère déjà 'message', on s'assure que reponseModeration existe
+    const colonnes = db.prepare('PRAGMA table_info(Signalement)').all();
+    if (!colonnes.some(c => c.name === 'reponseModeration')) {
+      db.exec('ALTER TABLE Signalement ADD COLUMN reponseModeration TEXT');
+      console.log('Migration Signalement : colonne reponseModeration ajoutée.');
+    }
+  }
+}
+
 module.exports = db;

@@ -44,7 +44,6 @@
       width: 100%;
     }
 
-    /* Texte de la publication */
     .post-caption-box {
       padding: 12px 16px 4px 16px;
       font-size: 14px;
@@ -57,7 +56,6 @@
       margin-right: 6px;
     }
     
-    /* Liens Hashtags cliquables */
     .hashtag-link {
       color: #a78bfa;
       text-decoration: none;
@@ -69,7 +67,6 @@
       text-decoration: underline;
     }
 
-    /* Barre d'actions */
     .interaction-bar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; }
     
     .icon-btn {
@@ -90,26 +87,20 @@
     .icon-btn:active { transform: scale(0.92); }
     .icon-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-    /* États actifs des réactions */
-    .icon-btn.active-like {
-      color: #ed4956;
-    }
+    .icon-btn.active-like { color: #ed4956; }
     .icon-btn.active-like svg {
       fill: #ed4956;
       stroke: #ed4956;
       animation: pop 0.25s ease-out;
     }
 
-    .icon-btn.active-dislike {
-      color: #3b82f6;
-    }
+    .icon-btn.active-dislike { color: #3b82f6; }
     .icon-btn.active-dislike svg {
       fill: #3b82f6;
       stroke: #3b82f6;
       animation: pop 0.25s ease-out;
     }
 
-    /* Section Commentaires */
     .comments-section {
       display: none;
       padding: 12px 16px;
@@ -186,7 +177,6 @@
     }
     .btn-reply-trigger:hover { color: #f5f5f5; }
 
-    /* Réponses imbriquées */
     .replies-container {
       margin-left: 24px;
       padding-left: 10px;
@@ -232,6 +222,7 @@
     .btn-action-icon svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; }
     .btn-action-icon:hover { background: #1f1f1f; color: #f5f5f5; }
     .btn-action-icon.delete:hover { color: #ed4956; background: rgba(237, 73, 86, 0.12); }
+    .btn-action-icon.report:hover { color: #f59e0b; background: rgba(245, 158, 11, 0.12); }
     
     .edit-form { display: none; margin-top: 8px; }
     .edit-form textarea { 
@@ -278,7 +269,22 @@
     .input-row button:hover { color: #1877f2; }
     .char-counter { font-size: 11px; color: #737373; text-align: right; margin-top: 4px; padding-right: 8px; }
 
-    /* Modale Pixora */
+    .delete-post {
+      background: #dc2626;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .delete-post:hover {
+      opacity: 0.85;
+    }
+
+    /* Modales */
     .pixora-modal-overlay {
       display: none;
       position: fixed;
@@ -290,21 +296,37 @@
       z-index: 1000;
     }
     .pixora-modal-card {
-      background: #262626;
-      border: 1px solid #363636;
+      background: #18181b;
+      border: 1px solid #27272a;
       width: 90%;
-      max-width: 320px;
+      max-width: 380px;
       border-radius: 16px;
       padding: 20px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
-      text-align: center;
+      text-align: left;
     }
     .pixora-modal-title { font-size: 16px; font-weight: 700; color: #f5f5f5; margin: 0 0 8px 0; }
     .pixora-modal-text { font-size: 13px; color: #a8a8a8; margin: 0 0 18px 0; }
-    .pixora-modal-actions { display: flex; flex-direction: column; gap: 8px; }
-    .btn-modal-delete { background: #ed4956; color: #fff; border: none; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
+    .pixora-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+    .btn-modal-delete { background: #ed4956; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
     .btn-modal-delete:hover { background: #c62828; }
-    .btn-modal-cancel { background: #363636; color: #f5f5f5; border: none; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
+    .btn-modal-cancel { background: #27272a; color: #f5f5f5; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
+    .btn-modal-primary { background: #0095f6; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
+
+    .report-field { margin-bottom: 12px; }
+    .report-field label { display: block; font-size: 12px; color: #a1a1aa; margin-bottom: 5px; font-weight: 600; }
+    .report-field select, .report-field textarea {
+      width: 100%;
+      background: #09090b;
+      border: 1px solid #27272a;
+      color: #f4f4f5;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      box-sizing: border-box;
+      outline: none;
+    }
+    .report-field select:focus, .report-field textarea:focus { border-color: #3b82f6; }
 
     @keyframes pop {
       0% { transform: scale(1); }
@@ -330,15 +352,21 @@
 
           <span class="publication-type">
             <% if (post.typePublication === 'repost') { %>
-              🔁 Repost
+              Repost
             <% } else if (post.typePublication === 'duo') { %>
-              🎭 Duo
+              Duo
             <% } else if (post.typePublication === 'collage') { %>
-              🧩 Collage
+              Collage
             <% } %>
           </span>
 
-          <% if (typeof currentUser !== 'undefined' && currentUser && Number(currentUser.idUser) === Number(post.idUser)) { %>
+          <% 
+            const userObj = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : ((typeof user !== 'undefined' && user) ? user : null);
+            const isOwner = userObj && Number(userObj.idUser) === Number(post.idUser);
+            const isStaff = userObj && (userObj.role === 'admin' || userObj.role === 'moderator' || userObj.idUser === -999);
+          %>
+
+          <% if (isOwner || isStaff) { %>
             <button
               type="button"
               class="delete-post"
@@ -358,7 +386,6 @@
           }) %>
         </div>
 
-        <!-- Légende et hashtags cliquables de la publication -->
         <% if (post.contenuPub) { %>
           <div class="post-caption-box">
             <a href="/profile/<%= post.auteurPseudo %>" style="text-decoration: none;">
@@ -390,15 +417,12 @@
           </div>
         <% } %>
 
-        <!-- Barre d'interactions post -->
         <div class="interaction-bar">
-          <!-- Like (mêmes icônes que le feed) -->
           <button type="button" class="icon-btn <%= (reactions && reactions.userReaction === 'LIKE') ? 'active-like' : '' %>" id="post-like-btn" onclick="sendReaction('LIKE')" title="J'aime">
             <svg viewBox="0 0 24 24"><path d="M20.8 8.8 C20.8 5.8 18.5 4 15.9 4 C14.1 4 12.7 5 12 6.3 C11.3 5 9.9 4 8.1 4 C5.5 4 3.2 5.8 3.2 8.8 C3.2 13.1 7.4 16.1 12 20 C16.6 16.1 20.8 13.1 20.8 8.8Z"></path></svg>
             <span id="like-count"><%= (reactions && reactions.likes) ? reactions.likes : 0 %></span>
           </button>
 
-          <!-- Dislike (mêmes icônes que le feed, pas un pouce) -->
           <button type="button" class="icon-btn <%= (reactions && reactions.userReaction === 'DISLIKE') ? 'active-dislike' : '' %>" id="post-dislike-btn" onclick="sendReaction('DISLIKE')" title="Je n'aime pas">
             <svg viewBox="0 0 24 24">
               <path d="M20.5 8.7 C20.5 5.9 18.3 4.2 15.8 4.2 C14.1 4.2 12.8 5.1 12 6.4"></path>
@@ -408,13 +432,11 @@
             <span id="dislike-count"><%= (reactions && reactions.dislikes) ? reactions.dislikes : 0 %></span>
           </button>
 
-          <!-- Bulle de commentaire -->
           <button type="button" class="icon-btn" onclick="toggleCommentsSection()" title="Commentaires">
             <svg viewBox="0 0 24 24"><path d="M20 11.5 C20 15.6 16.4 19 12 19 C10.8 19 9.6 18.8 8.6 18.3 L4 20 L5.2 16.2 C4.4 14.9 4 13.3 4 11.5 C4 7.4 7.6 4 12 4 C16.4 4 20 7.4 20 11.5Z"></path></svg>
             <span id="comment-bubble-count"><%= typeof comments !== 'undefined' ? comments.length : 0 %></span>
           </button>
 
-          <!-- Repost -->
           <button type="button" class="icon-btn <%= post.dejaReposte ? 'active-like' : '' %>" id="post-repost-btn" onclick="repartagerPost()" title="<%= post.dejaReposte ? 'Annuler le repost' : 'Reposter' %>">
             <svg viewBox="0 0 24 24">
               <path d="M17 7H7 C5.3 7 4 8.3 4 10 C4 11.7 5.3 13 7 13 H16"></path>
@@ -424,9 +446,8 @@
             </svg>
           </button>
 
-          <!-- Duo -->
           <% if (post.nomMedia || post.originalNomMedia) { %>
-            <button type="button" class="icon-btn" onclick="creerDuo(<%= post.idPubli %>)" title="Créer un Duo">
+            <button type="button" class="icon-btn" onclick="creerDuo(<%= post.idPubli %>)" title="Créer un duo">
               <svg viewBox="0 0 24 24">
                 <circle cx="8" cy="7" r="3"></circle>
                 <circle cx="16" cy="17" r="3"></circle>
@@ -435,7 +456,6 @@
             </button>
           <% } %>
 
-          <!-- Collage -->
           <% if (post.typeMedia === 'video' || post.originalTypeMedia === 'video') { %>
             <button type="button" class="icon-btn" onclick="creerCollage(<%= post.idPubli %>)" title="Créer un collage">
               <svg viewBox="0 0 24 24">
@@ -447,7 +467,6 @@
             </button>
           <% } %>
 
-          <!-- Copier le lien -->
           <button type="button" class="icon-btn" onclick="copierLienPost()" title="Copier le lien">
             <svg viewBox="0 0 24 24">
               <path d="M10 13 C8.3 14.7 8.3 17.3 10 19 C11.7 20.7 14.3 20.7 16 19 L19 16 C20.7 14.3 20.7 11.7 19 10 C17.3 8.3 14.7 8.3 13 10"></path>
@@ -456,17 +475,17 @@
           </button>
         </div>
 
-        <!-- Section Commentaires déroulante -->
         <div class="comments-section" id="commentsSection">
           <div class="comment-list">
             <% 
-              const myId = (typeof currentUser !== 'undefined' && currentUser && currentUser.idUser !== undefined) ? Number(currentUser.idUser) : null;
+              const myId = userObj && userObj.idUser !== undefined ? Number(userObj.idUser) : null;
               const postOwnerId = Number(post.idUser);
 
               function renderCommentNode(c) {
                 const commentAuthorId = Number(c.idUser);
                 const isMyComment = myId !== null && myId === commentAuthorId;
                 const isMyPost = myId !== null && myId === postOwnerId;
+                const canModerate = userObj && (userObj.role === 'admin' || userObj.role === 'moderator' || userObj.idUser === -999);
                 const hasReplies = c.replies && c.replies.length > 0;
                 const userReaction = c.reactions ? c.reactions.userReaction : null;
             %>
@@ -490,13 +509,11 @@
                     </span>
 
                     <div class="comment-meta">
-                      <!-- Bouton like commentaire -->
                       <button type="button" class="btn-comment-action <%= userReaction === 'LIKE' ? 'active-like' : '' %>" id="comm-like-btn-<%= c.idComm %>" onclick="sendCommentReaction('<%= c.idComm %>', 'LIKE')">
                         <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                         <span id="comm-like-<%= c.idComm %>"><%= (c.reactions && c.reactions.likes) ? c.reactions.likes : 0 %></span>
                       </button>
 
-                      <!-- Bouton dislike commentaire -->
                       <button type="button" class="btn-comment-action <%= userReaction === 'DISLIKE' ? 'active-dislike' : '' %>" id="comm-dislike-btn-<%= c.idComm %>" onclick="sendCommentReaction('<%= c.idComm %>', 'DISLIKE')">
                         <svg viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.33 2.33 0 0 1-2.33 2H17"></path></svg>
                         <span id="comm-dislike-<%= c.idComm %>"><%= (c.reactions && c.reactions.dislikes) ? c.reactions.dislikes : 0 %></span>
@@ -507,7 +524,6 @@
                       </button>
                     </div>
 
-                    <!-- Édition -->
                     <div id="edit-box-<%= c.idComm %>" class="edit-form">
                       <textarea id="input-edit-<%= c.idComm %>" maxlength="500" rows="2"><%= c.contenuCom %></textarea>
                       <div class="edit-buttons">
@@ -517,14 +533,18 @@
                     </div>
                   </div>
 
-                  <!-- Actions utilisateur -->
                   <div class="actions">
                     <% if (isMyComment) { %>
                       <button type="button" class="btn-action-icon" onclick="toggleEdit('<%= c.idComm %>')" title="Modifier">
                         <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                       </button>
+                    <% } else if (myId !== null) { %>
+                      <button type="button" class="btn-action-icon report" onclick="openReportModal('<%= c.idComm %>')" title="Signaler ce commentaire">
+                        <svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+                      </button>
                     <% } %>
-                    <% if (isMyComment || isMyPost) { %>
+
+                    <% if (isMyComment || isMyPost || canModerate) { %>
                       <button type="button" class="btn-action-icon delete" onclick="openDeleteModal('<%= c.idComm %>')" title="Supprimer">
                         <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                       </button>
@@ -532,7 +552,6 @@
                   </div>
                 </div>
 
-                <!-- Réponses imbriquées -->
                 <% if (hasReplies) { %>
                   <button type="button" class="toggle-replies-btn" onclick="toggleReplies('<%= c.idComm %>')">
                     Voir les <%= c.replies.length %> réponse<%= c.replies.length > 1 ? 's' : '' %>
@@ -555,7 +574,6 @@
             <% } %>
           </div>
 
-          <!-- Formulaire -->
           <div class="form-comment">
             <div id="replying-badge" class="replying-badge">
               <span>Réponse à <strong id="replying-pseudo" style="color:#f5f5f5;">@pseudo</strong></span>
@@ -578,10 +596,12 @@
       </div>
     </main>
 
-    <%- include('navbar') %>
+    <% if (!userObj || userObj.idUser !== -999) { %>
+      <%- include('navbar') %>
+    <% } %>
   </div>
 
-  <!-- Modale Pixora Dark -->
+  <!-- MODALE SUPPRESSION -->
   <div id="deleteModal" class="pixora-modal-overlay">
     <div class="pixora-modal-card">
       <h3 class="pixora-modal-title">Supprimer le commentaire ?</h3>
@@ -593,9 +613,35 @@
     </div>
   </div>
 
+  <!-- MODALE SIGNALEMENT COMMENTAIRE -->
+  <div id="reportCommentModal" class="pixora-modal-overlay">
+    <div class="pixora-modal-card">
+      <h3 class="pixora-modal-title">Signaler ce commentaire</h3>
+      <div class="report-field">
+        <label for="reportMotif">Motif du signalement :</label>
+        <select id="reportMotif">
+          <option value="Spam / Publicité">Spam / Publicité</option>
+          <option value="Contenu haineux ou harcèlement">Contenu haineux ou harcèlement</option>
+          <option value="Désinformation">Désinformation</option>
+          <option value="Violence ou menaces">Violence ou menaces</option>
+          <option value="Autre">Autre motif</option>
+        </select>
+      </div>
+      <div class="report-field">
+        <label for="reportDescription">Précisions (optionnel) :</label>
+        <textarea id="reportDescription" rows="3" placeholder="Donnez plus de détails..."></textarea>
+      </div>
+      <div class="pixora-modal-actions">
+        <button type="button" class="btn-modal-cancel" onclick="closeReportModal()">Annuler</button>
+        <button type="button" class="btn-modal-delete" onclick="submitReportComment()">Signaler</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let activeReplyParentId = null;
     let commentToDelete = null;
+    let commentToReport = null;
 
     function getPostId() {
       const card = document.querySelector('.post-card');
@@ -603,9 +649,55 @@
     }
 
     function getAuthHeaders() {
-      return {
-        'Content-Type': 'application/json'
-      };
+      const headers = { 'Content-Type': 'application/json' };
+      const token = localStorage.getItem('token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      return headers;
+    }
+
+    // Gestion de la modale de signalement
+    function openReportModal(idComm) {
+      commentToReport = idComm;
+      document.getElementById('reportDescription').value = '';
+      document.getElementById('reportCommentModal').style.display = 'flex';
+    }
+
+    function closeReportModal() {
+      commentToReport = null;
+      document.getElementById('reportCommentModal').style.display = 'none';
+    }
+
+    async function submitReportComment() {
+      if (!commentToReport) return;
+      const motif = document.getElementById('reportMotif').value;
+      const description = document.getElementById('reportDescription').value.trim();
+
+      try {
+        const res = await fetch('/api/reports', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          credentials: 'include',
+          body: JSON.stringify({
+            typeContenu: 'commentaire',
+            idContenu: Number(commentToReport),
+            motif: motif,
+            description: description
+          })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          alert('Le signalement a été transmis à la modération.');
+          closeReportModal();
+        } else {
+          alert(data.erreur || data.error || 'Impossible d’enregistrer le signalement.');
+        }
+      } catch (err) {
+        console.error('Erreur signalement commentaire :', err);
+        alert('Erreur réseau lors de l’envoi du signalement.');
+      }
     }
 
     async function repartagerPost() {
@@ -616,6 +708,7 @@
         const response = await fetch(`/api/publications/${idPubli}/repartage`, {
           method: 'POST',
           headers: getAuthHeaders(),
+          credentials: 'include',
           body: JSON.stringify({ visibilite: 1 })
         });
 
@@ -637,7 +730,6 @@
 
     function copierLienPost() {
       const url = window.location.href;
-
       navigator.clipboard.writeText(url).then(() => {
         alert('Lien copié !');
       }).catch(() => {
@@ -651,19 +743,24 @@
       }
 
       try {
-        const response = await fetch(`/api/publications/api/${idPubli}`, {
+        const response = await fetch(`/api/publications/${idPubli}`, {
           method: 'DELETE',
           credentials: 'include',
-          headers: { 'Accept': 'application/json' }
+          headers: getAuthHeaders()
         });
 
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-          throw new Error(data.error || 'Impossible de supprimer la publication.');
+          throw new Error(data.error || data.erreur || 'Impossible de supprimer la publication.');
         }
 
-        window.location.href = '/home';
+        const isSuperAdmin = <%= (userObj && userObj.idUser === -999) ? 'true' : 'false' %>;
+        if (isSuperAdmin) {
+          window.location.href = '/admin';
+        } else {
+          window.location.href = '/home';
+        }
       } catch (error) {
         console.error(error);
         alert(error.message || 'Une erreur est survenue lors de la suppression.');
@@ -752,9 +849,10 @@
       const res = await fetch('/api/comments', {
         method: 'POST',
         headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ 
           idPubli, 
-          contenuCom,
+          contenuCom, 
           idParent: activeReplyParentId 
         })
       });
@@ -776,6 +874,7 @@
       const res = await fetch('/api/comments/' + idComm, {
         method: 'PUT',
         headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ contenuCom: text })
       });
 
@@ -805,7 +904,8 @@
 
       const res = await fetch('/api/comments/' + idComm, {
         method: 'DELETE',
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
+        credentials: 'include'
       });
 
       if (res.ok) {
@@ -837,7 +937,6 @@
       }
     });
 
-    // Like / Dislike post
     async function sendReaction(type) {
       const idPubli = getPostId();
       if (!idPubli) return;
@@ -845,7 +944,7 @@
       const res = await fetch('/api/comments/react', {
         method: 'POST',
         headers: getAuthHeaders(),
-        credentials: 'same-origin',
+        credentials: 'include',
         body: JSON.stringify({ idPubli, type })
       });
 
@@ -864,12 +963,11 @@
       }
     }
 
-    // Like / Dislike commentaire
     async function sendCommentReaction(idComm, type) {
       const res = await fetch('/api/comments/' + idComm + '/react', {
         method: 'POST',
         headers: getAuthHeaders(),
-        credentials: 'same-origin',
+        credentials: 'include',
         body: JSON.stringify({ type })
       });
 
@@ -898,7 +996,6 @@
     }
   </script>
 
-  <!-- Clavier d'émojis + suggestions de hashtags pour le champ de commentaire -->
   <script src="/js/emojiPicker.js"></script>
   <script src="/js/hashtagSuggest.js"></script>
   <script>

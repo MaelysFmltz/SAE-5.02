@@ -350,6 +350,79 @@
       transform: scale(1.05);
     }
 
+    /* Modal de signalement */
+    .report-modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .report-modal-overlay.open {
+      display: flex;
+    }
+    .report-modal-card {
+      width: 90%;
+      max-width: 460px;
+      background: #17181c;
+      border: 1px solid #302c3d;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+    }
+    .report-modal-card h3 {
+      margin: 0 0 16px 0;
+      color: #f5f5f7;
+      font-size: 18px;
+    }
+    .report-modal-card label {
+      display: block;
+      color: #a5a7b0;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .report-modal-card select, .report-modal-card textarea {
+      width: 100%;
+      padding: 10px 12px;
+      background: #202229;
+      border: 1px solid #353741;
+      border-radius: 8px;
+      color: #f5f5f7;
+      font-size: 14px;
+      box-sizing: border-box;
+      margin-bottom: 14px;
+      outline: none;
+    }
+    .report-modal-card textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    .report-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .report-modal-actions button {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+    .report-btn-cancel {
+      background: #2d3039;
+      color: #e7e7eb;
+    }
+    .report-btn-submit {
+      background: #ef4444;
+      color: #ffffff;
+    }
+
     .discover-section {
       margin-top: 30px;
     }
@@ -421,6 +494,19 @@
         <strong>@<%= user.pseudo %></strong>
 
       </span>
+
+      <!-- Bouton d'accès modération ou centre d'administration selon le rôle -->
+      <% if (typeof user !== 'undefined' && user) { %>
+        <% if (user.role === 'admin' || user.role === 'superadmin' || user.idUser === -999) { %>
+          <a href="/admin" style="background: #2563eb; color: #ffffff; font-weight: 600; padding: 6px 12px; border-radius: 8px; text-decoration: none; font-size: 13px; margin-right: 10px; display: inline-flex; align-items: center;">
+            Centre d'administration
+          </a>
+        <% } else if (user.role === 'moderator' || user.role === 'moderateur' || user.role === 'modo') { %>
+          <a href="/admin" style="background: #374151; color: #ffffff; font-weight: 600; padding: 6px 12px; border-radius: 8px; text-decoration: none; font-size: 13px; margin-right: 10px; display: inline-flex; align-items: center;">
+            Modération
+          </a>
+        <% } %>
+      <% } %>
 
       <!-- Bouton Notifications (inactif pour l'instant) -->
       <button type="button" class="btn-notif-header" title="Notifications (bientôt disponible)" disabled>
@@ -668,10 +754,133 @@
 
 
 <!-- =====================================================
+     MODAL SIGNALEMENT UNIVERSEL
+====================================================== -->
+
+<div
+  id="report-modal"
+  class="report-modal-overlay"
+  onclick="fermerSignalement(event)"
+>
+  <div
+    class="report-modal-card"
+    onclick="event.stopPropagation()"
+  >
+    <h3 id="report-modal-title">Signaler</h3>
+
+    <input type="hidden" id="report-type-contenu" value="">
+    <input type="hidden" id="report-id-contenu" value="">
+
+    <label for="report-motif">Motif du signalement :</label>
+    <select id="report-motif">
+      <option value="Spam / Publicité">Spam ou contenu indésirable</option>
+      <option value="Contenu haineux ou harcèlement">Harcèlement ou intimidation</option>
+      <option value="Contenu inapproprié">Contenu inapproprié ou explicite</option>
+      <option value="Violence ou menaces">Violence ou menaces</option>
+      <option value="Autre">Autre motif</option>
+    </select>
+
+    <label for="report-description">Précision (optionnel) :</label>
+    <textarea id="report-description" placeholder="Expliquez brièvement la raison du signalement..."></textarea>
+
+    <div class="report-modal-actions">
+      <button type="button" class="report-btn-cancel" onclick="fermerSignalement()">Annuler</button>
+      <button type="button" class="report-btn-submit" onclick="envoyerSignalement()">Signaler</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- =====================================================
      JAVASCRIPT
 ====================================================== -->
 
 <script>
+
+  // =====================================================
+  // MODAL DE SIGNALEMENT UNIVERSEL
+  // =====================================================
+  function ouvrirSignalement(typeContenu, idContenu) {
+    document.getElementById('report-type-contenu').value = typeContenu;
+    document.getElementById('report-id-contenu').value = idContenu;
+    document.getElementById('report-description').value = '';
+    document.getElementById('report-modal-title').textContent = 'Signaler ce ' + (typeContenu === 'commentaire' ? 'commentaire' : (typeContenu === 'message' ? 'message' : typeContenu));
+    document.getElementById('report-modal').classList.add('open');
+  }
+
+  function fermerSignalement(event) {
+    if (event && event.target !== event.currentTarget) return;
+    document.getElementById('report-modal').classList.remove('open');
+  }
+
+  async function envoyerSignalement() {
+    const typeContenu = document.getElementById('report-type-contenu').value;
+    const idContenu = parseInt(document.getElementById('report-id-contenu').value, 10);
+    const motif = document.getElementById('report-motif').value;
+    const description = document.getElementById('report-description').value.trim();
+
+    if (!idContenu || isNaN(idContenu)) {
+      alert('Identifiant du contenu manquant ou invalide.');
+      return;
+    }
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    };
+    const token = localStorage.getItem('token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+      let response = await fetch('/api/reports', {
+        method: 'POST',
+        headers: headers,
+        credentials: 'include',
+        body: JSON.stringify({
+          typeContenu,
+          idContenu,
+          motif,
+          description
+        })
+      });
+
+      if (response.status === 404) {
+        response = await fetch('/api/signalements', {
+          method: 'POST',
+          headers: headers,
+          credentials: 'include',
+          body: JSON.stringify({
+            typeContenu,
+            idContenu,
+            motif,
+            description
+          })
+        });
+      }
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
+
+      if (!response.ok) {
+        alert(data.erreur || data.error || 'Impossible d’enregistrer le signalement.');
+        return;
+      }
+
+      alert('Votre signalement a bien été transmis à l’équipe de modération.');
+      fermerSignalement();
+
+    } catch (error) {
+      console.error('Erreur signalement :', error);
+      alert('Une erreur réseau est survenue lors de l’envoi du signalement.');
+    }
+  }
+
 
   // =====================================================
   // LIKE / DISLIKE PUBLICATION
@@ -969,6 +1178,43 @@
         : escapeHtml(pseudo.charAt(0).toUpperCase());
 
 
+    let actionsHtml = '';
+
+    if (estMonCommentaire) {
+      actionsHtml = `
+        <button
+          type="button"
+          class="comment-edit-button"
+          title="Modifier"
+          onclick="modifierCommentaire(${comment.idComm})"
+        >
+          ✎
+        </button>
+
+        <button
+          type="button"
+          class="comment-delete-button"
+          title="Supprimer"
+          onclick="supprimerCommentaire(${comment.idComm})"
+        >
+          🗑
+        </button>
+      `;
+    } else {
+      actionsHtml = `
+        <button
+          type="button"
+          class="comment-report-button"
+          title="Signaler ce commentaire"
+          onclick="ouvrirSignalement('commentaire', ${comment.idComm})"
+          style="background: transparent; border: none; color: #858894; cursor: pointer; font-size: 13px; padding: 2px 4px;"
+        >
+          🚩
+        </button>
+      `;
+    }
+
+
     let html = `
 
       <div
@@ -1058,30 +1304,8 @@
             </button>
 
 
-            <!-- Modifier / supprimer -->
-
-            ${estMonCommentaire ? `
-
-              <button
-                type="button"
-                class="comment-edit-button"
-                title="Modifier"
-                onclick="modifierCommentaire(${comment.idComm})"
-              >
-                ✎
-              </button>
-
-
-              <button
-                type="button"
-                class="comment-delete-button"
-                title="Supprimer"
-                onclick="supprimerCommentaire(${comment.idComm})"
-              >
-                🗑
-              </button>
-
-            ` : ''}
+            <!-- Modifier / supprimer / signaler -->
+            ${actionsHtml}
 
 
           </div>
@@ -1209,11 +1433,6 @@
   }
 
 
-  /*
-   * Échappe uniquement & < > (pas les apostrophes), pour que le
-   * hashtag #039 ne soit jamais confondu avec l'entité &#039;
-   * générée par l'échappement d'une apostrophe.
-   */
   function linkifyHashtagsClient(text) {
 
     const safeText =
@@ -1845,12 +2064,6 @@
 
 
   // =====================================================
-  // DUO / COLLAGE : voir partials/remixModal.ejs + js/remixModal.js
-  // (creerDuo/creerCollage sont définis là-bas)
-  // =====================================================
-
-
-  // =====================================================
   // COPIER LE LIEN
   // =====================================================
 
@@ -1927,6 +2140,7 @@
       if (event.key === 'Escape') {
 
         fermerCommentaires();
+        fermerSignalement();
 
       }
 

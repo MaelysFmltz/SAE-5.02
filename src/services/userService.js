@@ -81,15 +81,19 @@ async function removeAccount(idUser, currentPassword) {
 // ============================================================
 
 function obtenirUtilisateurs(db = dbInstance) {
+  const superPseudo = process.env.SUPERADMIN_PSEUDO || '';
+  const superEmail = process.env.SUPERADMIN_EMAIL || '';
+
   return db.prepare(`
     SELECT idUser, pseudo, email, statut, role, dateInscription, dateDerniereConnexion
     FROM Utilisateur
+    WHERE pseudo != ? AND email != ?
     ORDER BY idUser ASC
-  `).all();
+  `).all(superPseudo, superEmail);
 }
 
 function modifierStatut(db = dbInstance, idUser, statut, idUserConnecte = null) {
-  const statutsAutorises = ['actif', 'suspendu', 'banni', 'supprime'];
+  const statutsAutorises = ['actif', 'suspendu', 'supprime'];
 
   if (!statutsAutorises.includes(statut)) {
     return {
@@ -113,7 +117,6 @@ function modifierStatut(db = dbInstance, idUser, statut, idUserConnecte = null) 
     };
   }
 
-  // Interdiction de modifier son propre statut si on est administrateur
   if (idUserConnecte !== null && Number(idUserConnecte) === Number(idUser)) {
     return {
       succes: false,
@@ -128,11 +131,46 @@ function modifierStatut(db = dbInstance, idUser, statut, idUserConnecte = null) 
   };
 }
 
+function supprimerDefinitivement(db = dbInstance, idUser, idUserConnecte = null) {
+  if (!Number.isInteger(idUser) || idUser <= 0) {
+    return {
+      succes: false,
+      erreur: 'Identifiant utilisateur invalide'
+    };
+  }
+
+  if (idUserConnecte !== null && Number(idUserConnecte) === Number(idUser)) {
+    return {
+      succes: false,
+      erreur: 'Un administrateur ne peut pas modifier son propre statut'
+    };
+  }
+
+  const utilisateur = db.prepare('SELECT idUser FROM Utilisateur WHERE idUser = ?').get(idUser);
+  if (!utilisateur) {
+    return {
+      succes: false,
+      erreur: 'Utilisateur introuvable'
+    };
+  }
+
+  const suppression = db.transaction(() => {
+    db.prepare('DELETE FROM Utilisateur WHERE idUser = ?').run(idUser);
+  });
+
+  suppression();
+
+  return {
+    succes: true
+  };
+}
+
 module.exports = {
   changePseudo,
   changeEmail,
   changePassword,
   removeAccount,
   obtenirUtilisateurs,
-  modifierStatut
+  modifierStatut,
+  supprimerDefinitivement
 };

@@ -6,6 +6,117 @@
   <title><%= titreConversation %> — Pixora</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/messages.css">
+  <style>
+    /* Bouton de signalement sur les messages */
+    .bubble {
+      position: relative;
+    }
+    
+    .bubble.theirs .bubble-report-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      font-size: 11px;
+      padding: 2px 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.7;
+      transition: opacity 0.15s, color 0.15s, background 0.15s;
+    }
+
+    .bubble.theirs:hover .bubble-report-btn {
+      opacity: 1;
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.15);
+    }
+
+    /* Modale de signalement universelle */
+    .report-modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .report-modal-overlay.open {
+      display: flex;
+    }
+    .report-modal-card {
+      width: 90%;
+      max-width: 440px;
+      background: #17181c;
+      border: 1px solid #302c3d;
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+    }
+    .report-modal-card h3 {
+      margin: 0 0 16px 0;
+      color: #f5f5f7;
+      font-size: 17px;
+      font-weight: 700;
+    }
+    .report-modal-card label {
+      display: block;
+      color: #a5a7b0;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .report-modal-card select, .report-modal-card textarea {
+      width: 100%;
+      padding: 9px 12px;
+      background: #202229;
+      border: 1px solid #353741;
+      border-radius: 8px;
+      color: #f5f5f7;
+      font-size: 13px;
+      box-sizing: border-box;
+      margin-bottom: 14px;
+      outline: none;
+    }
+    .report-modal-card select:focus, .report-modal-card textarea:focus {
+      border-color: #3b82f6;
+    }
+    .report-modal-card textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    .report-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .report-modal-actions button {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+    }
+    .report-btn-cancel {
+      background: #2d3039;
+      color: #e7e7eb;
+    }
+    .report-btn-submit {
+      background: #ef4444;
+      color: #ffffff;
+    }
+    .report-btn-submit:hover {
+      background: #dc2626;
+    }
+  </style>
 </head>
 <body>
   <div class="app-container no-bottom-nav">
@@ -53,6 +164,9 @@
               <span class="bubble-deleted-text">Ce message a été supprimé</span>
             <% } else { %>
               <span class="bubble-text"><%= msg.contenu %></span>
+              <% if (msg.idUser !== idUserCourant) { %>
+                <button type="button" class="bubble-report-btn" title="Signaler ce message" onclick="ouvrirSignalement('message', <%= msg.idMessage %>)">🚩 Signaler</button>
+              <% } %>
             <% } %>
             <div class="bubble-meta"><%= new Date(msg.dateEnvoi).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) %><%= (!msg.supprime && msg.dateModification) ? ' · modifié' : '' %></div>
           </div>
@@ -69,6 +183,132 @@
       </form>
     </div>
   </div>
+
+  <!-- MODALE SIGNALEMENT UNIVERSEL -->
+  <div
+    id="report-modal"
+    class="report-modal-overlay"
+    onclick="fermerSignalement(event)"
+  >
+    <div
+      class="report-modal-card"
+      onclick="event.stopPropagation()"
+    >
+      <h3 id="report-modal-title">Signaler ce message</h3>
+
+      <input type="hidden" id="report-type-contenu" value="">
+      <input type="hidden" id="report-id-contenu" value="">
+
+      <label for="report-motif">Motif du signalement :</label>
+      <select id="report-motif">
+        <option value="Spam / Publicité">Spam ou contenu indésirable</option>
+        <option value="Contenu haineux ou harcèlement">Harcèlement ou intimidation</option>
+        <option value="Violence ou menaces">Violence ou menaces</option>
+        <option value="Contenu inapproprié">Contenu inapproprié ou explicite</option>
+        <option value="Autre">Autre motif</option>
+      </select>
+
+      <label for="report-description">Précisions (optionnel) :</label>
+      <textarea id="report-description" placeholder="Expliquez brièvement la raison du signalement..."></textarea>
+
+      <div class="report-modal-actions">
+        <button type="button" class="report-btn-cancel" onclick="fermerSignalement()">Annuler</button>
+        <button type="button" class="report-btn-submit" onclick="envoyerSignalement()">Signaler</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function getAuthHeaders() {
+      const headers = { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+      const token = localStorage.getItem('token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      return headers;
+    }
+
+    function ouvrirSignalement(typeContenu, idContenu) {
+      document.getElementById('report-type-contenu').value = typeContenu;
+      document.getElementById('report-id-contenu').value = idContenu;
+      document.getElementById('report-description').value = '';
+      document.getElementById('report-modal-title').textContent = 'Signaler ce ' + (typeContenu === 'message' ? 'message' : typeContenu);
+      document.getElementById('report-modal').classList.add('open');
+    }
+
+    function fermerSignalement(event) {
+      if (event && event.target !== event.currentTarget) return;
+      document.getElementById('report-modal').classList.remove('open');
+    }
+
+    async function envoyerSignalement() {
+      const typeContenu = document.getElementById('report-type-contenu').value;
+      const idContenu = parseInt(document.getElementById('report-id-contenu').value, 10);
+      const motif = document.getElementById('report-motif').value;
+      const description = document.getElementById('report-description').value.trim();
+
+      if (!idContenu) {
+        alert('Identifiant du contenu manquant.');
+        return;
+      }
+
+      try {
+        // Envoi vers /api/reports en priorité, avec support d'authentification complet
+        let response = await fetch('/api/reports', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          credentials: 'include',
+          body: JSON.stringify({
+            typeContenu,
+            idContenu,
+            motif,
+            description
+          })
+        });
+
+        // Repli transparent si la route est aliasée sur /api/signalements
+        if (response.status === 404) {
+          response = await fetch('/api/signalements', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            credentials: 'include',
+            body: JSON.stringify({
+              typeContenu,
+              idContenu,
+              motif,
+              description
+            })
+          });
+        }
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+
+        if (!response.ok) {
+          alert(data.erreur || data.error || 'Impossible d’enregistrer le signalement.');
+          return;
+        }
+
+        alert('Votre signalement a bien été transmis à l’équipe de modération.');
+        fermerSignalement();
+
+      } catch (error) {
+        console.error('Erreur signalement :', error);
+        alert('Une erreur réseau est survenue lors de l’envoi du signalement.');
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') fermerSignalement();
+    });
+  </script>
 
   <script src="/js/messages.js" data-conversation-id="<%= idConversation %>" data-is-group="<%= estGroupe ? 'true' : 'false' %>" data-user-id="<%= idUserCourant %>" data-titre-groupe="<%= estGroupe ? titreConversation : '' %>" data-est-createur="<%= estCreateurCourant ? 'true' : 'false' %>"></script>
 </body>

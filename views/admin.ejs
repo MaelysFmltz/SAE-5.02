@@ -1,352 +1,634 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixora - Panel Administration & Modération</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <% 
+    const isSuperAdmin = user && (user.idUser === -999 || user.role === 'superadmin');
+    const isAdmin = user && (user.role === 'admin' || isSuperAdmin);
+    const panelTitle = isAdmin ? "Administration" : "Modération";
+  %>
+  <title><%= panelTitle %> — Pixora</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/settings.css">
+  <style>
+    .filter-btn.active {
+      background: #2563eb !important;
+      color: #fff !important;
+    }
+    .ticket-card {
+      background: #111116;
+      border: 1px solid #24272c;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .ticket-card p {
+      font-size: 13px;
+      margin-bottom: 6px;
+      color: #cbd5e1;
+    }
+    .reason-box {
+      margin: 8px 0;
+      padding: 8px 12px;
+      background: #1f1414;
+      border-left: 3px solid #ef4444;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #fca5a5;
+    }
+    .preview-box {
+      margin: 8px 0;
+      padding: 8px 12px;
+      background: #141724;
+      border-left: 3px solid #3b82f6;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #cbd5e1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .response-box {
+      margin: 8px 0;
+      padding: 8px 12px;
+      background: #131c17;
+      border-left: 3px solid #10b981;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #a7f3d0;
+    }
+    .response-box.rejected {
+      background: #1c1418;
+      border-left-color: #f43f5e;
+      color: #fecdd3;
+    }
+    .badge-status {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge-en_attente { background: #854d0e; color: #fef08a; }
+    .badge-traite { background: #166534; color: #bbf7d0; }
+    .badge-rejete { background: #991b1b; color: #fecaca; }
+    .btn-ticket-action {
+      border: none;
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-traiter { background: #2563eb; color: #fff; }
+    .btn-rejeter { background: #374151; color: #fff; }
 
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: #0f0f12;
-            color: #e5e5e5;
-            padding: 30px;
-        }
-
-        header {
-            background: #18181f;
-            border: 1px solid #272732;
-            padding: 24px 30px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        header h1 {
-            font-size: 22px;
-            color: #fff;
-            margin-bottom: 4px;
-        }
-
-        header p {
-            color: #9ca3af;
-            font-size: 14px;
-        }
-
-        .back-link {
-            color: #3b82f6;
-            text-decoration: none;
-            font-size: 14px;
-        }
-        .back-link:hover { text-decoration: underline; }
-
-        .section {
-            background: #18181f;
-            border: 1px solid #272732;
-            padding: 25px;
-            border-radius: 12px;
-            margin-bottom: 25px;
-        }
-
-        .section h2 {
-            font-size: 18px;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #272732;
-            padding-bottom: 10px;
-            color: #f3f4f6;
-        }
-
-        .item {
-            background: #111116;
-            border: 1px solid #2a2a38;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 14px;
-        }
-
-        .item p {
-            font-size: 14px;
-            margin-bottom: 6px;
-            color: #d1d5db;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .badge-en_attente { background: #854d0e; color: #fef08a; }
-        .badge-traite { background: #166534; color: #bbf7d0; }
-        .badge-rejete { background: #991b1b; color: #fecaca; }
-        .badge-actif { background: #166534; color: #bbf7d0; }
-        .badge-suspendu { background: #9a3412; color: #fed7aa; }
-        .badge-banni { background: #7f1d1d; color: #fecaca; }
-        .badge-supprime { background: #374151; color: #9ca3af; }
-
-        .actions {
-            margin-top: 12px;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        button {
-            border: none;
-            border-radius: 6px;
-            padding: 7px 12px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            transition: opacity 0.15s;
-        }
-        button:hover { opacity: 0.85; }
-
-        .btn-traiter { background: #2563eb; color: white; }
-        .btn-rejeter { background: #4b5563; color: white; }
-        .btn-suspendre { background: #ea580c; color: white; }
-        .btn-bannir { background: #dc2626; color: white; }
-        .btn-activer { background: #16a34a; color: white; }
-        .btn-supprimer { background: #991b1b; color: white; }
-        .btn-role { background: #7c3aed; color: white; }
-        .btn-del-content { background: #be123c; color: white; }
-
-        .empty-text {
-            color: #6b7280;
-            font-style: italic;
-            font-size: 14px;
-        }
-    </style>
+    /* Modale de décision de modération */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+    }
+    .modal-decision-card {
+      width: 90%;
+      max-width: 480px;
+      background: #17181c;
+      border: 1px solid #302c3d;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+    }
+    .modal-decision-card h3 {
+      margin: 0 0 10px 0;
+      color: #f5f5f7;
+      font-size: 18px;
+    }
+    .modal-decision-card p {
+      color: #94a3b8;
+      font-size: 13px;
+      margin-bottom: 14px;
+    }
+    .modal-decision-card textarea {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 90px;
+      background: #202229;
+      border: 1px solid #353741;
+      border-radius: 8px;
+      color: #f5f5f7;
+      font-size: 14px;
+      padding: 10px;
+      outline: none;
+      resize: vertical;
+      margin-bottom: 16px;
+    }
+    .modal-decision-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+  </style>
 </head>
-
 <body>
+  <div 
+    class="settings-container" 
+    data-current-user-id="<%= user.idUser %>" 
+    data-current-user-role="<%= user.role || 'user' %>"
+  >
+    <header class="settings-header">
+      <div class="header-left">
+        <% if (!isSuperAdmin) { %>
+          <a href="/home" class="icon-btn" title="Retour au fil">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </a>
+        <% } %>
+        <h1 class="header-title"><%= panelTitle %></h1>
+      </div>
+      <div class="user-badge-info" style="display: flex; align-items: center; gap: 10px;">
+        <span class="badge-pseudo">@<%= user.pseudo %></span>
+        <% if (isSuperAdmin) { %>
+          <span class="badge badge-admin" style="background: #be123c; color: #fff;">Superadmin</span>
+          <form action="/api/auth/logout" method="POST" style="margin: 0;">
+            <button type="submit" class="btn-secondary-action" style="padding: 4px 8px; font-size: 12px;">Déconnexion</button>
+          </form>
+        <% } else if (isAdmin) { %>
+          <span class="badge badge-admin">Admin</span>
+        <% } else { %>
+          <span class="badge badge-modo">Modo</span>
+        <% } %>
+      </div>
+    </header>
 
-<header>
-    <div>
-        <h1>Pixora - Modération & Administration</h1>
-        <p>Gestion centrale des signalements, des contenus et des comptes</p>
+    <div class="settings-layout">
+      <!-- Navigation latérale -->
+      <aside class="settings-sidebar">
+        <nav class="settings-nav">
+          <p class="nav-section-title">Modération</p>
+          <button type="button" class="nav-btn active" data-tab="tab-moderation">
+            Signalements
+          </button>
+
+          <% if (isAdmin) { %>
+            <p class="nav-section-title">Administration</p>
+            <button type="button" class="nav-btn" data-tab="tab-admin">
+              Centre d'administration
+            </button>
+          <% } %>
+        </nav>
+      </aside>
+
+      <!-- Panneau principal -->
+      <main class="settings-content">
+        <div id="admin-alert" class="alert-box" style="display: none;"></div>
+
+        <!-- 1. SIGNALEMENTS -->
+        <section id="tab-moderation" class="tab-pane active">
+          <h2 class="section-heading">Modération</h2>
+          <div class="settings-card">
+            <div class="card-header-flex">
+              <div>
+                <h3>Tickets de signalement</h3>
+                <p class="card-desc">File des signalements soumis par la communauté.</p>
+              </div>
+              <div class="filter-group">
+                <button type="button" class="filter-btn active" data-filter="en_attente">En attente</button>
+                <button type="button" class="filter-btn" data-filter="traite">Traités</button>
+                <button type="button" class="filter-btn" data-filter="all">Tous</button>
+              </div>
+            </div>
+            <div id="tickets-container" class="empty-placeholder" style="margin-top: 16px;">
+              <p>Chargement des signalements...</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. CENTRE D'ADMINISTRATION -->
+        <% if (isAdmin) { %>
+          <section id="tab-admin" class="tab-pane">
+            <h2 class="section-heading">Administration</h2>
+            <div class="settings-card">
+              <h3>Gestion des membres</h3>
+              <p class="card-desc">Attribution des rôles et supervision des comptes.</p>
+              <form id="form-admin-search" class="form-row">
+                <input type="text" id="admin-search-input" placeholder="Rechercher par pseudonyme ou email..." required>
+                <button type="submit" class="btn-primary-action">Rechercher</button>
+              </form>
+              <div id="admin-search-results" class="empty-placeholder" style="margin-top: 16px;">
+                <p>Effectuez une recherche pour afficher et administrer les comptes.</p>
+              </div>
+            </div>
+          </section>
+        <% } %>
+      </main>
     </div>
-    <a href="/home" class="back-link">← Retour au fil</a>
-</header>
+  </div>
 
-<section class="section">
-    <h2>📋 File de modération (Signalements)</h2>
-    <div id="signalements">Chargement des signalements...</div>
-</section>
+  <!-- Modale d'enregistrement de la décision de modération -->
+  <div id="modal-decision" class="modal-backdrop" style="display: none;">
+    <div class="modal-decision-card">
+      <h3 id="modal-decision-title">Clôturer le signalement</h3>
+      <p id="modal-decision-desc">Ajoutez un message explicatif destiné à l'auteur du signalement.</p>
+      <textarea id="modal-decision-text" placeholder="Explication ou motif du traitement/rejet..."></textarea>
+      <div class="modal-decision-actions">
+        <button type="button" class="btn-secondary-action" onclick="fermerModalDecision()">Annuler</button>
+        <button type="button" id="btn-submit-decision" class="btn-primary-action">Confirmer</button>
+      </div>
+    </div>
+  </div>
 
-<section class="section">
-    <h2>👥 Gestion des comptes utilisateurs</h2>
-    <div id="utilisateurs">Chargement des utilisateurs...</div>
-</section>
+  <script>
+    const callerId = Number(document.querySelector('.settings-container').dataset.currentUserId);
+    const callerRole = document.querySelector('.settings-container').dataset.currentUserRole;
+    const isSuperAdmin = callerId === -999 || callerRole === 'superadmin';
 
-<script>
-    const token = localStorage.getItem('token');
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    const alertBox = document.getElementById('admin-alert');
 
-    function getHeaders() {
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-        return headers;
+    function notify(message, isSuccess = true) {
+      alertBox.textContent = message;
+      alertBox.className = isSuccess ? 'alert-box alert-success' : 'alert-box alert-error';
+      alertBox.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    async function chargerSignalements() {
-        try {
-            const response = await fetch('/api/signalements', { headers: getHeaders() });
-            if (!response.ok) throw new Error('Impossible de charger les signalements');
+    navButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        navButtons.forEach(b => b.classList.remove('active'));
+        tabPanes.forEach(pane => pane.classList.remove('active'));
 
-            const signalements = await response.json();
-            const container = document.getElementById('signalements');
-            container.innerHTML = '';
+        btn.classList.add('active');
+        const targetPane = document.getElementById(btn.dataset.tab);
+        if (targetPane) targetPane.classList.add('active');
+        alertBox.style.display = 'none';
+      });
+    });
 
-            if (!signalements || signalements.length === 0) {
-                container.innerHTML = '<p class="empty-text">Aucun signalement en attente.</p>';
-                return;
-            }
-
-            signalements.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'item';
-
-                card.innerHTML = `
-                    <p><strong>Ticket #${item.idSignalement}</strong> — Date : ${new Date(item.dateSignalement).toLocaleString()}</p>
-                    <p><strong>Signalé par :</strong> ${item.auteurPseudo || 'Utilisateur #' + item.idUserAuteur}</p>
-                    <p><strong>Cible :</strong> ${item.typeContenu.toUpperCase()} (ID: ${item.idContenu})</p>
-                    <p><strong>Motif :</strong> ${item.motif}</p>
-                    <p><strong>Statut :</strong> <span class="badge badge-${item.statut}">${item.statut}</span></p>
-                `;
-
-                const actions = document.createElement('div');
-                actions.className = 'actions';
-
-                // Action de suppression du contenu associé
-                if (['publication', 'commentaire'].includes(item.typeContenu)) {
-                    const btnDelContent = document.createElement('button');
-                    btnDelContent.className = 'btn-del-content';
-                    btnDelContent.textContent = `Supprimer ${item.typeContenu}`;
-                    btnDelContent.onclick = () => supprimerContenuSignale(item.typeContenu, item.idContenu, item.idSignalement);
-                    actions.appendChild(btnDelContent);
-                }
-
-                if (item.statut === 'en_attente') {
-                    const btnTraiter = document.createElement('button');
-                    btnTraiter.className = 'btn-traiter';
-                    btnTraiter.textContent = 'Marquer Traité';
-                    btnTraiter.onclick = () => modifierSignalement(item.idSignalement, 'traite');
-
-                    const btnRejeter = document.createElement('button');
-                    btnRejeter.className = 'btn-rejeter';
-                    btnRejeter.textContent = 'Rejeter';
-                    btnRejeter.onclick = () => modifierSignalement(item.idSignalement, 'rejete');
-
-                    actions.appendChild(btnTraiter);
-                    actions.appendChild(btnRejeter);
-                }
-
-                card.appendChild(actions);
-                container.appendChild(card);
-            });
-        } catch (e) {
-            document.getElementById('signalements').innerHTML = '<p class="empty-text">Erreur de chargement des signalements.</p>';
-        }
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
-    async function modifierSignalement(idSignalement, statut) {
-        await fetch(`/api/signalements/${idSignalement}/statut`, {
-            method: 'PATCH',
-            headers: getHeaders(),
-            body: JSON.stringify({ statut })
+    function getAuthHeaders() {
+      const token = localStorage.getItem('token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      return headers;
+    }
+
+    // GESTION DES SIGNALEMENTS
+    let allTickets = [];
+    let currentFilter = 'en_attente';
+    let pendingTicketId = null;
+    let pendingStatus = null;
+
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        renderTickets();
+      });
+    });
+
+    async function loadTickets() {
+      try {
+        const res = await fetch('/api/signalements', {
+          headers: getAuthHeaders(),
+          credentials: 'same-origin'
         });
-        chargerSignalements();
+        if (!res.ok) throw new Error();
+        allTickets = await res.json();
+        renderTickets();
+      } catch {
+        document.getElementById('tickets-container').innerHTML = '<p>Impossible de charger les signalements.</p>';
+      }
     }
 
-    async function supprimerContenuSignale(type, idContenu, idSignalement) {
-        if (!confirm(`Confirmer la suppression de ce ${type} ?`)) return;
+    function renderTickets() {
+      const container = document.getElementById('tickets-container');
+      const filtered = allTickets.filter(t => {
+        if (currentFilter === 'all') return true;
+        if (currentFilter === 'traite') return t.statut === 'traite' || t.statut === 'rejete';
+        return t.statut === currentFilter;
+      });
 
-        let url = '';
-        if (type === 'publication') url = `/api/publications/${idContenu}`;
-        if (type === 'commentaire') url = `/api/comments/${idContenu}/moderation`;
+      if (!filtered.length) {
+        container.className = 'empty-placeholder';
+        container.innerHTML = '<p>Aucun signalement correspondant.</p>';
+        return;
+      }
 
-        const res = await fetch(url, { method: 'DELETE', headers: getHeaders() });
+      container.className = '';
+      container.innerHTML = filtered.map(t => {
+        let cibleHtml = '';
+        let lienVoir = '';
+
+        if (t.typeContenu === 'utilisateur') {
+          cibleHtml = t.ciblePseudo ? `<a href="/profile/${encodeURIComponent(t.ciblePseudo)}" target="_blank" style="color:#60a5fa;">@${escapeHtml(t.ciblePseudo)}</a>` : 'Compte utilisateur';
+          if (t.ciblePseudo) lienVoir = `/profile/${encodeURIComponent(t.ciblePseudo)}`;
+        } else if (t.typeContenu === 'publication') {
+          cibleHtml = 'Publication' + (t.ciblePseudo ? ` de <a href="/profile/${encodeURIComponent(t.ciblePseudo)}" target="_blank" style="color:#60a5fa;">@${escapeHtml(t.ciblePseudo)}</a>` : '');
+          lienVoir = `/publication/${t.idContenu}`;
+        } else if (t.typeContenu === 'commentaire') {
+          cibleHtml = 'Commentaire' + (t.ciblePseudo ? ` de <a href="/profile/${encodeURIComponent(t.ciblePseudo)}" target="_blank" style="color:#60a5fa;">@${escapeHtml(t.ciblePseudo)}</a>` : '');
+        } else if (t.typeContenu === 'message') {
+          cibleHtml = 'Message privé' + (t.ciblePseudo ? ` de <a href="/profile/${encodeURIComponent(t.ciblePseudo)}" target="_blank" style="color:#60a5fa;">@${escapeHtml(t.ciblePseudo)}</a>` : '');
+        }
+
+        const motifRaw = t.motif || '';
+        let categorie = motifRaw;
+        let details = '';
+        if (motifRaw.includes(' — ')) {
+          const parts = motifRaw.split(' — ');
+          categorie = parts[0];
+          details = parts.slice(1).join(' — ');
+        }
+
+        const isRejete = t.statut === 'rejete';
+
+        return `
+          <div class="ticket-card" id="ticket-${t.idSignalement}">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <strong>Ticket #${t.idSignalement}</strong>
+              <span class="badge-status badge-${t.statut}">${t.statut}</span>
+            </div>
+            <p><strong>Signalé par :</strong> ${t.auteurPseudo ? `@${escapeHtml(t.auteurPseudo)}` : '#' + t.idUserAuteur}</p>
+            <p><strong>Cible :</strong> ${cibleHtml}</p>
+            <div class="reason-box">
+              <strong>Motif :</strong> ${escapeHtml(categorie)}
+              ${details ? `<p style="margin-top:4px;"><strong>Détails :</strong> ${escapeHtml(details)}</p>` : ''}
+            </div>
+            ${t.apercuContenu ? `
+              <div class="preview-box">
+                <div><strong>Aperçu :</strong> « ${escapeHtml(t.apercuContenu)} »</div>
+                ${lienVoir ? `<a href="${lienVoir}" target="_blank" class="btn-ticket-action btn-traiter" style="text-decoration:none;">Inspecter</a>` : ''}
+              </div>
+            ` : ''}
+
+            ${t.reponseModeration ? `
+              <div class="response-box ${isRejete ? 'rejected' : ''}">
+                <strong>Note de modération :</strong>
+                <p style="margin-top: 4px; color: #f8fafc;">« ${escapeHtml(t.reponseModeration)} »</p>
+              </div>
+            ` : ''}
+
+            ${t.statut === 'en_attente' ? `
+              <div style="margin-top:10px; display:flex; gap:8px;">
+                <button type="button" class="btn-ticket-action btn-traiter" onclick="ouvrirModalDecision(${t.idSignalement}, 'traite')">Marquer traité</button>
+                <button type="button" class="btn-ticket-action btn-rejeter" onclick="ouvrirModalDecision(${t.idSignalement}, 'rejete')">Rejeter</button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function ouvrirModalDecision(idSignalement, statut) {
+      pendingTicketId = idSignalement;
+      pendingStatus = statut;
+
+      const modal = document.getElementById('modal-decision');
+      const title = document.getElementById('modal-decision-title');
+      const desc = document.getElementById('modal-decision-desc');
+      const text = document.getElementById('modal-decision-text');
+      const btn = document.getElementById('btn-submit-decision');
+
+      text.value = '';
+      if (statut === 'traite') {
+        title.textContent = 'Marquer le signalement comme traité';
+        desc.textContent = 'Indiquez l’action appliquée ou un mot pour clore le ticket.';
+        btn.textContent = 'Valider le traitement';
+        btn.className = 'btn-primary-action';
+      } else {
+        title.textContent = 'Rejeter le signalement';
+        desc.textContent = 'Expliquez pourquoi ce signalement est classé sans suite.';
+        btn.textContent = 'Confirmer le rejet';
+        btn.className = 'btn-danger-action';
+      }
+
+      modal.style.display = 'flex';
+      text.focus();
+    }
+
+    function fermerModalDecision() {
+      document.getElementById('modal-decision').style.display = 'none';
+      pendingTicketId = null;
+      pendingStatus = null;
+    }
+
+    document.getElementById('btn-submit-decision').addEventListener('click', async () => {
+      if (!pendingTicketId || !pendingStatus) return;
+
+      const reponseModeration = document.getElementById('modal-decision-text').value.trim();
+      const idSignalement = pendingTicketId;
+      const statut = pendingStatus;
+
+      try {
+        const res = await fetch(`/api/signalements/${idSignalement}/statut`, {
+          method: 'PATCH',
+          headers: getAuthHeaders(),
+          credentials: 'same-origin',
+          body: JSON.stringify({ 
+            statut, 
+            reponseModeration: reponseModeration || (statut === 'traite' ? 'Signalement examiné et traité.' : 'Signalement classé sans suite.')
+          })
+        });
+
         if (res.ok) {
-            alert('Contenu supprimé avec succès.');
-            modifierSignalement(idSignalement, 'traite');
+          const ticket = allTickets.find(t => t.idSignalement === idSignalement);
+          if (ticket) {
+            ticket.statut = statut;
+            ticket.reponseModeration = reponseModeration || (statut === 'traite' ? 'Signalement examiné et traité.' : 'Signalement classé sans suite.');
+          }
+          fermerModalDecision();
+          renderTickets();
+          notify('Le signalement a été clôturé.');
         } else {
-            const data = await res.json().catch(() => ({}));
-            alert(data.erreur || data.error || 'Erreur lors de la suppression.');
+          const err = await res.json().catch(() => ({}));
+          alert(err.erreur || 'Erreur lors de la mise à jour du signalement.');
         }
-    }
+      } catch {
+        alert('Erreur réseau.');
+      }
+    });
 
-    async function chargerUtilisateurs() {
+    loadTickets();
+
+    // RECHERCHE ET GESTION DES MEMBRES CÔTÉ ADMIN
+    const searchForm = document.getElementById('form-admin-search');
+    const searchInput = document.getElementById('admin-search-input');
+    const searchResults = document.getElementById('admin-search-results');
+
+    if (searchForm) {
+      searchForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const query = searchInput.value.trim();
+        if (!query) return;
+
+        searchResults.className = 'empty-placeholder';
+        searchResults.innerHTML = '<p>Recherche en cours...</p>';
+
         try {
-            const response = await fetch('/api/admin/utilisateurs', { headers: getHeaders() });
-            if (!response.ok) throw new Error('Impossible de charger les utilisateurs');
+          const res = await fetch(`/api/user/settings/admin/search?q=${encodeURIComponent(query)}`, {
+            headers: getAuthHeaders(),
+            credentials: 'same-origin'
+          });
+          const data = await res.json();
 
-            const utilisateurs = await response.json();
-            const container = document.getElementById('utilisateurs');
-            container.innerHTML = '';
+          if (!res.ok) {
+            searchResults.innerHTML = `<p>${data.error || 'Erreur lors de la recherche.'}</p>`;
+            return;
+          }
 
-            utilisateurs.forEach(user => {
-                const card = document.createElement('div');
-                card.className = 'item';
+          if (!data.users || data.users.length === 0) {
+            searchResults.innerHTML = `<p>Aucun utilisateur trouvé pour « ${escapeHtml(query)} ».</p>`;
+            return;
+          }
 
-                card.innerHTML = `
-                    <p><strong>${user.pseudo}</strong> (${user.email}) — ID : ${user.idUser}</p>
-                    <p><strong>Rôle :</strong> ${user.role} | <strong>Statut :</strong> <span class="badge badge-${user.statut}">${user.statut}</span></p>
-                `;
+          searchResults.className = '';
+          let html = '<div class="admin-users-list">';
 
-                const actions = document.createElement('div');
-                actions.className = 'actions';
+          data.users.forEach(u => {
+            const isSelf = u.idUser === callerId;
+            const isTargetAdmin = u.role === 'admin';
+            const canModify = isSuperAdmin || (!isSelf && !isTargetAdmin);
 
-                if (user.statut === 'actif') {
-                    const btnSuspendre = document.createElement('button');
-                    btnSuspendre.className = 'btn-suspendre';
-                    btnSuspendre.textContent = 'Suspendre';
-                    btnSuspendre.onclick = () => changerStatutUser(user.idUser, 'suspendu');
-                    actions.appendChild(btnSuspendre);
+            html += `
+              <div class="action-item-row" id="user-row-${u.idUser}" style="padding: 12px 0; border-bottom: 1px solid #24272c;">
+                <div>
+                  <strong><a href="/profile/${encodeURIComponent(u.pseudo)}" target="_blank" style="color:#e6edf3; text-decoration:none;">@${escapeHtml(u.pseudo)}</a></strong> 
+                  <span style="color: #8b949e; font-size: 0.85rem;">(${escapeHtml(u.email)})</span>
+                  <div style="font-size: 0.8rem; color: #8b949e; margin-top: 4px;">
+                    Rôle : <strong class="user-role-label">${(u.role || 'user').toUpperCase()}</strong> — Statut : <strong>${(u.statut || 'actif').toUpperCase()}</strong>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                  ${!canModify ? `
+                    <span style="font-size: 0.8rem; color: #636b76; font-style: italic;">
+                      ${isSelf ? 'Votre compte' : 'Administrateur (verrouillé)'}
+                    </span>
+                  ` : `
+                    <select class="admin-role-select" data-user-id="${u.idUser}" style="background: #0b0e11; border: 1px solid #2d333b; color: #e6edf3; padding: 6px 10px; border-radius: 4px;">
+                      <option value="user" ${u.role === 'user' || !u.role ? 'selected' : ''}>Membre</option>
+                      <option value="moderator" ${u.role === 'moderator' || u.role === 'moderateur' ? 'selected' : ''}>Modérateur</option>
+                      ${isSuperAdmin ? `<option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>` : ''}
+                    </select>
+                    <button type="button" class="btn-primary-action btn-save-role" data-user-id="${u.idUser}">Appliquer</button>
+                    <button type="button" class="btn-secondary-action btn-toggle-status" data-user-id="${u.idUser}" data-current-status="${u.statut}">
+                      ${u.statut === 'actif' ? 'Suspendre' : 'Réactiver'}
+                    </button>
+                    <button type="button" class="btn-danger-action btn-delete-user" data-user-id="${u.idUser}">Supprimer</button>
+                  `}
+                </div>
+              </div>
+            `;
+          });
 
-                    const btnBannir = document.createElement('button');
-                    btnBannir.className = 'btn-bannir';
-                    btnBannir.textContent = 'Bannir';
-                    btnBannir.onclick = () => changerStatutUser(user.idUser, 'banni');
-                    actions.appendChild(btnBannir);
+          html += '</div>';
+          searchResults.innerHTML = html;
+
+          document.querySelectorAll('.btn-save-role').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              const idUser = btn.dataset.userId;
+              const select = document.querySelector(`.admin-role-select[data-user-id="${idUser}"]`);
+              const role = select.value;
+              const originalText = btn.textContent;
+
+              btn.disabled = true;
+              btn.textContent = '...';
+
+              try {
+                const patchRes = await fetch(`/api/admin/utilisateurs/${idUser}/role`, {
+                  method: 'PATCH',
+                  headers: getAuthHeaders(),
+                  credentials: 'same-origin',
+                  body: JSON.stringify({ role })
+                });
+                const patchData = await patchRes.json();
+
+                if (!patchRes.ok) {
+                  alert(patchData.erreur || patchData.error || 'Erreur lors de la modification');
                 } else {
-                    const btnActiver = document.createElement('button');
-                    btnActiver.className = 'btn-activer';
-                    btnActiver.textContent = 'Réactiver';
-                    btnActiver.onclick = () => changerStatutUser(user.idUser, 'actif');
-                    actions.appendChild(btnActiver);
+                  const row = document.getElementById(`user-row-${idUser}`);
+                  if (row) row.querySelector('.user-role-label').textContent = role.toUpperCase();
+                  btn.textContent = 'Enregistré !';
+                  setTimeout(() => { btn.textContent = originalText; }, 1500);
                 }
-
-                if (user.role === 'user') {
-                    const btnPromote = document.createElement('button');
-                    btnPromote.className = 'btn-role';
-                    btnPromote.textContent = 'Promouvoir Modérateur';
-                    btnPromote.onclick = () => changerRoleUser(user.idUser, 'moderator');
-                    actions.appendChild(btnPromote);
-                }
-
-                const btnDelete = document.createElement('button');
-                btnDelete.className = 'btn-supprimer';
-                btnDelete.textContent = 'Supprimer le compte';
-                btnDelete.onclick = () => changerStatutUser(user.idUser, 'supprime');
-                actions.appendChild(btnDelete);
-
-                card.appendChild(actions);
-                container.appendChild(card);
+              } catch {
+                alert('Erreur réseau.');
+                btn.textContent = originalText;
+              } finally {
+                btn.disabled = false;
+              }
             });
-        } catch (e) {
-            document.getElementById('utilisateurs').innerHTML = '<p class="empty-text">Erreur de chargement des utilisateurs.</p>';
+          });
+
+          document.querySelectorAll('.btn-toggle-status').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              const idUser = btn.dataset.userId;
+              const current = btn.dataset.currentStatus;
+              const target = current === 'actif' ? 'suspendu' : 'actif';
+
+              const res = await fetch(`/api/admin/utilisateurs/${idUser}/statut`, {
+                method: 'PATCH',
+                headers: getAuthHeaders(),
+                credentials: 'same-origin',
+                body: JSON.stringify({ statut: target })
+              });
+
+              if (res.ok) {
+                btn.dataset.currentStatus = target;
+                btn.textContent = target === 'actif' ? 'Suspendre' : 'Réactiver';
+                notify('Statut mis à jour.');
+              } else {
+                alert('Erreur modification statut.');
+              }
+            });
+          });
+
+          document.querySelectorAll('.btn-delete-user').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              const idUser = btn.dataset.userId;
+              if (!confirm('Attention : supprimer définitivement ce compte de la base de données ?')) return;
+
+              const res = await fetch(`/api/admin/utilisateurs/${idUser}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders(),
+                credentials: 'same-origin'
+              });
+
+              if (res.ok) {
+                const row = document.getElementById(`user-row-${idUser}`);
+                if (row) row.remove();
+                notify('Utilisateur supprimé définitivement.');
+              } else {
+                alert('Erreur lors de la suppression.');
+              }
+            });
+          });
+
+        } catch {
+          searchResults.innerHTML = '<p>Erreur réseau ou serveur inaccessible.</p>';
         }
+      });
     }
-
-    async function changerStatutUser(idUser, statut) {
-        if (statut === 'supprime' && !confirm('Supprimer définitivement ce compte ?')) return;
-
-        const res = await fetch(`/api/admin/utilisateurs/${idUser}/statut`, {
-            method: 'PATCH',
-            headers: getHeaders(),
-            body: JSON.stringify({ statut })
-        });
-
-        if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            alert(data.erreur || 'Action impossible sur cet utilisateur.');
-        }
-
-        chargerUtilisateurs();
-    }
-
-    async function changerRoleUser(idUser, role) {
-        if (!confirm(`Attribuer le rôle ${role} à cet utilisateur ?`)) return;
-
-        const res = await fetch(`/api/admin/utilisateurs/${idUser}/role`, {
-            method: 'PATCH',
-            headers: getHeaders(),
-            body: JSON.stringify({ role })
-        });
-
-        if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            alert(data.erreur || 'Action refusée.');
-        }
-
-        chargerUtilisateurs();
-    }
-
-    chargerSignalements();
-    chargerUtilisateurs();
-</script>
-
+  </script>
 </body>
 </html>

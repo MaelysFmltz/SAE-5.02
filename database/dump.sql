@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS Blocage (
 CREATE TABLE IF NOT EXISTS Signalement (
     idSignalement INTEGER PRIMARY KEY AUTOINCREMENT,
     idUserAuteur INTEGER NOT NULL,
-    typeContenu TEXT CHECK(typeContenu IN ('publication', 'commentaire', 'utilisateur', 'media')) NOT NULL,
+    typeContenu TEXT CHECK(typeContenu IN ('publication', 'commentaire', 'utilisateur', 'media', 'message')) NOT NULL,
     idContenu INTEGER NOT NULL,
     motif TEXT NOT NULL,
     dateSignalement DATETIME DEFAULT CURRENT_TIMESTAMP,

@@ -38,7 +38,7 @@ function obtenirPublicationsParHashtag(db, tag, idCurrentUser) {
 }
 
 /**
- * Recherche globale unifiée (profils, hashtags et publications) avec respect strict de la confidentialité
+ * Recherche globale unifiée (profils, hashtags et publications) avec respect strict de la confidentialité et des blocages
  * @param {object} db Instance SQLite
  * @param {string} query Terme recherché
  * @param {number} idCurrentUser Identifiant de l'utilisateur demandeur
@@ -55,7 +55,7 @@ function rechercherTout(db, query, idCurrentUser) {
   // 1. Recherche de hashtags (publics uniquement)
   const hashtags = hashtagModel.searchHashtags(db, tagQuery, 10);
 
-  // 2. Recherche d'utilisateurs (avec échappement LIKE)
+  // 2. Recherche d'utilisateurs (avec exclusion des comptes bloqués)
   let utilisateurs = [];
   if (!isHashtagSearch) {
     const escapedUserQuery = hashtagModel.escapeLike(q);
@@ -67,11 +67,17 @@ function rechercherTout(db, query, idCurrentUser) {
          OR pr.prenom LIKE (? || '%') ESCAPE '\\'
          OR pr.nom LIKE (? || '%') ESCAPE '\\')
         AND u.statut = 'actif'
+        AND u.idUser != ?
+        AND u.idUser NOT IN (
+          SELECT idUserBloque FROM Blocage WHERE idUserBloqueur = ?
+          UNION
+          SELECT idUserBloqueur FROM Blocage WHERE idUserBloque = ?
+        )
       LIMIT 10
-    `).all(escapedUserQuery, escapedUserQuery, escapedUserQuery);
+    `).all(escapedUserQuery, escapedUserQuery, escapedUserQuery, idCurrentUser, idCurrentUser, idCurrentUser);
   }
 
-  // 3. Recherche de publications avec contrôle d'accès
+  // 3. Recherche de publications avec contrôle d'accès et exclusion des blocs
   let publications = [];
   if (isHashtagSearch) {
     publications = hashtagModel.getPublicationsByHashtag(db, tagQuery, idCurrentUser);
@@ -92,6 +98,11 @@ function rechercherTout(db, query, idCurrentUser) {
       LEFT JOIN Profil pr ON u.idUser = pr.idUser
       LEFT JOIN Media m ON m.idPubli = p.idPubli
       WHERE p.contenuPub LIKE ('%' || ? || '%') ESCAPE '\\'
+        AND p.idUser NOT IN (
+          SELECT idUserBloque FROM Blocage WHERE idUserBloqueur = ?
+          UNION
+          SELECT idUserBloqueur FROM Blocage WHERE idUserBloque = ?
+        )
         AND (
           p.visibilite = 1
           OR p.idUser = ?
@@ -107,7 +118,7 @@ function rechercherTout(db, query, idCurrentUser) {
         )
       ORDER BY p.datePubli DESC
       LIMIT 15
-    `).all(escapedPostQuery, idCurrentUser, idCurrentUser);
+    `).all(escapedPostQuery, idCurrentUser, idCurrentUser, idCurrentUser, idCurrentUser);
   }
 
   return {

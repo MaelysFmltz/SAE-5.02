@@ -6,6 +6,135 @@
   <title>Paramètres — Pixora</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/settings.css">
+  <style>
+    .blocked-user-item {
+      padding: 12px 14px;
+      border-bottom: 1px solid #24272c;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .blocked-user-item:last-child {
+      border-bottom: none;
+    }
+    .blocked-user-info strong {
+      color: #f8fafc;
+      font-size: 0.95rem;
+    }
+    .blocked-user-info strong a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .blocked-user-info strong a:hover {
+      color: #60a5fa;
+      text-decoration: underline;
+    }
+    .blocked-user-meta {
+      font-size: 0.8rem;
+      color: #8b949e;
+      margin-top: 4px;
+    }
+    .btn-unblock {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-unblock:hover {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+      color: #fff;
+    }
+
+    .report-history-item {
+      padding: 14px;
+      border-bottom: 1px solid #24272c;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .report-history-item:last-child {
+      border-bottom: none;
+    }
+    .report-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .report-target-title {
+      font-size: 0.95rem;
+      color: #f8fafc;
+    }
+    .report-target-title a {
+      color: #60a5fa;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .report-target-title a:hover {
+      text-decoration: underline;
+    }
+    .badge-report {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .badge-en_attente { background: #854d0e; color: #fef08a; }
+    .badge-traite { background: #166534; color: #bbf7d0; }
+    .badge-rejete { background: #991b1b; color: #fecaca; }
+
+    .report-detail-box {
+      background: #161822;
+      border-left: 3px solid #3b82f6;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+    .report-moderation-box {
+      background: #131c17;
+      border-left: 3px solid #10b981;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      color: #a7f3d0;
+    }
+    .report-moderation-box.rejected {
+      background: #1c1418;
+      border-left-color: #f43f5e;
+      color: #fecdd3;
+    }
+    .report-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: #8b949e;
+      margin-top: 4px;
+    }
+    .btn-delete-report {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      font-size: 0.8rem;
+      cursor: pointer;
+      padding: 2px 4px;
+      text-decoration: underline;
+    }
+    .btn-delete-report:hover {
+      color: #f87171;
+    }
+  </style>
 </head>
 <body>
   <div 
@@ -34,7 +163,6 @@
     </header>
 
     <div class="settings-layout">
-      <!-- Navigation latérale -->
       <aside class="settings-sidebar">
         <nav class="settings-nav">
           <p class="nav-section-title">Général</p>
@@ -47,24 +175,9 @@
           <button type="button" class="nav-btn" data-tab="tab-help">
             Aide
           </button>
-
-          <% if (user.role === 'moderator' || user.role === 'moderateur' || user.role === 'modo' || user.role === 'admin') { %>
-            <p class="nav-section-title">Modération</p>
-            <button type="button" class="nav-btn" data-tab="tab-moderation">
-              Signalements
-            </button>
-          <% } %>
-
-          <% if (user.role === 'admin') { %>
-            <p class="nav-section-title">Administration</p>
-            <button type="button" class="nav-btn" data-tab="tab-admin">
-              Centre d'administration
-            </button>
-          <% } %>
         </nav>
       </aside>
 
-      <!-- Panneau principal -->
       <main class="settings-content">
         <div id="settings-alert" class="alert-box" style="display: none;"></div>
 
@@ -72,7 +185,6 @@
         <section id="tab-account" class="tab-pane active">
           <h2 class="section-heading">Mon compte</h2>
 
-          <!-- Pseudo -->
           <div class="settings-card">
             <h3>Nom d'utilisateur</h3>
             <p class="card-desc">Identifiant unique utilisé pour votre profil et vos publications.</p>
@@ -84,14 +196,13 @@
                 value="<%= user.pseudo %>" 
                 required 
                 minlength="3" 
-                maxlength="30"
+                maxlength="30" 
                 pattern="^[a-zA-Z0-9_-]{3,30}$"
               >
               <button type="submit" class="btn-primary-action">Enregistrer</button>
             </form>
           </div>
 
-          <!-- Email -->
           <div class="settings-card">
             <h3>Adresse email</h3>
             <p class="card-desc">Adresse associée : <strong class="current-value"><%= user.email %></strong></p>
@@ -108,7 +219,6 @@
             </form>
           </div>
 
-          <!-- Date de naissance -->
           <div class="settings-card">
             <h3>Date de naissance</h3>
             <p class="card-desc">Non modifiable après l'inscription.</p>
@@ -122,7 +232,6 @@
             </div>
           </div>
 
-          <!-- Mot de passe -->
           <div class="settings-card">
             <h3>Mot de passe</h3>
             <p class="card-desc">Huit caractères minimum avec majuscule, minuscule, chiffre et symbole.</p>
@@ -143,7 +252,6 @@
             </form>
           </div>
 
-          <!-- Actions de compte -->
           <div class="settings-card">
             <div class="action-item-row">
               <div>
@@ -166,18 +274,20 @@
         <!-- 2. CONFIDENTIALITÉ -->
         <section id="tab-privacy" class="tab-pane">
           <h2 class="section-heading">Confidentialité</h2>
+          
           <div class="settings-card">
             <h3>Comptes bloqués</h3>
             <p class="card-desc">Membres avec lesquels toute interaction est interrompue.</p>
-            <div class="empty-placeholder">
-              <p>Aucun utilisateur bloqué.</p>
+            <div id="blocked-users-list" class="empty-placeholder">
+              <p>Chargement des comptes bloqués...</p>
             </div>
           </div>
+
           <div class="settings-card">
             <h3>Historique des signalements</h3>
-            <p class="card-desc">Statut des signalements transmis à l'équipe de modération.</p>
-            <div class="empty-placeholder">
-              <p>Aucun signalement déposé.</p>
+            <p class="card-desc">Statut et réponses de modération associées à vos signalements.</p>
+            <div id="user-reports-history" class="empty-placeholder">
+              <p>Chargement de vos signalements...</p>
             </div>
           </div>
         </section>
@@ -200,52 +310,10 @@
             </div>
           </div>
         </section>
-
-        <!-- 4. MODÉRATION -->
-        <% if (user.role === 'moderator' || user.role === 'moderateur' || user.role === 'modo' || user.role === 'admin') { %>
-          <section id="tab-moderation" class="tab-pane">
-            <h2 class="section-heading">Modération</h2>
-            <div class="settings-card">
-              <div class="card-header-flex">
-                <div>
-                  <h3>Tickets de signalement</h3>
-                  <p class="card-desc">File des signalements soumis par la communauté.</p>
-                </div>
-                <div class="filter-group">
-                  <button type="button" class="filter-btn active" data-filter="pending">En attente</button>
-                  <button type="button" class="filter-btn" data-filter="resolved">Traités</button>
-                  <button type="button" class="filter-btn" data-filter="all">Tous</button>
-                </div>
-              </div>
-              <div id="tickets-container" class="empty-placeholder">
-                <p>Aucun signalement en attente de révision.</p>
-              </div>
-            </div>
-          </section>
-        <% } %>
-
-        <!-- 5. ADMINISTRATION -->
-        <% if (user.role === 'admin') { %>
-          <section id="tab-admin" class="tab-pane">
-            <h2 class="section-heading">Administration</h2>
-            <div class="settings-card">
-              <h3>Gestion des membres</h3>
-              <p class="card-desc">Attribution du statut modérateur et supervision des comptes.</p>
-              <form id="form-admin-search" class="form-row">
-                <input type="text" id="admin-search-input" placeholder="Rechercher par pseudonyme ou email..." required>
-                <button type="submit" class="btn-primary-action">Rechercher</button>
-              </form>
-              <div id="admin-search-results" class="empty-placeholder" style="margin-top: 16px;">
-                <p>Effectuez une recherche pour afficher et administrer les comptes.</p>
-              </div>
-            </div>
-          </section>
-        <% } %>
       </main>
     </div>
   </div>
 
-  <!-- Fenêtre modale de suppression -->
   <div id="modal-delete" class="modal-backdrop" style="display: none;">
     <div class="modal-box">
       <h3>Confirmer la suppression</h3>
@@ -268,9 +336,6 @@
   <%- include('navbar') %>
 
   <script>
-    const settingsContainer = document.querySelector('.settings-container');
-    const callerId = Number(settingsContainer.dataset.currentUserId);
-
     const navButtons = document.querySelectorAll('.nav-btn');
     const tabPanes = document.querySelectorAll('.tab-pane');
     const alertBox = document.getElementById('settings-alert');
@@ -282,6 +347,23 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function getAuthHeaders() {
+      const token = localStorage.getItem('token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      return headers;
+    }
+
     navButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         navButtons.forEach(b => b.classList.remove('active'));
@@ -289,12 +371,211 @@
 
         btn.classList.add('active');
         const targetPane = document.getElementById(btn.dataset.tab);
-        if (targetPane) targetPane.classList.add('active');
+        if (targetPane) {
+          targetPane.classList.add('active');
+          if (btn.dataset.tab === 'tab-privacy') {
+            loadBlockedUsers();
+            loadUserReports();
+          }
+        }
         alertBox.style.display = 'none';
       });
     });
 
-    // 1. Modification du nom d'utilisateur
+    // 1. Chargement des comptes bloqués
+    async function loadBlockedUsers() {
+      const container = document.getElementById('blocked-users-list');
+      if (!container) return;
+
+      try {
+        const res = await fetch('/api/blocks', {
+          method: 'GET',
+          headers: getAuthHeaders(),
+          credentials: 'same-origin'
+        });
+
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        const blocked = data.blockedUsers || [];
+
+        if (blocked.length === 0) {
+          container.className = 'empty-placeholder';
+          container.innerHTML = '<p>Aucun utilisateur bloqué.</p>';
+          return;
+        }
+
+        container.className = '';
+        container.innerHTML = blocked.map(b => `
+          <div class="blocked-user-item" id="blocked-user-${b.idUser}">
+            <div class="blocked-user-info">
+              <strong><a href="/profile/${encodeURIComponent(b.pseudo)}" target="_blank">@${escapeHtml(b.pseudo)}</a></strong>
+              <div class="blocked-user-meta">Bloqué le ${new Date(b.dateBlocage).toLocaleDateString()}</div>
+            </div>
+            <button type="button" class="btn-unblock" onclick="debloquerDepuisSettings(${b.idUser})">
+              Débloquer
+            </button>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error('Erreur chargement comptes bloqués :', e);
+        container.className = 'empty-placeholder';
+        container.innerHTML = '<p>Erreur lors du chargement des comptes bloqués.</p>';
+      }
+    }
+
+    async function debloquerDepuisSettings(idUser) {
+      try {
+        const res = await fetch(`/api/blocks/${idUser}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders(),
+          credentials: 'same-origin'
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || 'Impossible de débloquer cet utilisateur.');
+          return;
+        }
+
+        const el = document.getElementById(`blocked-user-${idUser}`);
+        if (el) el.remove();
+
+        const remaining = document.querySelectorAll('.blocked-user-item');
+        if (remaining.length === 0) {
+          const container = document.getElementById('blocked-users-list');
+          container.className = 'empty-placeholder';
+          container.innerHTML = '<p>Aucun utilisateur bloqué.</p>';
+        }
+
+        notify('Utilisateur débloqué.');
+      } catch {
+        alert('Erreur réseau lors du déblocage.');
+      }
+    }
+
+    // 2. Chargement des signalements personnels avec décision de modération
+    async function loadUserReports() {
+      const container = document.getElementById('user-reports-history');
+      if (!container) return;
+
+      try {
+        const res = await fetch('/api/signalements/mes-signalements', {
+          method: 'GET',
+          headers: getAuthHeaders(),
+          credentials: 'same-origin'
+        });
+
+        if (!res.ok) throw new Error();
+        const reports = await res.json();
+
+        if (!reports || reports.length === 0) {
+          container.className = 'empty-placeholder';
+          container.innerHTML = '<p>Aucun signalement déposé.</p>';
+          return;
+        }
+
+        container.className = '';
+        container.innerHTML = reports.map(r => {
+          let cibleHtml = '';
+          if (r.typeContenu === 'utilisateur') {
+            cibleHtml = r.ciblePseudo 
+              ? `Compte de <a href="/profile/${encodeURIComponent(r.ciblePseudo)}" target="_blank">@${escapeHtml(r.ciblePseudo)}</a>`
+              : 'Compte utilisateur';
+          } else if (r.typeContenu === 'publication') {
+            const authorLink = r.ciblePseudo ? ` de <a href="/profile/${encodeURIComponent(r.ciblePseudo)}" target="_blank">@${escapeHtml(r.ciblePseudo)}</a>` : '';
+            cibleHtml = `<a href="/publication/${r.idContenu}" target="_blank">Publication</a>${authorLink}`;
+          } else if (r.typeContenu === 'commentaire') {
+            const authorLink = r.ciblePseudo ? ` de <a href="/profile/${encodeURIComponent(r.ciblePseudo)}" target="_blank">@${escapeHtml(r.ciblePseudo)}</a>` : '';
+            cibleHtml = `Commentaire${authorLink}`;
+          } else if (r.typeContenu === 'message') {
+            const authorLink = r.ciblePseudo ? ` de <a href="/profile/${encodeURIComponent(r.ciblePseudo)}" target="_blank">@${escapeHtml(r.ciblePseudo)}</a>` : '';
+            cibleHtml = `Message privé${authorLink}`;
+          } else {
+            cibleHtml = escapeHtml(r.typeContenu);
+          }
+
+          const rawMotif = r.motif || '';
+          let motifPrincipal = rawMotif;
+          let detailsMotif = '';
+          if (rawMotif.includes(' — ')) {
+            const parts = rawMotif.split(' — ');
+            motifPrincipal = parts[0];
+            detailsMotif = parts.slice(1).join(' — ');
+          }
+
+          const statutLibelle = {
+            'en_attente': 'En attente',
+            'traite': 'Traité',
+            'rejete': 'Classé sans suite'
+          }[r.statut] || r.statut;
+
+          const isRejete = r.statut === 'rejete';
+
+          return `
+            <div class="report-history-item" id="user-report-${r.idSignalement}">
+              <div class="report-item-header">
+                <div class="report-target-title">
+                  <strong>${cibleHtml}</strong>
+                </div>
+                <span class="badge-report badge-${r.statut}">${statutLibelle}</span>
+              </div>
+
+              <div class="report-detail-box">
+                <div><strong>Motif :</strong> ${escapeHtml(motifPrincipal)}</div>
+                ${detailsMotif ? `<div style="margin-top: 4px; color: #f1f5f9;"><strong>Commentaire transmis :</strong> ${escapeHtml(detailsMotif)}</div>` : ''}
+              </div>
+
+              ${r.reponseModeration ? `
+                <div class="report-moderation-box ${isRejete ? 'rejected' : ''}">
+                  <strong>Retour de la modération :</strong>
+                  <p style="margin-top: 4px; color: #f8fafc;">« ${escapeHtml(r.reponseModeration)} »</p>
+                </div>
+              ` : ''}
+
+              <div class="report-meta-row">
+                <span>Déposé le ${new Date(r.dateSignalement).toLocaleDateString()} à ${new Date(r.dateSignalement).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                <button type="button" class="btn-delete-report" onclick="retirerSignalement(${r.idSignalement})">Retirer ce signalement</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error('Erreur chargement signalements :', e);
+        container.className = 'empty-placeholder';
+        container.innerHTML = '<p>Erreur lors du chargement de l’historique.</p>';
+      }
+    }
+
+    async function retirerSignalement(idSignalement) {
+      if (!confirm('Voulez-vous retirer ce signalement ?')) return;
+
+      try {
+        const res = await fetch(`/api/signalements/${idSignalement}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders(),
+          credentials: 'same-origin'
+        });
+
+        if (res.ok) {
+          const item = document.getElementById(`user-report-${idSignalement}`);
+          if (item) item.remove();
+          notify('Signalement retiré.');
+          const remaining = document.querySelectorAll('.report-history-item');
+          if (remaining.length === 0) {
+            const container = document.getElementById('user-reports-history');
+            container.className = 'empty-placeholder';
+            container.innerHTML = '<p>Aucun signalement déposé.</p>';
+          }
+        } else {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || 'Erreur lors du retrait du signalement.');
+        }
+      } catch {
+        alert('Erreur réseau.');
+      }
+    }
+
+    // 3. Gestion Mon Compte
     document.getElementById('form-pseudo').addEventListener('submit', async (e) => {
       e.preventDefault();
       alertBox.style.display = 'none';
@@ -303,7 +584,7 @@
       try {
         const res = await fetch('/api/user/settings/pseudo', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ pseudo })
         });
         const data = await res.json();
@@ -317,7 +598,6 @@
       }
     });
 
-    // 2. Modification de l'email
     document.getElementById('form-email').addEventListener('submit', async (e) => {
       e.preventDefault();
       alertBox.style.display = 'none';
@@ -326,7 +606,7 @@
       try {
         const res = await fetch('/api/user/settings/email', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ email })
         });
         const data = await res.json();
@@ -340,7 +620,6 @@
       }
     });
 
-    // 3. Modification du mot de passe
     document.getElementById('form-password').addEventListener('submit', async (e) => {
       e.preventDefault();
       alertBox.style.display = 'none';
@@ -356,7 +635,7 @@
       try {
         const res = await fetch('/api/user/settings/password', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ oldPassword, newPassword, confirmPassword })
         });
         const data = await res.json();
@@ -369,7 +648,6 @@
       }
     });
 
-    // 4. Déconnexion
     document.getElementById('btn-logout').addEventListener('click', async () => {
       try {
         await fetch('/api/auth/logout', { method: 'POST' });
@@ -379,7 +657,6 @@
       }
     });
 
-    // 5. Suppression du compte (Modale)
     const modalDelete = document.getElementById('modal-delete');
     document.getElementById('btn-open-delete').addEventListener('click', () => {
       modalDelete.style.display = 'flex';
@@ -397,7 +674,7 @@
       try {
         const res = await fetch('/api/user/settings/account', {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ password })
         });
         const data = await res.json();
@@ -413,122 +690,6 @@
         modalDelete.style.display = 'none';
       }
     });
-
-    // Filtres signalements
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    filterButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        filterButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-      });
-    });
-
-    // Recherche d'utilisateurs et changement de rôle côté admin
-    const adminSearchForm = document.getElementById('form-admin-search');
-    const adminSearchInput = document.getElementById('admin-search-input');
-    const resultsContainer = document.getElementById('admin-search-results');
-
-    if (adminSearchForm) {
-      adminSearchForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const query = adminSearchInput.value.trim();
-        if (!query) return;
-
-        resultsContainer.innerHTML = '<p>Recherche en cours...</p>';
-
-        try {
-          const res = await fetch(`/api/user/settings/admin/search?q=${encodeURIComponent(query)}`);
-          const data = await res.json();
-
-          if (!res.ok) {
-            resultsContainer.innerHTML = `<p>${data.error || 'Erreur lors de la recherche.'}</p>`;
-            return;
-          }
-
-          if (!data.users || data.users.length === 0) {
-            resultsContainer.innerHTML = `<p>Aucun utilisateur trouvé pour « ${query} ».</p>`;
-            return;
-          }
-
-          let html = '<div class="admin-users-list">';
-          data.users.forEach(u => {
-            const isTargetAdmin = u.role === 'admin';
-            const isSelf = u.idUser === callerId;
-            const isDisabled = isSelf || isTargetAdmin;
-
-            html += `
-              <div class="action-item-row" id="user-row-${u.idUser}" style="padding: 10px 0; border-bottom: 1px solid #24272c;">
-                <div>
-                  <strong>@${u.pseudo}</strong> <span style="color: #8b949e; font-size: 0.85rem;">(${u.email})</span>
-                  <div style="font-size: 0.8rem; color: #636b76;">
-                    Rôle actuel : <strong class="user-role-label">${(u.role || 'user').toUpperCase()}</strong>
-                  </div>
-                </div>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                  ${isDisabled ? `
-                    <span style="font-size: 0.8rem; color: #636b76; font-style: italic;">
-                      ${isSelf ? 'Votre compte' : 'Administrateur (verrouillé)'}
-                    </span>
-                  ` : `
-                    <select class="admin-role-select" data-user-id="${u.idUser}" style="background: #0b0e11; border: 1px solid #2d333b; color: #e6edf3; padding: 6px 10px; border-radius: 4px;">
-                      <option value="user" ${u.role === 'user' || !u.role ? 'selected' : ''}>Membre</option>
-                      <option value="moderator" ${u.role === 'moderator' || u.role === 'moderateur' ? 'selected' : ''}>Modérateur</option>
-                    </select>
-                    <button type="button" class="btn-primary-action btn-save-role" data-user-id="${u.idUser}">Appliquer</button>
-                  `}
-                </div>
-              </div>
-            `;
-          });
-          html += '</div>';
-
-          resultsContainer.innerHTML = html;
-
-          document.querySelectorAll('.btn-save-role').forEach(btn => {
-            btn.addEventListener('click', async () => {
-              const idUser = btn.dataset.userId;
-              const select = document.querySelector(`.admin-role-select[data-user-id="${idUser}"]`);
-              const role = select.value;
-              const originalText = btn.textContent;
-
-              btn.disabled = true;
-              btn.textContent = '...';
-
-              try {
-                const patchRes = await fetch('/api/user/settings/admin/role', {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ idUser, role })
-                });
-                const patchData = await patchRes.json();
-
-                if (!patchRes.ok) {
-                  alert(patchData.error || 'Erreur lors de la modification du rôle');
-                } else {
-                  const row = document.getElementById(`user-row-${idUser}`);
-                  if (row) {
-                    const label = row.querySelector('.user-role-label');
-                    if (label) label.textContent = role.toUpperCase();
-                  }
-                  btn.textContent = 'Enregistré !';
-                  setTimeout(() => {
-                    btn.textContent = originalText;
-                  }, 1500);
-                }
-              } catch {
-                alert('Erreur réseau ou serveur inaccessible.');
-                btn.textContent = originalText;
-              } finally {
-                btn.disabled = false;
-              }
-            });
-          });
-
-        } catch {
-          resultsContainer.innerHTML = '<p>Erreur réseau ou serveur inaccessible.</p>';
-        }
-      });
-    }
   </script>
 </body>
 </html>
