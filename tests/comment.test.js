@@ -1,12 +1,18 @@
 process.env.DB_PATH = ':memory:';
+process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-de-test-uniquement';
 
 const fs = require('fs');
 const path = require('path');
 const request = require('supertest');
+const jwt = require('jsonwebtoken');
 
 const app = require('../src/app');
 const db = require('../src/config/database');
 const commentModel = require('../src/models/commentModel');
+
+function tokenPour(idUser, pseudo, role = 'user') {
+  return jwt.sign({ idUser, pseudo, role }, process.env.JWT_SECRET);
+}
 
 function seedSchema() {
   const schema = fs.readFileSync(
@@ -153,91 +159,21 @@ describe('commentModel', () => {
 });
 
 describe(
-  'API commentaires - failles de sécurité (aucune authentification requise)',
+  'API commentaires - authentification et anti-spoofing obligatoires',
   () => {
 
     test(
-      "POST /api/comments fonctionne sans aucun token/session : n'importe qui peut publier",
+      "POST /api/comments refuse une requête sans token/session",
       async () => {
         const res = await request(app)
           .post('/api/comments')
           .send({
             idPubli: 1,
             idUser: 1,
-            contenuCom: 'Anonyme mais accepté'
+            contenuCom: 'Anonyme'
           });
 
-        expect(res.status).toBe(302);
-        expect(
-          commentModel.getCommentsByPostId(1)
-        ).toHaveLength(1);
-      }
-    );
-
-    test(
-      "POST /api/comments : l'idUser vient du body, donc on peut publier au nom de n'importe quel utilisateur existant",
-      async () => {
-        await request(app)
-          .post('/api/comments')
-          .send({
-            idPubli: 1,
-            idUser: 2,
-            contenuCom: 'Message posté au nom de bob'
-          });
-
-        const comments =
-          commentModel.getCommentsByPostId(1);
-
-        expect(comments).toHaveLength(1);
-        expect(comments[0].pseudo).toBe('bob');
-      }
-    );
-
-    test(
-      "POST /api/comments/:idComm/edit : on peut modifier le commentaire d'un autre utilisateur en donnant son idUser",
-      async () => {
-        const comment = commentModel.createComment(
-          1,
-          1,
-          'Commentaire d\'alice'
-        );
-
-        const res = await request(app)
-          .post(
-            `/api/comments/${comment.idComm}/edit`
-          )
-          .send({
-            idPubli: 1,
-            idUser: 1,
-            contenuCom: 'Modifié par un usurpateur'
-          });
-
-        expect(res.status).toBe(302);
-        expect(
-          commentModel.getCommentsByPostId(1)[0].contenuCom
-        ).toBe('Modifié par un usurpateur');
-      }
-    );
-
-    test(
-      "POST /api/comments/:idComm/delete : on peut supprimer le commentaire d'un autre utilisateur en donnant son idUser",
-      async () => {
-        const comment = commentModel.createComment(
-          2,
-          1,
-          'Commentaire de bob'
-        );
-
-        const res = await request(app)
-          .post(
-            `/api/comments/${comment.idComm}/delete`
-          )
-          .send({
-            idPubli: 1,
-            idUser: 2
-          });
-
-        expect(res.status).toBe(302);
+        expect(res.status).toBe(401);
         expect(
           commentModel.getCommentsByPostId(1)
         ).toHaveLength(0);
@@ -245,20 +181,88 @@ describe(
     );
 
     test(
-      'POST /api/comments sans idUser fourni publie quand même, au nom du user 1 par défaut',
+      "POST /api/comments : un idUser fourni dans le body est ignoré, l'auteur vient du token",
       async () => {
         await request(app)
           .post('/api/comments')
+          .set('Authorization', `Bearer ${tokenPour(1, 'alice')}`)
           .send({
             idPubli: 1,
-            contenuCom: 'Sans idUser du tout'
+            idUser: 2,
+            contenuCom: 'Tentative de spoof'
           });
 
         const comments =
           commentModel.getCommentsByPostId(1);
 
         expect(comments).toHaveLength(1);
-        expect(comments[0].idUser).toBe(1);
+        expect(comments[0].pseudo).toBe('alice');
+      }
+    );
+
+    test(
+      "POST /api/comments/:idComm/edit refuse une requête sans token/session",
+      async () => {
+        const comment = commentModel.createComment(1, 1, "Commentaire d'alice");
+
+        const res = await request(app)
+          .post(`/api/comments/${comment.idComm}/edit`)
+          .send({ idPubli: 1, idUser: 1, contenuCom: 'Modifié anonymement' });
+
+        expect(res.status).toBe(401);
+        expect(
+          commentModel.getCommentsByPostId(1)[0].contenuCom
+        ).toBe("Commentaire d'alice");
+      }
+    );
+
+    test(
+      "POST /api/comments/:idComm/edit : bob ne peut pas modifier le commentaire d'alice en spoofant idUser",
+      async () => {
+        const comment = commentModel.createComment(1, 1, "Commentaire d'alice");
+
+        const res = await request(app)
+          .post(`/api/comments/${comment.idComm}/edit`)
+          .set('Authorization', `Bearer ${tokenPour(2, 'bob')}`)
+          .send({ idPubli: 1, idUser: 1, contenuCom: 'Modifié par un usurpateur' });
+
+        expect(res.status).toBe(403);
+        expect(
+          commentModel.getCommentsByPostId(1)[0].contenuCom
+        ).toBe("Commentaire d'alice");
+      }
+    );
+
+    test(
+      "POST /api/comments/:idComm/delete refuse une requête sans token/session",
+      async () => {
+        const comment = commentModel.createComment(2, 1, 'Commentaire de bob');
+
+        const res = await request(app)
+          .post(`/api/comments/${comment.idComm}/delete`)
+          .send({ idPubli: 1, idUser: 2 });
+
+        expect(res.status).toBe(401);
+        expect(
+          commentModel.getCommentsByPostId(1)
+        ).toHaveLength(1);
+      }
+    );
+
+    test(
+      "POST /api/comments/:idComm/delete : alice ne peut pas supprimer le commentaire de bob en spoofant idUser",
+      async () => {
+        const comment = commentModel.createComment(2, 1, 'Commentaire de bob');
+
+        const res = await request(app)
+          .post(`/api/comments/${comment.idComm}/delete`)
+          .set('Authorization', `Bearer ${tokenPour(1, 'alice')}`)
+          .send({ idPubli: 1, idUser: 2 });
+
+        expect(res.status).toBe(403);
+        expect(
+          commentModel.getCommentsByPostId(1)
+        ).toHaveLength(1);
       }
     );
 
@@ -292,9 +296,9 @@ describe('API commentaires - comportement fonctionnel', () => {
     async () => {
       const res = await request(app)
         .post('/api/comments')
+        .set('Authorization', `Bearer ${tokenPour(1, 'alice')}`)
         .send({
           idPubli: 1,
-          idUser: 1,
           contenuCom: 'a'.repeat(501)
         });
 
@@ -310,9 +314,9 @@ describe('API commentaires - comportement fonctionnel', () => {
     async () => {
       const res = await request(app)
         .post('/api/comments')
+        .set('Cookie', `token=${tokenPour(1, 'alice')}`)
         .send({
           idPubli: 1,
-          idUser: 1,
           contenuCom: '   '
         });
 
@@ -334,9 +338,8 @@ describe('API commentaires - comportement fonctionnel', () => {
 
       const res = await request(app)
         .delete(`/api/comments/${comment.idComm}`)
-        .send({
-          idUser: 1
-        });
+        .set('Cookie', `token=${tokenPour(1, 'alice')}`)
+        .send();
 
       expect(res.status).toBe(302);
       expect(

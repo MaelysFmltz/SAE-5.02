@@ -115,16 +115,24 @@ function creerSignalement(req, res) {
 
 function obtenirSignalement(req, res) {
     const idSignalement = Number(req.params.idSignalement);
+    const idUserConnecte = req.user?.idUser;
+    const isStaff = ['admin', 'moderator', 'superadmin'].includes(req.user?.role) || idUserConnecte === -999;
 
     const signalement = reportService.obtenirSignalement(
         db,
         idSignalement,
-        req.user?.idUser
+        idUserConnecte
     );
 
     if (!signalement) {
         return res.status(404).json({
             erreur: 'Signalement introuvable'
+        });
+    }
+
+    if (!isStaff && signalement.idUserAuteur !== idUserConnecte) {
+        return res.status(403).json({
+            erreur: 'Vous n’êtes pas autorisé à consulter ce signalement'
         });
     }
 

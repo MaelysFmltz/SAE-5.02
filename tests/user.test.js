@@ -125,6 +125,63 @@ describe('Gestion des utilisateurs', () => {
         expect(utilisateur.statut).toBe('actif');
     });
 
+    test('un modérateur ne peut pas suspendre un administrateur', () => {
+        db.exec(`
+            INSERT INTO Utilisateur
+                (idUser, pseudo, email, motDePasse, statut, role)
+            VALUES
+                (3, 'test_mod', 'mod@test.fr', 'hash', 'actif', 'moderator');
+        `);
+
+        const resultat = userService.modifierStatut(
+            db,
+            2,
+            'suspendu',
+            3,
+            'moderator'
+        );
+
+        expect(resultat.succes).toBe(false);
+        expect(resultat.erreur).toBe(
+            'Seul un administrateur peut modifier le statut d’un compte administrateur'
+        );
+
+        const utilisateur = db.prepare(`
+            SELECT statut
+            FROM Utilisateur
+            WHERE idUser = 2
+        `).get();
+
+        expect(utilisateur.statut).toBe('actif');
+    });
+
+    test('un administrateur peut suspendre un autre administrateur', () => {
+        db.exec(`
+            INSERT INTO Utilisateur
+                (idUser, pseudo, email, motDePasse, statut, role)
+            VALUES
+                (4, 'test_admin2', 'admin2@test.fr', 'hash', 'actif', 'admin');
+        `);
+
+        const resultat = userService.modifierStatut(
+            db,
+            2,
+            'suspendu',
+            4,
+            'admin'
+        );
+
+        expect(resultat.succes).toBe(true);
+
+        const utilisateur = db.prepare(`
+            SELECT statut
+            FROM Utilisateur
+            WHERE idUser = 2
+        `).get();
+
+        expect(utilisateur.statut).toBe('suspendu');
+    });
+
     test('un administrateur ne peut pas supprimer son propre compte', () => {
         const resultat = userService.modifierStatut(
             db,

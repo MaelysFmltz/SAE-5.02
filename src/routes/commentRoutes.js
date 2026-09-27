@@ -10,20 +10,20 @@ router.get('/view/:idPubli', commentController.renderPostPage);
 // 2. Consultation API (JSON - accessible aux tests et utilisateurs)
 router.get('/:idPubli', commentController.getComments);
 
-// 3. Actions d'écriture sur les publications (supporte l'auth JWT et le payload direct)
-router.post('/', commentController.addComment);
+// 3. Actions d'écriture sur les publications (authentification JWT obligatoire)
+router.post('/', authMiddleware, commentController.addComment);
 router.post('/react', authMiddleware, commentController.handleReaction);
 
 // 4. Modération directe d'un commentaire (Admin & Modérateur)
 router.delete('/:idComm/moderation', authMiddleware, adminOrModeratorMiddleware, commentController.supprimerCommentaireMod);
 
-// 5. Routes legacy attendues par la suite d'audit de sécurité
-router.post('/:idComm/edit', commentController.editComment);
-router.post('/:idComm/delete', commentController.removeCommentApi);
+// 5. Routes legacy (édition/suppression) : authentification JWT obligatoire
+router.post('/:idComm/edit', authMiddleware, commentController.editComment);
+router.post('/:idComm/delete', authMiddleware, commentController.removeCommentApi);
 
 // 6. Routes REST modernes
 router.post('/:idComm/react', authMiddleware, commentController.handleCommentReaction);
-router.put('/:idComm', commentController.editComment);
-router.delete('/:idComm', commentController.removeCommentApi);
+router.put('/:idComm', authMiddleware, commentController.editComment);
+router.delete('/:idComm', authMiddleware, commentController.removeCommentApi);
 
 module.exports = router;

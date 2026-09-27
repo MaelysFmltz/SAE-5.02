@@ -103,9 +103,18 @@ function creerSignalement(db, idUserAuteur, typeContenu, idContenu, motif) {
     }
 
     if (typeContenu === 'message') {
-        const message = db.prepare('SELECT idMessage FROM Message WHERE idMessage = ?').get(idContenu);
+        const message = db.prepare('SELECT idMessage, idConversation FROM Message WHERE idMessage = ?').get(idContenu);
         if (!message) {
             return { succes: false, erreur: 'Message introuvable' };
+        }
+
+        const estMembreConversation = db.prepare(`
+            SELECT 1 FROM ConversationMembre
+            WHERE idConversation = ? AND idUser = ?
+        `).get(message.idConversation, idUserAuteur);
+
+        if (!estMembreConversation) {
+            return { succes: false, erreur: 'Vous ne pouvez signaler que les messages de vos propres conversations' };
         }
     }
 

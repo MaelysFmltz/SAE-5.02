@@ -34,7 +34,8 @@ function modifierStatutUtilisateur(req, res) {
         db,
         idUser,
         statut,
-        req.user.idUser
+        req.user.idUser,
+        operateurRole
     );
 
     if (!resultat.succes) {

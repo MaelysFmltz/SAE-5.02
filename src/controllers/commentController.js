@@ -125,13 +125,10 @@ async function addComment(req, res) {
     const apiModerne = estClientApiModerne(req);
     const user = extraireUtilisateur(req);
 
-    let idUser = user?.idUser;
-    if (!idUser && req.body?.idUser !== undefined) {
-      idUser = parseInt(req.body.idUser, 10);
+    if (!user?.idUser) {
+      return res.status(401).json({ error: 'Authentification requise.' });
     }
-    if (!idUser) {
-      idUser = 1;
-    }
+    const idUser = user.idUser;
 
     const idPubli = parseInt(req.body?.idPubli, 10);
     let idParent = null;
@@ -212,10 +209,10 @@ async function editComment(req, res) {
     const apiModerne = estClientApiModerne(req);
     const user = extraireUtilisateur(req);
 
-    let idUser = user?.idUser;
-    if (!idUser && req.body?.idUser !== undefined) {
-      idUser = parseInt(req.body.idUser, 10);
+    if (!user?.idUser) {
+      return res.status(401).json({ error: 'Authentification requise.' });
     }
+    const idUser = user.idUser;
 
     const idComm = parseInt(req.params.idComm, 10);
     const contenuCom = req.body?.contenuCom ? String(req.body.contenuCom).trim() : '';
@@ -230,13 +227,17 @@ async function editComment(req, res) {
 
     const updated = commentModel.updateComment(idComm, idUser, contenuCom);
 
+    if (!updated) {
+      if (!apiModerne) {
+        const idPubli = req.body?.idPubli || 1;
+        return res.redirect(302, `/publication/${idPubli}`);
+      }
+      return res.status(403).json({ error: 'Action refusée : vous n’êtes pas l’auteur.' });
+    }
+
     if (!apiModerne) {
       const idPubli = req.body?.idPubli || 1;
       return res.redirect(302, `/publication/${idPubli}`);
-    }
-
-    if (!updated && !req.body?.idUser) {
-      return res.status(403).json({ error: 'Action refusée : vous n’êtes pas l’auteur.' });
     }
 
     return res.status(200).json({ success: true, message: 'Commentaire modifié.' });
@@ -251,10 +252,10 @@ async function removeCommentApi(req, res) {
     const apiModerne = estClientApiModerne(req);
     const user = extraireUtilisateur(req);
 
-    let idUser = user?.idUser;
-    if (!idUser && req.body?.idUser !== undefined) {
-      idUser = parseInt(req.body.idUser, 10);
+    if (!user?.idUser) {
+      return res.status(401).json({ error: 'Authentification requise.' });
     }
+    const idUser = user.idUser;
 
     const userRole = (user?.role || req.user?.role || 'user').toLowerCase();
     const idComm = parseInt(req.params.idComm, 10);
@@ -272,9 +273,9 @@ async function removeCommentApi(req, res) {
     }
 
     const estModerateurOuAdmin = ['admin', 'superadmin', 'moderator', 'moderateur', 'modo'].includes(userRole);
-    const estAuteur = idUser && Number(comment.idUser) === Number(idUser);
+    const estAuteur = Number(comment.idUser) === Number(idUser);
 
-    if (!estAuteur && !estModerateurOuAdmin && idUser !== undefined && req.body?.idUser === undefined) {
+    if (!estAuteur && !estModerateurOuAdmin) {
       return res.status(403).json({ error: 'Action non autorisée sur ce commentaire.' });
     }
 

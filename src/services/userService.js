@@ -92,7 +92,7 @@ function obtenirUtilisateurs(db = dbInstance) {
   `).all(superPseudo, superEmail);
 }
 
-function modifierStatut(db = dbInstance, idUser, statut, idUserConnecte = null) {
+function modifierStatut(db = dbInstance, idUser, statut, idUserConnecte = null, operateurRole = null) {
   const statutsAutorises = ['actif', 'suspendu', 'supprime'];
 
   if (!statutsAutorises.includes(statut)) {
@@ -121,6 +121,13 @@ function modifierStatut(db = dbInstance, idUser, statut, idUserConnecte = null) 
     return {
       succes: false,
       erreur: 'Un administrateur ne peut pas modifier son propre statut'
+    };
+  }
+
+  if (utilisateur.role === 'admin' && !['admin', 'superadmin'].includes(operateurRole)) {
+    return {
+      succes: false,
+      erreur: 'Seul un administrateur peut modifier le statut d’un compte administrateur'
     };
   }
 

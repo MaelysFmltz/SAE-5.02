@@ -39,6 +39,23 @@ describe('Système de signalement', () => {
                 dateUpload DATETIME DEFAULT CURRENT_TIMESTAMP
             );
 
+            CREATE TABLE Conversation (
+                idConversation INTEGER PRIMARY KEY
+            );
+
+            CREATE TABLE ConversationMembre (
+                idConversation INTEGER NOT NULL,
+                idUser INTEGER NOT NULL,
+                PRIMARY KEY (idConversation, idUser)
+            );
+
+            CREATE TABLE Message (
+                idMessage INTEGER PRIMARY KEY,
+                idConversation INTEGER NOT NULL,
+                idUser INTEGER NOT NULL,
+                contenu TEXT NOT NULL
+            );
+
             CREATE TABLE Signalement (
                 idSignalement INTEGER PRIMARY KEY AUTOINCREMENT,
                 idUserAuteur INTEGER NOT NULL,
@@ -47,7 +64,8 @@ describe('Système de signalement', () => {
                         'publication',
                         'commentaire',
                         'utilisateur',
-                        'media'
+                        'media',
+                        'message'
                     )
                 ) NOT NULL,
                 idContenu INTEGER NOT NULL,
@@ -91,6 +109,16 @@ describe('Système de signalement', () => {
             )
             VALUES (?, ?, ?, ?)
         `).run(1, 1, 10, 'Commentaire de test');
+
+        db.exec(`
+            INSERT INTO Conversation (idConversation) VALUES (100);
+            INSERT INTO ConversationMembre (idConversation, idUser) VALUES (100, 1), (100, 2);
+        `);
+
+        db.prepare(`
+            INSERT INTO Message (idMessage, idConversation, idUser, contenu)
+            VALUES (?, ?, ?, ?)
+        `).run(1, 100, 1, 'Message privé de test');
     });
 
     afterEach(() => {
@@ -282,5 +310,23 @@ describe('Système de signalement', () => {
         `).get(resultatCreation.idSignalement);
 
         expect(signalement.statut).toBe('en_attente');
+    });
+
+    test('Un membre de la conversation peut signaler un message', () => {
+        const resultat = creerSignalement(db, 2, 'message', 1, 'Message inapproprié');
+        expect(resultat.succes).toBe(true);
+    });
+
+    test('Un utilisateur qui n’est pas membre de la conversation ne peut pas signaler un message', () => {
+        db.prepare(`
+            INSERT INTO Utilisateur (idUser) VALUES (?)
+        `).run(3);
+
+        const resultat = creerSignalement(db, 3, 'message', 1, 'Tentative de fuite de contenu privé');
+
+        expect(resultat.succes).toBe(false);
+        expect(resultat.erreur).toBe(
+            'Vous ne pouvez signaler que les messages de vos propres conversations'
+        );
     });
 });

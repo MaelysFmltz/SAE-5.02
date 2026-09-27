@@ -150,7 +150,7 @@ function authMiddleware(req, res, next) {
       ...decoded,
       idUser: decoded.idUser,
       pseudo: decoded.pseudo || user?.pseudo,
-      role: decoded.role || user?.role || 'user',
+      role: user?.role || decoded.role || 'user',
       statut: user?.statut || 'actif'
     };
 
