@@ -705,6 +705,270 @@
   <% } %>
 
   <script>
+    // =========================================
+    // RÉACTIONS DES PUBLICATIONS
+    // =========================================
+
+    async function reactionPublication(
+      idPubli,
+      type
+    ) {
+
+      try {
+
+        const response =
+          await fetch(
+            '/api/comments/react',
+            {
+              method: 'POST',
+
+              headers: {
+                'Content-Type': 'application/json'
+              },
+
+              credentials: 'same-origin',
+
+              body: JSON.stringify({
+                idPubli: idPubli,
+                type: type
+              })
+
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        if (response.status === 401) {
+
+          window.location.href =
+            '/login';
+
+          return;
+
+        }
+
+
+        if (!response.ok) {
+
+          alert(
+            data.error ||
+            'Erreur lors de la réaction'
+          );
+
+          return;
+
+        }
+
+
+        const article =
+          document.querySelector(
+            `[data-publication-id="${idPubli}"]`
+          );
+
+
+        if (!article) {
+          return;
+        }
+
+
+        const likeButton =
+          article.querySelector(
+            '.like-action'
+          );
+
+
+        const dislikeButton =
+          article.querySelector(
+            '.dislike-action'
+          );
+
+
+        if (likeButton) {
+
+          const count =
+            likeButton.querySelector(
+              '.reaction-count'
+            );
+
+
+          if (count) {
+
+            count.textContent =
+              data.likes ?? 0;
+
+          }
+
+        }
+
+
+        if (dislikeButton) {
+
+          const count =
+            dislikeButton.querySelector(
+              '.reaction-count'
+            );
+
+
+          if (count) {
+
+            count.textContent =
+              data.dislikes ?? 0;
+
+          }
+
+        }
+
+
+        if (likeButton) {
+
+          likeButton.classList.toggle(
+            'active',
+            data.userReaction === 'LIKE'
+          );
+
+        }
+
+
+        if (dislikeButton) {
+
+          dislikeButton.classList.toggle(
+            'active',
+            data.userReaction === 'DISLIKE'
+          );
+
+        }
+
+      } catch (error) {
+
+        console.error(
+          'Erreur réaction publication :',
+          error
+        );
+
+
+        alert(
+          'Une erreur est survenue lors de la réaction.'
+        );
+
+      }
+
+    }
+
+
+    // =========================================
+    // COMMENTAIRES
+    // =========================================
+
+    function ouvrirCommentaires(idPubli) {
+
+      window.location.href =
+        `/api/comments/view/${idPubli}`;
+
+    }
+
+
+    // =========================================
+    // REPARTAGE
+    // =========================================
+
+    async function repartager(idPubli, button) {
+
+      try {
+
+        const response =
+          await fetch(
+            `/api/publications/${idPubli}/repartage`,
+            {
+              method: 'POST',
+
+              headers: {
+                'Content-Type': 'application/json'
+              },
+
+              body: JSON.stringify({
+                visibilite: 1
+              })
+            }
+          );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+
+          throw new Error(
+            data.error || 'Erreur lors du repartage'
+          );
+
+        }
+
+        if (button) {
+
+          button.classList.toggle(
+            'active',
+            data.reposted
+          );
+
+          button.dataset.reposted =
+            data.reposted ? 'true' : 'false';
+
+          const label =
+            data.reposted
+              ? 'Annuler le repost'
+              : 'Reposter';
+
+          button.title = label;
+          button.setAttribute('aria-label', label);
+        }
+
+      } catch (error) {
+
+        console.error(error);
+
+        alert(
+          error.message ||
+          'Impossible de repartager cette publication.'
+        );
+
+      }
+
+    }
+
+
+    // =========================================
+    // COPIER LE LIEN
+    // =========================================
+
+    async function copierLien(idPubli) {
+
+      const url =
+        `${window.location.origin}/publication/${idPubli}`;
+
+
+      try {
+
+        await navigator.clipboard.writeText(url);
+
+        alert(
+          'Lien copié !'
+        );
+
+      } catch (error) {
+
+        console.error(error);
+
+        alert(
+          'Impossible de copier le lien.'
+        );
+
+      }
+
+    }
+
+
+
     function toggleReposts() {
       const publications = document.getElementById('profile-publications');
       const reposts = document.getElementById('profile-reposts');
