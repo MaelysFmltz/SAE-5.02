@@ -86,17 +86,45 @@
 }
 
 .btn-notif-header {
+  position: relative;
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   color: var(--profile-text-dimmed, #8b92a5);
-  cursor: not-allowed;
+  cursor: pointer;
   padding: 6px 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.6;
-  transition: opacity 0.2s;
+  text-decoration: none;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.btn-notif-header:hover {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+/* Pastille du nombre de notifications non lues */
+.nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--gradient-pixora);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-badge[hidden] {
+  display: none;
 }
 
 .feed-title {

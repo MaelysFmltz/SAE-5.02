@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications — Pixora</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/notification.css">
+</head>
+<body>
+  <div class="app-container">
+
+    <header class="notif-header">
+      <h1>Notifications</h1>
+    </header>
+
+    <main class="notif-list">
+      <% if (notifications && notifications.length > 0) { %>
+        <% notifications.forEach(n => { %>
+          <a href="<%= n.lien %>" class="notif-item <%= n.nonLues > 0 ? 'unread' : '' %>">
+            <span class="notif-text"><%= n.texte %></span>
+            <span class="notif-date">
+              <%= new Date(n.dateDerniere.replace(' ', 'T') + 'Z').toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) %>
+            </span>
+          </a>
+        <% }) %>
+      <% } else { %>
+        <p class="notif-empty">Aucune notification pour l'instant</p>
+      <% } %>
+    </main>
+
+    <%- include('navbar') %>
+  </div>
+</body>
+</html>

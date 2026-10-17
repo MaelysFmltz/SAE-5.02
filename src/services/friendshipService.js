@@ -1,3 +1,5 @@
+const notificationService = require('./notificationService');
+
 function sontAmis(db, idUser1, idUser2) {
     const resultat = db.prepare(`
         SELECT COUNT(*) AS nombre
@@ -39,6 +41,8 @@ function suivre(db, idUser, idUserCible) {
             INSERT INTO Abonnement (idUserAbonne, idUserSuivi)
             VALUES (?, ?)
         `).run(idUser, idUserCible);
+
+        notificationService.creerNotification(idUserCible, idUser, 'nouvel_abonne');
     }
 
     return true;
