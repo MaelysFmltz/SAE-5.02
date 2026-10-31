@@ -12,6 +12,9 @@
     box-sizing: border-box;
     background: #12111a;
     border-bottom: 1px solid #292738;
+    position: sticky;
+    top: 0;
+    z-index: 900;
 }
 
 .nav-brand {
