@@ -17,7 +17,8 @@ async function getMine(req, res) {
 async function getUnreadCount(req, res) {
   try {
     const count = await notificationService.countUnread(req.user.idUser);
-    return res.status(200).json({ count });
+    const messages = await notificationService.countUnreadMessages(req.user.idUser);
+    return res.status(200).json({ count, messages });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }

@@ -10,12 +10,12 @@ process.env.JWT_SECRET = 'test-secret-de-test-uniquement';
 
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
-
 const app = require('../src/app');
 const db = require('../src/config/database');
 const { seedSchema } = require('./testDb');
 const notificationService = require('../src/services/notificationService');
 const friendshipService = require('../src/services/friendshipService');
+const messageService = require('../src/services/messageService');
 
 let alice, bob, carla, dave;
 
@@ -56,6 +56,7 @@ beforeEach(() => {
 
 afterEach(() => {
   db.exec('DELETE FROM Notification');
+  db.exec('DELETE FROM Conversation');
   db.exec('DELETE FROM Utilisateur');
 });
 
@@ -96,15 +97,6 @@ describe('Création des notifications', () => {
     });
   });
 
-  test('crée une notification de nouveau message', () => {
-    notificationService.creerNotification(dave, alice, 'message', 5);
-
-    expect(lignesNotification(dave)[0]).toMatchObject({
-      type: 'message',
-      idSource: 5
-    });
-  });
-
   test('ne notifie pas quelqu\'un de ses propres actions', () => {
     const id = notificationService.creerNotification(alice, alice, 'like', 10);
 
@@ -118,13 +110,6 @@ describe('Création des notifications', () => {
 
     expect(second).toBeNull();
     expect(lignesNotification(dave)).toHaveLength(1);
-  });
-
-  test('autorise plusieurs messages de la même personne', () => {
-    notificationService.creerNotification(dave, alice, 'message', 5);
-    notificationService.creerNotification(dave, alice, 'message', 5);
-
-    expect(lignesNotification(dave)).toHaveLength(2);
   });
 
   test('un type inconnu ne plante pas et ne crée rien', () => {
@@ -189,18 +174,6 @@ describe('Regroupement par événement', () => {
     expect(liste[0].nombre).toBe(3);
     expect(liste[0].nbActeurs).toBe(1);
     expect(liste[0].texte).toBe('alice a commenté votre publication');
-  });
-
-  test('groupe les messages d\'une conversation et en indique le nombre', async () => {
-    notificationService.creerNotification(dave, alice, 'message', 5);
-    notificationService.creerNotification(dave, alice, 'message', 5);
-    notificationService.creerNotification(dave, alice, 'message', 5);
-
-    const liste = await notificationService.getMyNotifications(dave);
-
-    expect(liste).toHaveLength(1);
-    expect(liste[0].texte).toBe('alice vous a envoyé 3 messages');
-    expect(liste[0].lien).toBe('/messages/5');
   });
 
   test('construit les bons liens', async () => {
@@ -298,7 +271,7 @@ describe('API /api/notifications', () => {
       .set('Authorization', `Bearer ${tokenPour(dave, 'dave')}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ count: 1 });
+    expect(res.body).toEqual({ count: 1, messages: 0 });
   });
 
   test('PUT /read marque tout comme lu', async () => {
@@ -314,7 +287,7 @@ describe('API /api/notifications', () => {
     const count = await request(app)
       .get('/api/notifications/unread-count')
       .set('Authorization', `Bearer ${token}`);
-    expect(count.body).toEqual({ count: 0 });
+    expect(count.body).toEqual({ count: 0, messages: 0 });
   });
 
   test('PUT /read refuse un type invalide', async () => {
@@ -355,5 +328,236 @@ describe('Déclenchement depuis friendshipService.suivre', () => {
     friendshipService.suivre(db, alice, alice);
 
     expect(lignesNotification(alice)).toHaveLength(0);
+  });
+});
+
+describe('notifierLike et notifierCommentaire', () => {
+  function creerPublication(idUser) {
+    const info = db.prepare(
+      'INSERT INTO Publication (idUser, contenuPub) VALUES (?, ?)'
+    ).run(idUser, 'une publication');
+    return Number(info.lastInsertRowid);
+  }
+
+  function creerCommentaire(idUser, idPubli, idParent = null) {
+    const info = db.prepare(
+      'INSERT INTO Commentaire (idUser, idPubli, idParent, contenuCom) VALUES (?, ?, ?, ?)'
+    ).run(idUser, idPubli, idParent, 'un commentaire');
+    return Number(info.lastInsertRowid);
+  }
+
+  function creerReaction(idUser, idPubli, estLike) {
+    db.prepare(
+      'INSERT INTO LikeDislike (idUser, idPubli, estLike) VALUES (?, ?, ?)'
+    ).run(idUser, idPubli, estLike);
+  }
+
+  function creerReactionCommentaire(idUser, idComm, estLike) {
+    db.prepare(
+      'INSERT INTO LikeCommentaire (idUser, idComm, estLike) VALUES (?, ?, ?)'
+    ).run(idUser, idComm, estLike);
+  }
+
+  test('un like notifie l\'auteur de la publication', () => {
+    const idPubli = creerPublication(dave);
+    creerReaction(alice, idPubli, 1);
+
+    notificationService.notifierLike(idPubli, alice);
+
+    expect(lignesNotification(dave)[0]).toMatchObject({
+      type: 'like',
+      idActeur: alice,
+      idSource: idPubli
+    });
+  });
+
+  test('un dislike ne notifie personne', () => {
+    const idPubli = creerPublication(dave);
+    creerReaction(alice, idPubli, 0);
+
+    notificationService.notifierLike(idPubli, alice);
+
+    expect(lignesNotification(dave)).toHaveLength(0);
+  });
+
+  test('un like retiré (plus aucune réaction) ne notifie personne', () => {
+    const idPubli = creerPublication(dave);
+
+    notificationService.notifierLike(idPubli, alice);
+
+    expect(lignesNotification(dave)).toHaveLength(0);
+  });
+
+  test('un like de commentaire notifie l\'auteur du commentaire', async () => {
+    const idPubli = creerPublication(dave);
+    const idComm = creerCommentaire(bob, idPubli);
+    creerReactionCommentaire(alice, idComm, 1);
+
+    notificationService.notifierLikeCommentaire(idComm, alice);
+
+    expect(lignesNotification(bob)[0]).toMatchObject({
+      type: 'like_commentaire',
+      idActeur: alice,
+      idSource: idPubli
+    });
+    expect(lignesNotification(dave)).toHaveLength(0);
+
+    const liste = await notificationService.getMyNotifications(bob);
+    expect(liste[0].texte).toBe('alice a aimé votre commentaire');
+    expect(liste[0].lien).toBe(`/publication/${idPubli}`);
+  });
+
+  test('un dislike ou un like retiré sur un commentaire ne notifie personne', () => {
+    const idPubli = creerPublication(dave);
+    const idComm = creerCommentaire(bob, idPubli);
+
+    notificationService.notifierLikeCommentaire(idComm, alice);
+    creerReactionCommentaire(carla, idComm, 0);
+    notificationService.notifierLikeCommentaire(idComm, carla);
+
+    expect(lignesNotification(bob)).toHaveLength(0);
+  });
+
+  test('liker son propre commentaire ne notifie personne', () => {
+    const idPubli = creerPublication(dave);
+    const idComm = creerCommentaire(bob, idPubli);
+    creerReactionCommentaire(bob, idComm, 1);
+
+    notificationService.notifierLikeCommentaire(idComm, bob);
+
+    expect(lignesNotification(bob)).toHaveLength(0);
+  });
+
+  test('un commentaire notifie l\'auteur de la publication', () => {
+    const idPubli = creerPublication(dave);
+
+    notificationService.notifierCommentaire(idPubli, alice);
+
+    expect(lignesNotification(dave)[0]).toMatchObject({
+      type: 'commentaire',
+      idSource: idPubli
+    });
+  });
+
+  test('une réponse notifie l\'auteur du commentaire parent, pas celui de la publication', () => {
+    const idPubli = creerPublication(dave);
+    const idParent = creerCommentaire(bob, idPubli);
+
+    notificationService.notifierCommentaire(idPubli, alice, idParent);
+
+    expect(lignesNotification(bob)[0]).toMatchObject({
+      type: 'reponse_commentaire',
+      idActeur: alice,
+      idSource: idPubli
+    });
+    expect(lignesNotification(dave)).toHaveLength(0);
+  });
+
+  test('commenter sa propre publication ne notifie personne', () => {
+    const idPubli = creerPublication(dave);
+
+    notificationService.notifierCommentaire(idPubli, dave);
+
+    expect(lignesNotification(dave)).toHaveLength(0);
+  });
+
+  test('une publication inexistante ne plante pas', () => {
+    expect(() => notificationService.notifierLike(99999, alice)).not.toThrow();
+  });
+});
+
+describe('Messages non lus (pastille Messagerie)', () => {
+  function creerConversation(idUsers, dateRejoint = null) {
+    const info = db.prepare('INSERT INTO Conversation (titreGroupe) VALUES (NULL)').run();
+    const idConversation = Number(info.lastInsertRowid);
+    idUsers.forEach((idUser) => {
+      if (dateRejoint) {
+        db.prepare(
+          'INSERT INTO ConversationMembre (idConversation, idUser, dateRejoint) VALUES (?, ?, ?)'
+        ).run(idConversation, idUser, dateRejoint);
+      } else {
+        db.prepare(
+          'INSERT INTO ConversationMembre (idConversation, idUser) VALUES (?, ?)'
+        ).run(idConversation, idUser);
+      }
+    });
+    return idConversation;
+  }
+
+  function envoyerMessage(idConversation, idUser) {
+    db.prepare(
+      'INSERT INTO Message (idConversation, idUser, contenu) VALUES (?, ?, ?)'
+    ).run(idConversation, idUser, 'salut');
+  }
+
+  test('compte les conversations avec des messages non lus reçus', async () => {
+    const conv1 = creerConversation([alice, dave]);
+    const conv2 = creerConversation([bob, dave]);
+    envoyerMessage(conv1, alice);
+    envoyerMessage(conv1, alice);
+    envoyerMessage(conv2, bob);
+
+    expect(await notificationService.countUnreadMessages(dave)).toBe(2);
+  });
+
+  test('ne compte pas ses propres messages', async () => {
+    const conv = creerConversation([alice, dave]);
+    envoyerMessage(conv, alice);
+
+    expect(await notificationService.countUnreadMessages(alice)).toBe(0);
+  });
+
+  test('ne compte plus une conversation une fois ouverte', async () => {
+    const conv = creerConversation([alice, dave]);
+    envoyerMessage(conv, alice);
+
+    await messageService.markAsRead(conv, dave);
+
+    expect(await notificationService.countUnreadMessages(dave)).toBe(0);
+  });
+
+  test('un nouveau message après lecture redonne une pastille', async () => {
+    const conv = creerConversation([alice, dave]);
+    envoyerMessage(conv, alice);
+    await messageService.markAsRead(conv, dave);
+
+    envoyerMessage(conv, alice);
+
+    expect(await notificationService.countUnreadMessages(dave)).toBe(1);
+  });
+
+  test('dans un groupe, lire la conversation ne la marque lue que pour soi', async () => {
+    const conv = creerConversation([alice, bob, carla]);
+    envoyerMessage(conv, alice);
+
+    await messageService.markAsRead(conv, bob);
+
+    expect(await notificationService.countUnreadMessages(bob)).toBe(0);
+    expect(await notificationService.countUnreadMessages(carla)).toBe(1);
+  });
+
+  test('un membre arrivé après l\'envoi ne voit pas les anciens messages comme non lus', async () => {
+    const conv = creerConversation([alice, dave], '2999-01-01 00:00:00');
+    envoyerMessage(conv, alice);
+
+    expect(await notificationService.countUnreadMessages(dave)).toBe(0);
+  });
+
+  test('ne compte pas les conversations dont on n\'est pas membre', async () => {
+    const conv = creerConversation([alice, dave]);
+    envoyerMessage(conv, alice);
+
+    expect(await notificationService.countUnreadMessages(carla)).toBe(0);
+  });
+
+  test('l\'API renvoie aussi le nombre de conversations non lues', async () => {
+    const conv = creerConversation([alice, dave]);
+    envoyerMessage(conv, alice);
+
+    const res = await request(app)
+      .get('/api/notifications/unread-count')
+      .set('Authorization', `Bearer ${tokenPour(dave, 'dave')}`);
+
+    expect(res.body).toEqual({ count: 0, messages: 1 });
   });
 });

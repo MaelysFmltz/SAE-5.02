@@ -11,14 +11,18 @@ const notificationModel = require('../models/notificationModel');
 const TYPES_VALIDES = [
   'nouvel_abonne',
   'like',
-  'message',
+  'like_commentaire',
   'reaction_message',
   'commentaire',
   'reponse_commentaire'
 ];
 
 // Pour ces types, on ne notifie qu'une fois par personne (évite like / unlike / like)
-const TYPES_SANS_DOUBLON = ['nouvel_abonne', 'like'];
+const TYPES_SANS_DOUBLON = [
+  'nouvel_abonne', 
+  'like',
+  'like_commentaire'
+];
 
 /**
  * Crée une notification. Volontairement SYNCHRONE (pas de await nécessaire)
@@ -71,16 +75,14 @@ function construireTexte(groupe) {
       return `${sujet} ${pluriel ? 'vous suivent' : 'vous suit'} maintenant`;
     case 'like':
       return `${sujet} ${pluriel ? 'ont aimé' : 'a aimé'} votre publication`;
+    case 'like_commentaire':
+      return `${sujet} ${pluriel ? 'ont aimé' : 'a aimé'} votre commentaire`;
     case 'commentaire':
       return `${sujet} ${pluriel ? 'ont commenté' : 'a commenté'} votre publication`;
     case 'reponse_commentaire':
       return `${sujet} ${pluriel ? 'ont répondu' : 'a répondu'} à votre commentaire`;
     case 'reaction_message':
       return `${sujet} ${pluriel ? 'ont réagi' : 'a réagi'} à votre message`;
-    case 'message':
-      return groupe.nombre > 1
-        ? `${acteur} vous a envoyé ${groupe.nombre} messages`
-        : `${acteur} vous a envoyé un message`;
     default:
       return 'Nouvelle notification';
   }
@@ -96,10 +98,10 @@ function construireLien(groupe) {
         ? `/profile/${encodeURIComponent(groupe.dernierActeur)}`
         : '/profile';
     case 'like':
+    case 'like_commentaire':
     case 'commentaire':
     case 'reponse_commentaire':
       return `/publication/${groupe.idSource}`;
-    case 'message':
     case 'reaction_message':
       return `/messages/${groupe.idSource}`;
     default:
@@ -150,11 +152,84 @@ async function markAsRead(idUser, type, idSource) {
   return notificationModel.markGroupAsRead(idUser, type, source);
 }
 
+/**
+ * À appeler après chaque réaction sur une publication (like, dislike ou retrait).
+ * Notifie l'auteur uniquement si l'état actuel est un LIKE.
+ */
+function notifierLike(idPubli, idActeur) {
+  try {
+    if (!notificationModel.isLikedBy(idPubli, idActeur)) {
+      return;
+    }
+
+    const idAuteur = notificationModel.getPublicationAuthor(idPubli);
+    if (idAuteur) {
+      creerNotification(idAuteur, idActeur, 'like', idPubli);
+    }
+  } catch (err) {
+    console.error('Erreur notification like :', err.message);
+  }
+}
+
+/**
+ * À appeler après chaque réaction sur un commentaire (like, dislike ou retrait).
+ * Notifie l'auteur du commentaire uniquement si l'état actuel est un LIKE.
+ * idSource = la publication, pour que la notification mène à la bonne page.
+ */
+function notifierLikeCommentaire(idComm, idActeur) {
+  try {
+    if (!notificationModel.isCommentLikedBy(idComm, idActeur)) {
+      return;
+    }
+
+    const commentaire = notificationModel.getCommentInfo(idComm);
+    if (commentaire) {
+      creerNotification(commentaire.idUser, idActeur, 'like_commentaire', commentaire.idPubli);
+    }
+  } catch (err) {
+    console.error('Erreur notification like commentaire :', err.message);
+  }
+}
+
+/**
+ * À appeler après la création d'un commentaire.
+ * Sans idParent : notifie l'auteur de la publication ('commentaire').
+ * Avec idParent : notifie l'auteur du commentaire parent ('reponse_commentaire').
+ */
+function notifierCommentaire(idPubli, idActeur, idParent = null) {
+  try {
+    if (idParent) {
+      const idAuteurParent = notificationModel.getCommentAuthor(idParent);
+      if (idAuteurParent) {
+        creerNotification(idAuteurParent, idActeur, 'reponse_commentaire', idPubli);
+      }
+    } else {
+      const idAuteur = notificationModel.getPublicationAuthor(idPubli);
+      if (idAuteur) {
+        creerNotification(idAuteur, idActeur, 'commentaire', idPubli);
+      }
+    }
+  } catch (err) {
+    console.error('Erreur notification commentaire :', err.message);
+  }
+}
+
+/**
+ * Nombre de conversations avec des messages non lus (pastille du bouton Messagerie)
+ */
+async function countUnreadMessages(idUser) {
+  return notificationModel.countUnreadMessageConversations(idUser);
+}
+
 module.exports = {
   TYPES_VALIDES,
   creerNotification,
+  notifierLike,
+  notifierLikeCommentaire,
+  notifierCommentaire,
   getMyNotifications,
   countUnread,
+  countUnreadMessages,
   markAllAsRead,
   markAsRead
 };

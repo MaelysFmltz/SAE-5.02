@@ -94,11 +94,80 @@ function markGroupAsRead(idUser, type, idSource = null) {
   ).run(idUser, type, idSource);
 }
 
+/**
+ * Retourne l'id de l'auteur d'une publication (null si elle n'existe pas)
+ */
+function getPublicationAuthor(idPubli) {
+  const row = db.prepare('SELECT idUser FROM Publication WHERE idPubli = ?').get(idPubli);
+  return row ? row.idUser : null;
+}
+
+/**
+ * Retourne l'id de l'auteur d'un commentaire (null s'il n'existe pas)
+ */
+function getCommentAuthor(idComm) {
+  const row = db.prepare('SELECT idUser FROM Commentaire WHERE idComm = ?').get(idComm);
+  return row ? row.idUser : null;
+}
+
+/**
+ * Vrai si cet utilisateur a actuellement un LIKE (et pas un dislike) sur la publication
+ */
+function isLikedBy(idPubli, idUser) {
+  const row = db.prepare(
+    'SELECT estLike FROM LikeDislike WHERE idUser = ? AND idPubli = ?'
+  ).get(idUser, idPubli);
+  return !!row && row.estLike === 1;
+}
+
+/**
+ * Vrai si cet utilisateur a actuellement un LIKE (et pas un dislike) sur ce commentaire
+ */
+function isCommentLikedBy(idComm, idUser) {
+  const row = db.prepare(
+    'SELECT estLike FROM LikeCommentaire WHERE idUser = ? AND idComm = ?'
+  ).get(idUser, idComm);
+  return !!row && row.estLike === 1;
+}
+
+/**
+ * Retourne l'auteur et la publication d'un commentaire (undefined s'il n'existe pas)
+ */
+function getCommentInfo(idComm) {
+  return db.prepare(
+    'SELECT idUser, idPubli FROM Commentaire WHERE idComm = ?'
+  ).get(idComm);
+}
+
+/**
+ * Nombre de conversations contenant au moins un message non lu PAR CET UTILISATEUR :
+ * message d'un autre, plus récent que son marque-page, et envoyé depuis son arrivée
+ * dans la conversation. Sert à la pastille du bouton Messagerie.
+ */
+function countUnreadMessageConversations(idUser) {
+  const row = db.prepare(
+    `SELECT COUNT(DISTINCT m.idConversation) AS total
+     FROM ConversationMembre cm
+     JOIN Message m ON m.idConversation = cm.idConversation
+     WHERE cm.idUser = ?
+       AND m.idUser != ?
+       AND m.idMessage > cm.idDernierMessageLu
+       AND m.dateEnvoi >= cm.dateRejoint`
+  ).get(idUser, idUser);
+  return row.total;
+}
+
 module.exports = {
   createNotification,
   exists,
   getGroupedByUser,
   countUnreadGroups,
+  countUnreadMessageConversations,
   markAllAsRead,
-  markGroupAsRead
+  markGroupAsRead,
+  getPublicationAuthor,
+  getCommentAuthor,
+  getCommentInfo,
+  isLikedBy,
+  isCommentLikedBy
 };
