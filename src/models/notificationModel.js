@@ -6,6 +6,12 @@
  */
 const db = require('../config/database');
 
+// Les notifications liées à une publication supprimée sont ignorées (lien mort sinon)
+const PUBLICATION_EXISTE = `
+  (n.type NOT IN ('like', 'like_commentaire', 'commentaire', 'reponse_commentaire')
+   OR EXISTS (SELECT 1 FROM Publication p WHERE p.idPubli = n.idSource))
+`;
+
 /**
  * Enregistre une notification et retourne son id
  */
@@ -54,6 +60,7 @@ function getGroupedByUser(idUser) {
       ) AS dernierActeur
     FROM Notification n
     WHERE n.idUser = ?
+      AND ${PUBLICATION_EXISTE}
     GROUP BY n.type, n.idSource
     ORDER BY dateDerniere DESC
     LIMIT 50
@@ -67,9 +74,10 @@ function getGroupedByUser(idUser) {
 function countUnreadGroups(idUser) {
   const row = db.prepare(
     `SELECT COUNT(*) AS total FROM (
-       SELECT 1 FROM Notification
-       WHERE idUser = ? AND lu = 0
-       GROUP BY type, idSource
+       SELECT 1 FROM Notification n
+       WHERE n.idUser = ? AND n.lu = 0
+         AND ${PUBLICATION_EXISTE}
+       GROUP BY n.type, n.idSource
      )`
   ).get(idUser);
   return row.total;
@@ -92,6 +100,18 @@ function markGroupAsRead(idUser, type, idSource = null) {
     `UPDATE Notification SET lu = 1
      WHERE idUser = ? AND type = ? AND idSource IS ? AND lu = 0`
   ).run(idUser, type, idSource);
+}
+
+/**
+ * Vrai si l'un des deux utilisateurs a bloqué l'autre
+ */
+function sontBloques(idUser1, idUser2) {
+  const row = db.prepare(
+    `SELECT 1 FROM Blocage
+     WHERE (idUserBloqueur = ? AND idUserBloque = ?)
+        OR (idUserBloqueur = ? AND idUserBloque = ?)`
+  ).get(idUser1, idUser2, idUser2, idUser1);
+  return !!row;
 }
 
 /**
@@ -160,6 +180,7 @@ function countUnreadMessageConversations(idUser) {
 module.exports = {
   createNotification,
   exists,
+  sontBloques,
   getGroupedByUser,
   countUnreadGroups,
   countUnreadMessageConversations,

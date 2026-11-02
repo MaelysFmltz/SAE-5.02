@@ -52,6 +52,8 @@ beforeEach(() => {
   bob = creerUtilisateur('bob');
   carla = creerUtilisateur('carla');
   dave = creerUtilisateur('dave');
+  // Publications 10 et 11 réelles : les notifications vers une publication supprimée sont ignorées
+  db.prepare("INSERT INTO Publication (idPubli, idUser, contenuPub) VALUES (10, ?, 'p10'), (11, ?, 'p11')").run(dave, dave);
 });
 
 afterEach(() => {
@@ -559,5 +561,118 @@ describe('Messages non lus (pastille Messagerie)', () => {
       .set('Authorization', `Bearer ${tokenPour(dave, 'dave')}`);
 
     expect(res.body).toEqual({ count: 0, messages: 1 });
+  });
+});
+
+describe('Sécurité : blocages, visibilité et publications supprimées', () => {
+  function bloquer(idBloqueur, idBloque) {
+    db.prepare('INSERT INTO Blocage (idUserBloqueur, idUserBloque) VALUES (?, ?)').run(idBloqueur, idBloque);
+  }
+
+  function creerCommentaire(idUser, idPubli) {
+    const info = db.prepare(
+      'INSERT INTO Commentaire (idUser, idPubli, contenuCom) VALUES (?, ?, ?)'
+    ).run(idUser, idPubli, 'un commentaire');
+    return Number(info.lastInsertRowid);
+  }
+
+  afterEach(() => {
+    db.exec('DELETE FROM Blocage');
+  });
+
+  test('aucune notification entre deux utilisateurs bloqués (dans les deux sens)', () => {
+    bloquer(dave, alice);
+
+    expect(notificationService.creerNotification(dave, alice, 'like', 10)).toBeNull();
+    expect(notificationService.creerNotification(alice, dave, 'nouvel_abonne')).toBeNull();
+    expect(lignesNotification(dave)).toHaveLength(0);
+    expect(lignesNotification(alice)).toHaveLength(0);
+  });
+
+  test('un utilisateur bloqué ne peut pas suivre celui qui l\'a bloqué', () => {
+    bloquer(dave, alice);
+
+    expect(friendshipService.suivre(db, alice, dave)).toBe(false);
+    expect(lignesNotification(dave)).toHaveLength(0);
+  });
+
+  test('API : un utilisateur bloqué ne peut pas répondre au commentaire de celui qui l\'a bloqué', async () => {
+    const idComm = creerCommentaire(bob, 10);
+    bloquer(bob, alice);
+
+    const res = await request(app)
+      .post('/api/comments')
+      .set('Authorization', `Bearer ${tokenPour(alice, 'alice')}`)
+      .set('Accept', 'application/json')
+      .send({ idPubli: 10, idParent: idComm, contenuCom: 'coucou' });
+
+    expect(res.status).toBe(403);
+    expect(lignesNotification(bob)).toHaveLength(0);
+  });
+
+  test('API : un utilisateur bloqué ne peut pas liker le commentaire de celui qui l\'a bloqué', async () => {
+    const idComm = creerCommentaire(bob, 10);
+    bloquer(bob, alice);
+
+    const res = await request(app)
+      .post(`/api/comments/${idComm}/react`)
+      .set('Authorization', `Bearer ${tokenPour(alice, 'alice')}`)
+      .send({ type: 'LIKE' });
+
+    expect(res.status).toBe(403);
+    expect(lignesNotification(bob)).toHaveLength(0);
+  });
+
+  test('API : impossible de liker ou commenter une publication privée sans être ami', async () => {
+    db.prepare('UPDATE Publication SET visibilite = 0 WHERE idPubli = 10').run();
+    const token = tokenPour(alice, 'alice');
+
+    const like = await request(app)
+      .post('/api/comments/react')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ idPubli: 10, type: 'LIKE' });
+    const commentaire = await request(app)
+      .post('/api/comments')
+      .set('Authorization', `Bearer ${token}`)
+      .set('Accept', 'application/json')
+      .send({ idPubli: 10, contenuCom: 'je ne devrais pas voir ça' });
+
+    expect(like.status).toBe(404);
+    expect(commentaire.status).toBe(404);
+    expect(lignesNotification(dave)).toHaveLength(0);
+  });
+
+  test('API : liker une publication inexistante renvoie 404 (et non 500)', async () => {
+    const res = await request(app)
+      .post('/api/comments/react')
+      .set('Authorization', `Bearer ${tokenPour(alice, 'alice')}`)
+      .send({ idPubli: 99999, type: 'LIKE' });
+
+    expect(res.status).toBe(404);
+  });
+
+  test('les notifications d\'une publication supprimée ne sont plus affichées ni comptées', async () => {
+    notificationService.creerNotification(dave, alice, 'like', 10);
+    notificationService.creerNotification(dave, bob, 'like', 11);
+    db.prepare('DELETE FROM Publication WHERE idPubli = 10').run();
+
+    const liste = await notificationService.getMyNotifications(dave);
+    expect(liste).toHaveLength(1);
+    expect(liste[0].idSource).toBe(11);
+    expect(await notificationService.countUnread(dave)).toBe(1);
+  });
+
+  test('API : une erreur interne ne renvoie pas le détail SQL au client', async () => {
+    const espion = jest.spyOn(notificationService, 'getMyNotifications').mockRejectedValue(new Error('no such column: n.idActeur'));
+    const console_ = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await request(app)
+      .get('/api/notifications')
+      .set('Authorization', `Bearer ${tokenPour(dave, 'dave')}`);
+
+    expect(res.status).toBe(500);
+    expect(JSON.stringify(res.body)).not.toMatch(/idActeur|column/);
+    espion.mockRestore();
+    console_.mockRestore();
   });
 });

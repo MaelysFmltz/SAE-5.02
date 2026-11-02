@@ -28,6 +28,12 @@ describe("Gestion des amitiés (abonnements réciproques)", () => {
                 PRIMARY KEY (idUserAbonne, idUserSuivi)
             );
 
+            CREATE TABLE Blocage (
+                idUserBloqueur INTEGER NOT NULL,
+                idUserBloque INTEGER NOT NULL,
+                PRIMARY KEY (idUserBloqueur, idUserBloque)
+            );
+
             INSERT INTO Utilisateur (idUser, pseudo)
             VALUES (1, 'alice'), (2, 'bob'), (3, 'chloe'), (4, 'david');
 
@@ -41,6 +47,12 @@ describe("Gestion des amitiés (abonnements réciproques)", () => {
     });
 
     describe('suivre', () => {
+
+        test('refuse l\'abonnement si l\'un a bloqué l\'autre', () => {
+            db.prepare('INSERT INTO Blocage (idUserBloqueur, idUserBloque) VALUES (4, 3)').run();
+            expect(suivre(db, 3, 4)).toBe(false);
+            expect(suivre(db, 4, 3)).toBe(false);
+        });
 
         test('crée un nouvel abonnement', () => {
             expect(suivre(db, 3, 2)).toBe(true);

@@ -168,9 +168,17 @@ async function addComment(req, res) {
       }
     } catch {}
 
+    // On ne commente pas une publication qu'on ne peut pas voir (inexistante, privée hors amis)
+    if (!postService.peutVoirPublication(db, idPubli, idUser)) {
+      return res.status(404).json({ error: 'Publication introuvable.' });
+    }
+
     let parentId = idParent || null;
     if (parentId) {
       const parentComment = commentModel.getCommentById(parentId);
+      if (parentComment && sontBloques(parentComment.idUser, idUser)) {
+        return res.status(403).json({ error: 'Action refusée : interaction impossible avec cet utilisateur (blocage actif).' });
+      }
       if (parentComment && parentComment.idParent) {
         parentId = parentComment.idParent;
       }
@@ -350,6 +358,10 @@ async function handleReaction(req, res) {
       }
     } catch {}
 
+    if (!postService.peutVoirPublication(db, idPubli, idUser)) {
+      return res.status(404).json({ error: 'Publication introuvable.' });
+    }
+
     const result = reactionModel.toggleReaction(idUser, idPubli, type);
 
     notificationService.notifierLike(idPubli, idUser);
@@ -370,6 +382,15 @@ async function handleCommentReaction(req, res) {
 
     if (isNaN(idComm)) {
       return res.status(400).json({ error: 'ID commentaire invalide.' });
+    }
+
+    const commentaire = commentModel.getCommentById(idComm);
+    if (!commentaire || !postService.peutVoirPublication(db, commentaire.idPubli, idUser)) {
+      return res.status(404).json({ error: 'Commentaire introuvable.' });
+    }
+
+    if (sontBloques(commentaire.idUser, idUser)) {
+      return res.status(403).json({ error: 'Action refusée : blocage actif.' });
     }
 
     const result = reactionModel.toggleCommentReaction(idUser, idComm, type);

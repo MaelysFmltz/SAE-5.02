@@ -25,6 +25,15 @@ const TYPES_SANS_DOUBLON = [
 ];
 
 /**
+ * Erreur dont le message peut être renvoyé tel quel au client (saisie invalide)
+ */
+function erreurValidation(message) {
+  const err = new Error(message);
+  err.estValidation = true;
+  return err;
+}
+
+/**
  * Crée une notification. Volontairement SYNCHRONE (pas de await nécessaire)
  * et qui ne plante JAMAIS : une notification ratée ne doit pas empêcher
  * un like ou un message de fonctionner chez les autres.
@@ -42,6 +51,11 @@ function creerNotification(idDestinataire, idActeur, type, idSource = null) {
 
     // On ne se notifie pas soi-même
     if (!idDestinataire || idDestinataire === idActeur) {
+      return null;
+    }
+
+    // Aucune notification entre deux utilisateurs dont l'un a bloqué l'autre
+    if (notificationModel.sontBloques(idDestinataire, idActeur)) {
       return null;
     }
 
@@ -141,12 +155,12 @@ async function markAsRead(idUser, type, idSource) {
   }
 
   if (!TYPES_VALIDES.includes(type)) {
-    throw new Error('Type de notification invalide');
+    throw erreurValidation('Type de notification invalide');
   }
 
   const source = idSource === undefined || idSource === null ? null : Number(idSource);
   if (source !== null && !Number.isInteger(source)) {
-    throw new Error('Identifiant de source invalide');
+    throw erreurValidation('Identifiant de source invalide');
   }
 
   return notificationModel.markGroupAsRead(idUser, type, source);

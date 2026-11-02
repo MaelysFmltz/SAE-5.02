@@ -29,6 +29,18 @@ function suivre(db, idUser, idUserCible) {
         return false;
     }
 
+    // Pas d'abonnement possible si l'un a bloqué l'autre (le blocage supprime déjà les abonnements)
+    const blocage = db.prepare(`
+        SELECT 1
+        FROM Blocage
+        WHERE (idUserBloqueur = ? AND idUserBloque = ?)
+           OR (idUserBloqueur = ? AND idUserBloque = ?)
+    `).get(idUser, idUserCible, idUserCible, idUser);
+
+    if (blocage) {
+        return false;
+    }
+
     const dejaAbonne = db.prepare(`
         SELECT 1
         FROM Abonnement
