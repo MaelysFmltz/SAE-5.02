@@ -500,6 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
         submitButton.textContent = 'Publication...';
 
         const formData = new FormData(form);
+        formData.set('commentairesActifs', document.getElementById('commentaires-actifs')?.checked ? '1' : '0');
         formData.delete('media');
         formData.append('media', file);
         if (editedFile && validation.type === 'image') formData.append('editedMedia', 'true');

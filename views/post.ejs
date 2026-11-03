@@ -6,6 +6,7 @@
   <title>Pixora — Publication #<%= post.idPubli %></title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/feed.css">
+  <link rel="stylesheet" href="/css/publication-actions.css">
   <style>
     body {
       background-color: #000;
@@ -343,7 +344,7 @@
   <div class="app-container">
 
     <main class="post-container">
-      <div class="post-card" data-post-id="<%= post.idPubli %>">
+      <div class="post-card" data-post-id="<%= post.idPubli %>" data-publication-id="<%= post.idPubli %>">
         
         <div class="post-header">
           <a href="/profile/<%= post.auteurPseudo %>" class="post-author">
@@ -378,6 +379,42 @@
           <% } %>
         </div>
 
+        <% if (post.datePubli) { %>
+          <%
+            const rawPostDate = String(post.datePubli);
+            const normalizedPostDate = rawPostDate.includes('T') ? rawPostDate : `${rawPostDate.replace(' ', 'T')}Z`;
+            const parsedPostDate = new Date(normalizedPostDate);
+            const postDateIso = Number.isNaN(parsedPostDate.getTime()) ? '' : parsedPostDate.toISOString();
+            const postDateLabel = postDateIso
+              ? parsedPostDate.toLocaleString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+              : rawPostDate;
+          %>
+          <time class="publication-date" datetime="<%= postDateIso %>">Publié le <%= postDateLabel %></time>
+        <% } %>
+
+        <% if (isOwner) { %>
+          <div class="publication-owner-tools post-owner-tools">
+            <button type="button" class="publication-owner-tool" data-publication-action="edit-caption">
+              <%= post.contenuPub ? '✏️ Modifier la légende' : '＋ Ajouter une légende' %>
+            </button>
+            <button type="button" class="publication-owner-tool danger" data-publication-action="delete-caption" <%= post.contenuPub ? '' : 'hidden' %>>
+              Supprimer la légende
+            </button>
+            <button type="button" class="publication-owner-tool" data-publication-action="toggle-comments" data-enabled="<%= Number(post.commentairesActifs ?? 1) === 1 ? '1' : '0' %>">
+              <%= Number(post.commentairesActifs ?? 1) === 1 ? 'Désactiver les commentaires' : 'Activer les commentaires' %>
+            </button>
+            <span class="publication-action-feedback" data-publication-feedback role="status" aria-live="polite"></span>
+          </div>
+          <div class="publication-caption-editor" data-caption-editor hidden>
+            <label class="publication-caption-label" for="post-caption-<%= post.idPubli %>">Légende de la publication</label>
+            <textarea id="post-caption-<%= post.idPubli %>" data-caption-input maxlength="5000" rows="3"><%= post.contenuPub || '' %></textarea>
+            <div class="publication-caption-editor-actions">
+              <button type="button" data-publication-action="save-caption">Enregistrer</button>
+              <button type="button" data-publication-action="cancel-caption">Annuler</button>
+            </div>
+          </div>
+        <% } %>
+
         <div class="post-photo">
           <%- include('partials/mediaBlock', {
             publication: post,
@@ -386,19 +423,27 @@
           }) %>
         </div>
 
-        <% if (post.contenuPub) { %>
-          <div class="post-caption-box">
-            <a href="/profile/<%= post.auteurPseudo %>" style="text-decoration: none;">
-              <strong>@<%= post.auteurPseudo %></strong>
-            </a>
-            <% if (typeof linkifyHashtags === 'function') { %>
-              <%- linkifyHashtags(post.contenuPub) %>
-            <% } else { %>
-              <%= post.contenuPub %>
-            <% } %>
-          </div>
-        <% } else if (post.idPubliPartagee && post.auteurOriginalPseudo) { %>
-          <div class="post-caption-box">
+        <div class="publication-caption-display" data-caption-display <%= post.contenuPub ? '' : 'hidden' %>>
+          <% if (post.contenuPub) { %>
+            <div class="post-caption-box">
+              <a href="/profile/<%= post.auteurPseudo %>" style="text-decoration: none;">
+                <strong>@<%= post.auteurPseudo %></strong>
+              </a>
+              <span data-caption-text>
+                <% if (typeof linkifyHashtags === 'function') { %>
+                  <%- linkifyHashtags(post.contenuPub) %>
+                <% } else { %>
+                  <%= post.contenuPub %>
+                <% } %>
+              </span>
+            </div>
+          <% } else { %>
+            <div class="post-caption-box"><span data-caption-text></span></div>
+          <% } %>
+        </div>
+
+        <% if (!post.contenuPub && post.idPubliPartagee && post.auteurOriginalPseudo) { %>
+          <div class="post-caption-box original-content">
             <% if (post.typePublication === 'repost') { %>
               Repost de
             <% } else { %>
@@ -432,10 +477,11 @@
             <span id="dislike-count"><%= (reactions && reactions.dislikes) ? reactions.dislikes : 0 %></span>
           </button>
 
-          <button type="button" class="icon-btn" onclick="toggleCommentsSection()" title="Commentaires">
+          <button type="button" class="icon-btn" data-post-comment-toggle onclick="toggleCommentsSection()" title="Commentaires" <%= Number(post.commentairesActifs ?? 1) === 1 ? '' : 'hidden' %>>
             <svg viewBox="0 0 24 24"><path d="M20 11.5 C20 15.6 16.4 19 12 19 C10.8 19 9.6 18.8 8.6 18.3 L4 20 L5.2 16.2 C4.4 14.9 4 13.3 4 11.5 C4 7.4 7.6 4 12 4 C16.4 4 20 7.4 20 11.5Z"></path></svg>
             <span id="comment-bubble-count"><%= typeof comments !== 'undefined' ? comments.length : 0 %></span>
           </button>
+          <span class="publication-action-feedback" data-comments-disabled-notice <%= Number(post.commentairesActifs ?? 1) === 1 ? 'hidden' : '' %>>Commentaires désactivés</span>
 
           <button type="button" class="icon-btn <%= post.dejaReposte ? 'active-like' : '' %>" id="post-repost-btn" onclick="repartagerPost()" title="<%= post.dejaReposte ? 'Annuler le repost' : 'Reposter' %>">
             <svg viewBox="0 0 24 24">
@@ -475,7 +521,7 @@
           </button>
         </div>
 
-        <div class="comments-section" id="commentsSection">
+        <div class="comments-section" id="commentsSection" <%= Number(post.commentairesActifs ?? 1) === 1 ? '' : 'hidden' %>>
           <div class="comment-list">
             <% 
               const myId = userObj && userObj.idUser !== undefined ? Number(userObj.idUser) : null;
@@ -1014,5 +1060,7 @@
   </script>
 
   <%- include('partials/remixModal') %>
+  <script src="/js/publicationActions.js" defer></script>
+
 </body>
 </html>

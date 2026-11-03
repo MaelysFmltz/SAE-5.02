@@ -1,0 +1,78 @@
+.publication-date {
+  display: block;
+  margin: 7px 2px 0;
+  color: #92909d;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.publication-owner-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px 12px;
+  margin: 5px 0 10px;
+}
+
+.publication-owner-tool {
+  border: 0;
+  padding: 3px 0;
+  color: #b9a5ff;
+  background: transparent;
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.publication-owner-tool:hover { color: #e0d7ff; text-decoration: underline; }
+.publication-owner-tool.danger { color: #f28b9a; }
+.publication-action-feedback { color: #a8a5b2; font-size: 0.76rem; }
+.publication-caption-editor {
+  margin: 8px 0 12px;
+  padding: 10px;
+  border: 1px solid rgba(167, 139, 250, 0.28);
+  border-radius: 10px;
+  background: rgba(17, 15, 26, 0.88);
+}
+.publication-caption-editor[hidden] { display: none !important; }
+.publication-caption-label { display: block; margin-bottom: 6px; color: #d8d1ed; font-size: 0.8rem; }
+.publication-caption-editor textarea {
+  display: block;
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  border: 1px solid #403852;
+  border-radius: 8px;
+  color: #f4f1fa;
+  background: #0d0b12;
+  font: inherit;
+}
+.publication-caption-editor-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.publication-caption-editor-actions button {
+  padding: 7px 11px;
+  border: 1px solid #51466e;
+  border-radius: 7px;
+  color: #f3efff;
+  background: #282039;
+  cursor: pointer;
+}
+.publication-caption-editor-actions button:first-child { background: #6941c6; border-color: #805de0; }
+.publication-action.comments-disabled { opacity: 0.48; cursor: not-allowed; }
+.publication-action.comments-disabled .reaction-count { font-size: 0.68rem; }
+.publication-comments-setting { margin-top: 18px; }
+.comments-setting-label { display: block; margin-bottom: 8px; }
+.comments-setting-toggle { display: flex; align-items: center; gap: 9px; color: #e7e3ef; cursor: pointer; }
+.comments-setting-toggle input { accent-color: #8b5cf6; width: 17px; height: 17px; }
+.publication-comments-setting small { display: block; margin: 6px 0 0 26px; color: #96919f; }
+
+@media (max-width: 520px) {
+  .publication-owner-tools { gap: 6px 10px; }
+  .publication-owner-tool { font-size: 0.73rem; }
+}
+
+.post-owner-tools { padding: 0 14px; margin: 8px 0 12px; }
+.post-card > .publication-date { padding: 0 14px; }
+.post-card > .publication-caption-editor { margin: 8px 14px 12px; }
+.post-card > .publication-caption-display .post-caption-box { white-space: pre-wrap; }

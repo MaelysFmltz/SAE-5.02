@@ -33,6 +33,17 @@ if (!tableExists) {
 }
 
 // 4. Migrations dynamiques (ajouts de colonnes sans casser les bases existantes)
+
+// Migration Publication : activation/désactivation des commentaires par publication.
+const publicationExiste = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='Publication'").get();
+if (publicationExiste) {
+  const colonnesPublication = db.prepare('PRAGMA table_info(Publication)').all();
+  if (!colonnesPublication.some(column => column.name === 'commentairesActifs')) {
+    db.exec('ALTER TABLE Publication ADD COLUMN commentairesActifs INTEGER NOT NULL DEFAULT 1 CHECK(commentairesActifs IN (0, 1))');
+    console.log('Migration Publication : colonne commentairesActifs ajoutée (commentaires activés par défaut).');
+  }
+}
+
 const commentTableInfo = db.prepare("PRAGMA table_info(Commentaire)").all();
 const hasIdParent = commentTableInfo.some(column => column.name === 'idParent');
 if (!hasIdParent) {

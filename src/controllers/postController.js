@@ -37,12 +37,16 @@ function createPublication(req, res) {
         } = req.body;
 
         const visibilite = Number(req.body.visibilite);
+        const commentairesActifs = req.body.commentairesActifs === undefined
+            ? 1
+            : Number(req.body.commentairesActifs);
 
         const publication = postService.createPublication(
             req.user.idUser,
             contenuPub,
             visibilite,
-            idPubliPartagee || null
+            idPubliPartagee || null,
+            commentairesActifs
         );
 
         if (contenuPub) {
@@ -394,12 +398,24 @@ async function uploadImage(req, res) {
             });
         }
 
+        const commentairesActifs = req.body.commentairesActifs === undefined
+            ? 1
+            : Number(req.body.commentairesActifs);
+
+        if (commentairesActifs !== 0 && commentairesActifs !== 1) {
+            await fs.unlink(uploadedFilePath).catch(() => {});
+            return res.status(400).json({
+                error: 'Paramètre de commentaires invalide.'
+            });
+        }
+
         const post = await postService.createMediaPost(
             req.user.idUser,
             contenuPub,
             visibilite,
             file.filename,
-            typeMedia
+            typeMedia,
+            commentairesActifs
         );
 
         uploadedFilePath = null;

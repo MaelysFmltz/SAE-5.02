@@ -1109,7 +1109,8 @@ describe('Vérification des permissions des publications', () => {
             CREATE TABLE Publication (
                 idPubli INTEGER PRIMARY KEY,
                 idUser INTEGER NOT NULL,
-                visibilite INTEGER NOT NULL
+                visibilite INTEGER NOT NULL,
+                commentairesActifs INTEGER NOT NULL DEFAULT 1
             );
 
             CREATE TABLE Abonnement (
@@ -1221,7 +1222,8 @@ describe('Cas limites complémentaires (amitié et visibilité)', () => {
             CREATE TABLE Publication (
                 idPubli INTEGER PRIMARY KEY,
                 idUser INTEGER NOT NULL,
-                visibilite INTEGER NOT NULL
+                visibilite INTEGER NOT NULL,
+                commentairesActifs INTEGER NOT NULL DEFAULT 1
             );
 
             CREATE TABLE Abonnement (
@@ -1601,6 +1603,7 @@ describe('Gestion des suppressions et auteurs originaux (Modération)', () => {
                 idUser INTEGER NOT NULL,
                 contenuPub TEXT,
                 visibilite INTEGER NOT NULL,
+                commentairesActifs INTEGER NOT NULL DEFAULT 1,
                 idPubliPartagee INTEGER
             );
 
@@ -1659,7 +1662,8 @@ describe('Vérification des permissions des publications et visibilité', () => 
             CREATE TABLE Publication (
                 idPubli INTEGER PRIMARY KEY,
                 idUser INTEGER NOT NULL,
-                visibilite INTEGER NOT NULL
+                visibilite INTEGER NOT NULL,
+                commentairesActifs INTEGER NOT NULL DEFAULT 1
             );
             CREATE TABLE Abonnement (
                 idUserAbonne INTEGER NOT NULL,

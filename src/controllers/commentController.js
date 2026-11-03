@@ -95,7 +95,9 @@ async function renderPostPage(req, res) {
 
     let rawComments = [];
     try {
-      rawComments = commentModel.getCommentsByPostId(idPubli, currentUser?.idUser) || [];
+      rawComments = Number(post?.commentairesActifs ?? 1) === 1
+        ? (commentModel.getCommentsByPostId(idPubli, currentUser?.idUser) || [])
+        : [];
     } catch {
       rawComments = [];
     }
@@ -159,12 +161,23 @@ async function addComment(req, res) {
       return res.status(400).json({ error: 'Limite de 500 caractères dépassée.' });
     }
 
-    try {
-      const publiInfo = db.prepare('SELECT idUser FROM Publication WHERE idPubli = ?').get(idPubli);
-      if (publiInfo && sontBloques(publiInfo.idUser, idUser)) {
-        return res.status(403).json({ error: 'Action refusée : interaction impossible avec cet utilisateur (blocage actif).' });
-      }
-    } catch {}
+    const publiInfo = db.prepare(`
+      SELECT idUser, commentairesActifs
+      FROM Publication
+      WHERE idPubli = ?
+    `).get(idPubli);
+
+    if (!publiInfo) {
+      return res.status(404).json({ error: 'Publication introuvable.' });
+    }
+
+    if (Number(publiInfo.commentairesActifs) === 0) {
+      return res.status(403).json({ error: 'Les commentaires sont désactivés pour cette publication.' });
+    }
+
+    if (sontBloques(publiInfo.idUser, idUser)) {
+      return res.status(403).json({ error: 'Action refusée : interaction impossible avec cet utilisateur (blocage actif).' });
+    }
 
     let parentId = idParent || null;
     if (parentId) {
@@ -376,6 +389,20 @@ async function getComments(req, res) {
     const idPubli = parseInt(req.params.idPubli, 10);
     if (isNaN(idPubli)) {
       return res.status(400).json({ error: 'ID publication invalide.' });
+    }
+
+    const publication = db.prepare(`
+      SELECT commentairesActifs
+      FROM Publication
+      WHERE idPubli = ?
+    `).get(idPubli);
+
+    if (!publication) {
+      return res.status(404).json({ error: 'Publication introuvable.' });
+    }
+
+    if (Number(publication.commentairesActifs) === 0) {
+      return res.status(403).json({ error: 'Les commentaires sont désactivés pour cette publication.' });
     }
 
     const user = extraireUtilisateur(req);

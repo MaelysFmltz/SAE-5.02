@@ -49,12 +49,13 @@ function createPublication(
     contenuPub,
     visibilite = 1,
     idPubliPartagee = null,
-    typePublication = 'original'
+    typePublication = 'original',
+    commentairesActifs = 1
 ) {
     const stmt = db.prepare(`
         INSERT INTO Publication
-        (idUser, contenuPub, visibilite, idPubliPartagee, typePublication)
-        VALUES (?, ?, ?, ?, ?)
+        (idUser, contenuPub, visibilite, idPubliPartagee, typePublication, commentairesActifs)
+        VALUES (?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
@@ -62,7 +63,8 @@ function createPublication(
         contenuPub,
         visibilite,
         idPubliPartagee,
-        typePublication
+        typePublication,
+        commentairesActifs
     );
 
     return findById(result.lastInsertRowid);
@@ -76,20 +78,23 @@ function createMediaPost(
     contenuPub,
     visibilite,
     nomMedia,
-    typeMedia
+    typeMedia,
+    commentairesActifs = 1
 ) {
     const transaction = db.transaction(() => {
         const publicationResult = db.prepare(`
             INSERT INTO Publication (
                 idUser,
                 contenuPub,
-                visibilite
+                visibilite,
+                commentairesActifs
             )
-            VALUES (?, ?, ?)
+            VALUES (?, ?, ?, ?)
         `).run(
             idUser,
             contenuPub || null,
-            visibilite
+            visibilite,
+            commentairesActifs
         );
 
         const idPubli = publicationResult.lastInsertRowid;
@@ -159,6 +164,24 @@ function findById(idPubli) {
     `).get(idPubli);
 }
 
+/** Met à jour la légende uniquement si l'utilisateur est propriétaire. */
+function updateCaption(idPubli, idUser, contenuPub) {
+    return db.prepare(`
+        UPDATE Publication
+        SET contenuPub = ?, dateModif = CURRENT_TIMESTAMP
+        WHERE idPubli = ? AND idUser = ?
+    `).run(contenuPub, idPubli, idUser);
+}
+
+/** Active ou désactive les commentaires uniquement pour le propriétaire. */
+function updateCommentsEnabled(idPubli, idUser, enabled) {
+    return db.prepare(`
+        UPDATE Publication
+        SET commentairesActifs = ?
+        WHERE idPubli = ? AND idUser = ?
+    `).run(enabled ? 1 : 0, idPubli, idUser);
+}
+
 /**
  * Récupérer l'auteur d'une publication.
  */
@@ -188,6 +211,7 @@ function findWithOriginal(idPubli) {
             p.typePublication,
             p.datePubli,
             p.dateModif,
+            p.commentairesActifs,
 
             (
                 SELECT COUNT(*)
@@ -302,18 +326,20 @@ function createDuo(
     contenuPub,
     visibilite = 1,
     nomMedia = null,
-    typeMedia = null
+    typeMedia = null,
+    commentairesActifs = 1
 ) {
     const transaction = db.transaction(() => {
         const result = db.prepare(`
             INSERT INTO Publication
-            (idUser, contenuPub, visibilite, idPubliPartagee, typePublication)
-            VALUES (?, ?, ?, ?, 'duo')
+            (idUser, contenuPub, visibilite, idPubliPartagee, typePublication, commentairesActifs)
+            VALUES (?, ?, ?, ?, 'duo', ?)
         `).run(
             idUser,
             contenuPub,
             visibilite,
-            idPubliOriginale
+            idPubliOriginale,
+            commentairesActifs
         );
 
         const idPubli = result.lastInsertRowid;
@@ -340,18 +366,20 @@ function createCollage(
     contenuPub,
     visibilite = 1,
     nomMedia = null,
-    typeMedia = null
+    typeMedia = null,
+    commentairesActifs = 1
 ) {
     const transaction = db.transaction(() => {
         const result = db.prepare(`
             INSERT INTO Publication
-            (idUser, contenuPub, visibilite, idPubliPartagee, typePublication)
-            VALUES (?, ?, ?, ?, 'collage')
+            (idUser, contenuPub, visibilite, idPubliPartagee, typePublication, commentairesActifs)
+            VALUES (?, ?, ?, ?, 'collage', ?)
         `).run(
             idUser,
             contenuPub,
             visibilite,
-            idPubliOriginale
+            idPubliOriginale,
+            commentairesActifs
         );
 
         const idPubli = result.lastInsertRowid;
@@ -429,6 +457,7 @@ function findByUserId(idUser) {
             p.typePublication,
             p.datePubli,
             p.dateModif,
+            p.commentairesActifs,
 
             u.pseudo AS auteurPseudo,
 
@@ -479,6 +508,8 @@ function findAllPostsWithMedia() {
             p.contenuPub,
             p.visibilite,
             p.datePubli,
+            p.dateModif,
+            p.commentairesActifs,
 
             m.idMedia,
             m.nomMedia,
@@ -511,6 +542,8 @@ function findPostsByUserId(idUser) {
             p.contenuPub,
             p.visibilite,
             p.datePubli,
+            p.dateModif,
+            p.commentairesActifs,
 
             m.idMedia,
             m.nomMedia,
@@ -544,6 +577,8 @@ function findPostById(idPubli) {
             p.contenuPub,
             p.visibilite,
             p.datePubli,
+            p.dateModif,
+            p.commentairesActifs,
 
             m.idMedia,
             m.nomMedia,
@@ -602,6 +637,8 @@ module.exports = {
 
     // Recherche publications
     findById,
+    updateCaption,
+    updateCommentsEnabled,
     findAuthor,
     findWithOriginal,
     findRemixChain,
