@@ -20,7 +20,8 @@ const adminRoutes = require('./routes/adminRoutes');
 const conversationRoutes = require('./routes/conversationRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const blockRoutes = require('./routes/blockRoutes');
-
+const notificationRoutes = require('./routes/notificationRoutes');
+const notificationService = require('./services/notificationService');
 const commentController = require('./controllers/commentController');
 const authMiddleware = require('./middlewares/authMiddleware');
 const adminOrModeratorMiddleware = require('./middlewares/adminOrModeratorMiddleware');
@@ -169,6 +170,29 @@ app.get('/messages/:idConversation', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error('Erreur GET /messages/:idConversation :', err);
     res.redirect('/messages');
+  }
+});
+
+// Notifications
+app.get('/notifications', authMiddleware, async (req, res) => {
+  try {
+    const notifications = await notificationService.getMyNotifications(req.user.idUser);
+    // On marque tout comme lu APRÈS avoir récupéré la liste,
+    // pour que les non lues restent mises en évidence à cet affichage
+    await notificationService.markAllAsRead(req.user.idUser);
+
+    res.render('notification', {
+      user: req.user,
+      notifications,
+      activeTab: 'notifications'
+    });
+  } catch (err) {
+    console.error('Erreur GET /notifications :', err);
+    res.render('notification', {
+      user: req.user,
+      notifications: [],
+      activeTab: 'notifications'
+    });
   }
 });
 
@@ -365,6 +389,7 @@ app.use('/api/comments', commentRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/conversations', conversationRoutes);
 app.use('/api/conversations', messageRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/blocks', blockRoutes);
 
 // Routes Signalement & Modération

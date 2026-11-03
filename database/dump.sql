@@ -169,6 +169,7 @@ CREATE TABLE IF NOT EXISTS ConversationMembre (
     idUser INTEGER NOT NULL,
     dateRejoint DATETIME DEFAULT CURRENT_TIMESTAMP,
     estCreateur INTEGER NOT NULL DEFAULT 0,
+    idDernierMessageLu INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (idConversation, idUser),
     FOREIGN KEY (idConversation) REFERENCES Conversation(idConversation) ON DELETE CASCADE,
     FOREIGN KEY (idUser) REFERENCES Utilisateur(idUser) ON DELETE CASCADE
@@ -195,11 +196,13 @@ CREATE TABLE IF NOT EXISTS Message (
 CREATE TABLE IF NOT EXISTS Notification (
     idNotif INTEGER PRIMARY KEY AUTOINCREMENT,
     idUser INTEGER NOT NULL,
+    idActeur INTEGER,
     type TEXT NOT NULL,
     idSource INTEGER,
     dateNotif DATETIME DEFAULT CURRENT_TIMESTAMP,
     lu INTEGER DEFAULT 0,
-    FOREIGN KEY (idUser) REFERENCES Utilisateur(idUser) ON DELETE CASCADE
+    FOREIGN KEY (idUser) REFERENCES Utilisateur(idUser) ON DELETE CASCADE,
+    FOREIGN KEY (idActeur) REFERENCES Utilisateur(idUser) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS VuePublication (

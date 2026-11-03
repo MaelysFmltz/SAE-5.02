@@ -45,9 +45,23 @@ function removeMember(idConversation, idUser) {
   ).run(idConversation, idUser);
 }
 
+/**
+ * Avance le "marque-page" de lecture d'UN membre : tous les messages actuels de la
+ * conversation sont considérés comme lus pour lui seul, pas pour les autres membres.
+ */
+function markAsReadForMember(idConversation, idUser) {
+  return db.prepare(
+    `UPDATE ConversationMembre
+     SET idDernierMessageLu = COALESCE(
+       (SELECT MAX(idMessage) FROM Message WHERE idConversation = ?), 0)
+     WHERE idConversation = ? AND idUser = ?`
+  ).run(idConversation, idConversation, idUser);
+}
+
 module.exports = {
   addMember,
   addMembers,
   setCreateur,
-  removeMember
+  removeMember,
+  markAsReadForMember
 };

@@ -1,9 +1,11 @@
 const commentModel = require('../models/commentModel');
-const reactionModel = require('../models/reactionModel');
+const reactionModel = require('../models/reactionModel'); 
+const notificationService = require('../services/notificationService');
 const db = require('../config/database');
 const jwt = require('jsonwebtoken');
 const postService = require('../services/postService');
 const { linkifyHashtags } = require('../utils/hashtagUtils');
+
 
 function sontBloques(idUser1, idUser2) {
   if (!idUser1 || !idUser2) return false;
@@ -179,15 +181,27 @@ async function addComment(req, res) {
       return res.status(403).json({ error: 'Action refusée : interaction impossible avec cet utilisateur (blocage actif).' });
     }
 
+    // On ne commente pas une publication qu'on ne peut pas voir (inexistante, privée hors amis)
+    if (!postService.peutVoirPublication(db, idPubli, idUser)) {
+      return res.status(404).json({ error: 'Publication introuvable.' });
+    }
+
     let parentId = idParent || null;
     if (parentId) {
       const parentComment = commentModel.getCommentById(parentId);
+      if (parentComment && sontBloques(parentComment.idUser, idUser)) {
+        return res.status(403).json({ error: 'Action refusée : interaction impossible avec cet utilisateur (blocage actif).' });
+      }
       if (parentComment && parentComment.idParent) {
         parentId = parentComment.idParent;
       }
     }
 
     const newComment = commentModel.createComment(idUser, idPubli, contenuCom, parentId);
+
+    // Notification : AVANT les return ci-dessous (sinon le chemin web classique l'ignorerait).
+    // On passe idParent (le commentaire auquel on répond), pas parentId (aplati vers la racine).
+    notificationService.notifierCommentaire(idPubli, idUser, idParent);
 
     // Si le client n'utilise pas l'API moderne / AJAX, on effectue la redirection 302 attendue
     if (!apiModerne) {
@@ -357,7 +371,14 @@ async function handleReaction(req, res) {
       }
     } catch {}
 
+    if (!postService.peutVoirPublication(db, idPubli, idUser)) {
+      return res.status(404).json({ error: 'Publication introuvable.' });
+    }
+
     const result = reactionModel.toggleReaction(idUser, idPubli, type);
+
+    notificationService.notifierLike(idPubli, idUser);
+
     return res.status(200).json(result);
   } catch (error) {
     console.error('Erreur handleReaction :', error);
@@ -376,7 +397,19 @@ async function handleCommentReaction(req, res) {
       return res.status(400).json({ error: 'ID commentaire invalide.' });
     }
 
+    const commentaire = commentModel.getCommentById(idComm);
+    if (!commentaire || !postService.peutVoirPublication(db, commentaire.idPubli, idUser)) {
+      return res.status(404).json({ error: 'Commentaire introuvable.' });
+    }
+
+    if (sontBloques(commentaire.idUser, idUser)) {
+      return res.status(403).json({ error: 'Action refusée : blocage actif.' });
+    }
+
     const result = reactionModel.toggleCommentReaction(idUser, idComm, type);
+
+    notificationService.notifierLikeCommentaire(idComm, idUser);
+    
     return res.status(200).json(result);
   } catch (error) {
     console.error('Erreur handleCommentReaction :', error);
