@@ -797,7 +797,7 @@
      JAVASCRIPT
 ====================================================== -->
 
-<script data-user-id="<%= user.idUser %>" data-user-pseudo="<%= user.pseudo %>">
+<script>
 
   // =====================================================
   // MODAL DE SIGNALEMENT UNIVERSEL
@@ -1074,11 +1074,11 @@
 
 
   const currentUserId =
-    document.currentScript.dataset.userId;
+    <%- JSON.stringify(user.idUser) %>;
 
 
   const currentUserPseudo =
-    document.currentScript.dataset.userPseudo;
+    <%- JSON.stringify(user.pseudo) %>;
 
 
   function afficherCommentaires(comments) {

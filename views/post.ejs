@@ -372,7 +372,7 @@
               type="button"
               class="delete-post"
               data-id="<%= post.idPubli %>"
-              onclick="supprimerPublication"(<%= post.idPubli %>)"
+              onclick="supprimerPublication(<%= post.idPubli %>)"
             >
               Supprimer
             </button>
@@ -493,7 +493,7 @@
           </button>
 
           <% if (post.nomMedia || post.originalNomMedia) { %>
-            <button type="button" class="icon-btn" onclick="creerDuo('<%= post.idPubli %>')" title="Créer un duo">
+            <button type="button" class="icon-btn" onclick="creerDuo(<%= post.idPubli %>)" title="Créer un duo">
               <svg viewBox="0 0 24 24">
                 <circle cx="8" cy="7" r="3"></circle>
                 <circle cx="16" cy="17" r="3"></circle>
@@ -503,7 +503,7 @@
           <% } %>
 
           <% if (post.typeMedia === 'video' || post.originalTypeMedia === 'video') { %>
-            <button type="button" class="icon-btn" onclick="creerCollage('<%= post.idPubli %>')" title="Créer un collage">
+            <button type="button" class="icon-btn" onclick="creerCollage(<%= post.idPubli %>)" title="Créer un collage">
               <svg viewBox="0 0 24 24">
                 <rect x="4" y="4" width="7" height="7" rx="1"></rect>
                 <rect x="13" y="4" width="7" height="7" rx="1"></rect>
@@ -801,7 +801,7 @@
           throw new Error(data.error || data.erreur || 'Impossible de supprimer la publication.');
         }
 
-        const isSuperAdmin = "<%= (userObj && userObj.idUser === -999) ? 'true' : 'false' %>";
+        const isSuperAdmin = <%= (userObj && userObj.idUser === -999) ? 'true' : 'false' %>;
         if (isSuperAdmin) {
           window.location.href = '/admin';
         } else {
