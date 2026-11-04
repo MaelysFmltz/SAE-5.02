@@ -281,29 +281,3 @@ body {
   color: var(--text-secondary);
   font-size: 0.75rem;
 }
-
-/* Pastille de messages non lus sur le bouton Messagerie */
-.nav-item {
-  position: relative;
-}
-
-.nav-msg-badge {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 8px;
-  background: var(--gradient-pixora);
-  color: #ffffff;
-  font-size: 0.65rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nav-msg-badge[hidden] {
-  display: none;
-}

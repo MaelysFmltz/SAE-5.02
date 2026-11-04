@@ -1,5 +1,3 @@
-const notificationService = require('./notificationService');
-
 function sontAmis(db, idUser1, idUser2) {
     const resultat = db.prepare(`
         SELECT COUNT(*) AS nombre
@@ -29,18 +27,6 @@ function suivre(db, idUser, idUserCible) {
         return false;
     }
 
-    // Pas d'abonnement possible si l'un a bloqué l'autre (le blocage supprime déjà les abonnements)
-    const blocage = db.prepare(`
-        SELECT 1
-        FROM Blocage
-        WHERE (idUserBloqueur = ? AND idUserBloque = ?)
-           OR (idUserBloqueur = ? AND idUserBloque = ?)
-    `).get(idUser, idUserCible, idUserCible, idUser);
-
-    if (blocage) {
-        return false;
-    }
-
     const dejaAbonne = db.prepare(`
         SELECT 1
         FROM Abonnement
@@ -53,8 +39,6 @@ function suivre(db, idUser, idUserCible) {
             INSERT INTO Abonnement (idUserAbonne, idUserSuivi)
             VALUES (?, ?)
         `).run(idUser, idUserCible);
-
-        notificationService.creerNotification(idUserCible, idUser, 'nouvel_abonne');
     }
 
     return true;

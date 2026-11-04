@@ -9,7 +9,6 @@ const conversationModel = require('../models/conversationModel');
 const conversationService = require('./conversationService');
 const { sanitizeText } = require('../utils/validationUtils');
 const db = require('../config/database');
-const conversationMemberModel = require('../models/conversationMemberModel');
 
 const CONTENU_MAX_LENGTH = 2000;
 
@@ -79,10 +78,8 @@ async function sendMessage(idConversation, idUser, contenu) {
   }
 
   const contenuNettoye = validerContenu(contenu);
-  
-  const idMessage = messageModel.createMessage(idConversation, idUser, contenuNettoye);
 
-  return idMessage;
+  return messageModel.createMessage(idConversation, idUser, contenuNettoye);
 }
 
 async function getMessages(idConversation, idUser) {
@@ -92,9 +89,7 @@ async function getMessages(idConversation, idUser) {
 
 async function markAsRead(idConversation, idUser) {
   conversationService.ensureIsMember(idConversation, idUser);
-  const result = messageModel.markConversationAsRead(idConversation, idUser);
-  conversationMemberModel.markAsReadForMember(idConversation, idUser);
-  return result;
+  return messageModel.markConversationAsRead(idConversation, idUser);
 }
 
 async function editMessage(idConversation, idUser, idMessage, contenu) {
