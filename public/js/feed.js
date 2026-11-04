@@ -1,49 +1,79 @@
-document.addEventListener('click', async (event) => {
-    const button = event.target.closest('.delete-post');
+/* ==========================================
+   RETOUR EN HAUT DU FIL D'ACTUALITÉ
+========================================== */
 
-    if (!button) {
-        return;
-    }
+(() => {
+    'use strict';
 
-    const idPubli = button.dataset.id;
+    function initialiserRetourEnHaut() {
+        const button = document.getElementById('back-to-top');
 
-    if (!idPubli) {
-        return;
-    }
-
-    const confirmation = confirm(
-        'Voulez-vous vraiment supprimer cette publication ?'
-    );
-
-    if (!confirmation) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`/post/api/${idPubli}`, {
-            method: 'DELETE',
-            credentials: 'include',
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            alert(data.error || 'Impossible de supprimer la publication.');
+        if (!button) {
             return;
         }
 
-        // Suppression visuelle immédiate du post.
-        const postElement = button.closest('.post');
+        const seuilAffichage = 300;
+        let animationFrameEnAttente = false;
+        let timerMasquage = null;
 
-        if (postElement) {
-            postElement.remove();
+        function mettreAJourBouton() {
+            const doitAfficher = window.scrollY > seuilAffichage;
+
+            if (doitAfficher) {
+                if (timerMasquage !== null) {
+                    window.clearTimeout(timerMasquage);
+                    timerMasquage = null;
+                }
+
+                button.hidden = false;
+                window.requestAnimationFrame(() => {
+                    button.classList.add('is-visible');
+                });
+            } else {
+                button.classList.remove('is-visible');
+
+                if (timerMasquage !== null) {
+                    window.clearTimeout(timerMasquage);
+                }
+
+                timerMasquage = window.setTimeout(() => {
+                    if (window.scrollY <= seuilAffichage) {
+                        button.hidden = true;
+                    }
+                    timerMasquage = null;
+                }, 220);
+            }
         }
 
-    } catch (error) {
-        console.error(error);
-        alert('Une erreur est survenue lors de la suppression.');
+        window.addEventListener('scroll', () => {
+            if (animationFrameEnAttente) {
+                return;
+            }
+
+            animationFrameEnAttente = true;
+            window.requestAnimationFrame(() => {
+                mettreAJourBouton();
+                animationFrameEnAttente = false;
+            });
+        }, { passive: true });
+
+        button.addEventListener('click', () => {
+            const prefersReducedMotion = window.matchMedia
+                && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            window.scrollTo({
+                top: 0,
+                behavior: prefersReducedMotion ? 'auto' : 'smooth'
+            });
+        });
+
+        mettreAJourBouton();
     }
-});
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initialiserRetourEnHaut, { once: true });
+    } else {
+        initialiserRetourEnHaut();
+    }
+})();
+

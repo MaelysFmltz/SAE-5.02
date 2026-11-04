@@ -65,8 +65,19 @@ app.get('/banned', (req, res) => {
 
 // Fil d'actualité
 app.get('/home', authMiddleware, (req, res) => {
+  // Deux vues possibles : toutes les publications ou celles des abonnements.
+  const feedFilter = req.query.filter === 'following' ? 'following' : 'all';
+
   try {
-    const publications = postService.getFeedForUser(req.user.idUser);
+    let publications = postService.getFeedForUser(req.user.idUser);
+
+    if (feedFilter === 'following') {
+      const abonnements = friendshipModel.listerAbonnements(db, req.user.idUser);
+      const idsSuivis = new Set(abonnements.map(abonnement => Number(abonnement.idUser)));
+      publications = publications.filter(publication =>
+        idsSuivis.has(Number(publication.idUser))
+      );
+    }
 
     const suggestions = db.prepare(`
       SELECT u.idUser, u.pseudo, u.role, p.bio
@@ -85,7 +96,8 @@ app.get('/home', authMiddleware, (req, res) => {
       user: req.user,
       publications,
       suggestions,
-      linkifyHashtags
+      linkifyHashtags,
+      feedFilter
     });
   } catch (err) {
     console.error('Erreur GET /home :', err);
@@ -93,7 +105,8 @@ app.get('/home', authMiddleware, (req, res) => {
       user: req.user,
       publications: [],
       suggestions: [],
-      linkifyHashtags
+      linkifyHashtags,
+      feedFilter
     });
   }
 });

@@ -552,6 +552,23 @@
         Découvre les dernières publications de Pixora.
       </p>
 
+      <nav class="feed-filters" aria-label="Filtrer les publications">
+        <a
+          class="feed-filter <%= feedFilter !== 'following' ? 'active' : '' %>"
+          href="/home"
+          <%= feedFilter !== 'following' ? 'aria-current="page"' : '' %>
+        >
+          Toutes les publications
+        </a>
+        <a
+          class="feed-filter <%= feedFilter === 'following' ? 'active' : '' %>"
+          href="/home?filter=following"
+          <%= feedFilter === 'following' ? 'aria-current="page"' : '' %>
+        >
+          Abonnements
+        </a>
+      </nav>
+
     </div>
 
 
@@ -580,7 +597,9 @@
       <div class="card">
 
         <p>
-          Aucune publication pour le moment.
+          <%= feedFilter === 'following'
+            ? 'Aucune publication des personnes que vous suivez pour le moment.'
+            : 'Aucune publication pour le moment.' %>
         </p>
 
       </div>
@@ -2152,6 +2171,21 @@
 
 
 <!-- Suppression des publications -->
+
+<!-- Bouton de retour en haut de la page -->
+<button
+  type="button"
+  id="back-to-top"
+  class="back-to-top"
+  aria-label="Retour en haut de la page"
+  title="Retour en haut"
+  hidden
+>
+  <span aria-hidden="true">↑</span>
+</button>
+
+<!-- Navigation du fil : bouton de retour en haut -->
+<script src="/js/feed.js"></script>
 
 <script src="/js/deletePost.js"></script>
 
