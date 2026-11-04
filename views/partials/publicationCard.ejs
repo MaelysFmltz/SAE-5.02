@@ -55,7 +55,7 @@
           type="button"
           class="report-post-btn"
           title="Signaler cette publication"
-          onclick="if (typeof ouvrirSignalement === 'function') { ouvrirSignalement('publication', <%= publication.idPubli %>); }"
+          onclick="if (typeof ouvrirSignalement === 'function') { ouvrirSignalement('publication', '<%= publication.idPubli %>'); }"
           style="background: transparent; border: none; color: #858894; cursor: pointer; font-size: 15px; padding: 4px;"
         >
           🚩
@@ -65,29 +65,6 @@
 
   </div>
 
-  <% if (publication.datePubli) { %>
-    <%
-      const rawPublicationDate = String(publication.datePubli);
-      const normalizedPublicationDate = rawPublicationDate.includes('T')
-        ? rawPublicationDate
-        : `${rawPublicationDate.replace(' ', 'T')}Z`;
-      const parsedPublicationDate = new Date(normalizedPublicationDate);
-      const publicationDateIso = Number.isNaN(parsedPublicationDate.getTime())
-        ? ''
-        : parsedPublicationDate.toISOString();
-      const publicationDateLabel = publicationDateIso
-        ? parsedPublicationDate.toLocaleString('fr-FR', {
-            timeZone: 'Europe/Paris',
-            day: '2-digit', month: '2-digit', year: 'numeric',
-            hour: '2-digit', minute: '2-digit'
-          })
-        : rawPublicationDate;
-    %>
-    <time class="publication-date" datetime="<%= publicationDateIso %>">
-      Publié le <%= publicationDateLabel %>
-    </time>
-  <% } %>
-
   <!-- MÉDIA -->
   <a href="<%= mediaLinkHref %>" class="publication-main-link">
     <div class="publication-media">
@@ -95,48 +72,15 @@
     </div>
   </a>
 
-  <!-- LÉGENDE / HASHTAGS -->
-  <div class="publication-caption-display" data-caption-display <%= publication.contenuPub ? '' : 'hidden' %>>
-    <% if (publication.contenuPub) { %>
-      <p class="publication-content" data-caption-text>
-        <% if (typeof linkifyHashtags === 'function') { %>
-          <%- linkifyHashtags(publication.contenuPub) %>
-        <% } else { %>
-          <%= publication.contenuPub %>
-        <% } %>
-      </p>
-    <% } else { %>
-      <p class="publication-content" data-caption-text></p>
-    <% } %>
-  </div>
-
-  <% if (canDelete) { %>
-    <div class="publication-owner-tools">
-      <button type="button" class="publication-owner-tool" data-publication-action="edit-caption">
-        <%= publication.contenuPub ? '✏️ Modifier la légende' : '＋ Ajouter une légende' %>
-      </button>
-      <button type="button" class="publication-owner-tool danger" data-publication-action="delete-caption" <%= publication.contenuPub ? '' : 'hidden' %>>
-        Supprimer la légende
-      </button>
-      <button
-        type="button"
-        class="publication-owner-tool"
-        data-publication-action="toggle-comments"
-        data-enabled="<%= Number(publication.commentairesActifs ?? 1) === 1 ? '1' : '0' %>"
-      >
-        <%= Number(publication.commentairesActifs ?? 1) === 1 ? 'Désactiver les commentaires' : 'Activer les commentaires' %>
-      </button>
-      <span class="publication-action-feedback" data-publication-feedback role="status" aria-live="polite"></span>
-    </div>
-
-    <div class="publication-caption-editor" data-caption-editor hidden>
-      <label class="publication-caption-label" for="caption-<%= publication.idPubli %>">Légende de la publication</label>
-      <textarea id="caption-<%= publication.idPubli %>" data-caption-input maxlength="5000" rows="3"><%= publication.contenuPub || '' %></textarea>
-      <div class="publication-caption-editor-actions">
-        <button type="button" data-publication-action="save-caption">Enregistrer</button>
-        <button type="button" data-publication-action="cancel-caption">Annuler</button>
-      </div>
-    </div>
+  <!-- DESCRIPTION / HASHTAGS -->
+  <% if (publication.contenuPub) { %>
+    <p class="publication-content">
+      <% if (typeof linkifyHashtags === 'function') { %>
+        <%- linkifyHashtags(publication.contenuPub) %>
+      <% } else { %>
+        <%= publication.contenuPub %>
+      <% } %>
+    </p>
   <% } %>
 
   <!-- PUBLICATION PARTAGÉE -->
@@ -174,7 +118,7 @@
     <button
       type="button"
       class="publication-action reaction-action like-action <%= publication.userReaction === 'LIKE' ? 'active' : '' %>"
-      onclick="reactionPublication(<%= publication.idPubli %>, 'LIKE')"
+      onclick="reactionPublication('<%= publication.idPubli %>', 'LIKE')"
       title="J'aime"
       aria-label="J'aime"
     >
@@ -188,7 +132,7 @@
     <button
       type="button"
       class="publication-action reaction-action dislike-action <%= publication.userReaction === 'DISLIKE' ? 'active' : '' %>"
-      onclick="reactionPublication(<%= publication.idPubli %>, 'DISLIKE')"
+      onclick="reactionPublication('<%= publication.idPubli %>', 'DISLIKE')"
       title="Je n'aime pas"
       aria-label="Je n'aime pas"
     >
@@ -203,24 +147,22 @@
     <!-- Commentaires -->
     <button
       type="button"
-      class="publication-action <%= Number(publication.commentairesActifs ?? 1) === 1 ? '' : 'comments-disabled' %>"
-      data-comment-open
-      <%= Number(publication.commentairesActifs ?? 1) === 1 ? '' : 'disabled' %>
-      onclick="ouvrirCommentaires(<%= publication.idPubli %>)"
-      title="<%= Number(publication.commentairesActifs ?? 1) === 1 ? 'Commentaires' : 'Commentaires désactivés' %>"
-      aria-label="<%= Number(publication.commentairesActifs ?? 1) === 1 ? 'Commentaires' : 'Commentaires désactivés' %>"
+      class="publication-action"
+      onclick="ouvrirCommentaires('<%= publication.idPubli %>')"
+      title="Commentaires"
+      aria-label="Commentaires"
     >
       <svg viewBox="0 0 24 24">
         <path d="M20 11.5 C20 15.6 16.4 19 12 19 C10.8 19 9.6 18.8 8.6 18.3 L4 20 L5.2 16.2 C4.4 14.9 4 13.3 4 11.5 C4 7.4 7.6 4 12 4 C16.4 4 20 7.4 20 11.5Z"></path>
       </svg>
-      <span class="reaction-count" data-comment-count data-count="<%= publication.nombreCommentaires || 0 %>"><%= Number(publication.commentairesActifs ?? 1) === 1 ? (publication.nombreCommentaires || 0) : 'Désactivés' %></span>
+      <span class="reaction-count"><%= publication.nombreCommentaires || 0 %></span>
     </button>
 
     <!-- Repost -->
     <button
       type="button"
       class="publication-action repost-action <%= publication.dejaReposte ? 'active' : '' %>"
-      onclick="repartager(<%= publication.idPubli %>, this)"
+      onclick="repartager('<%= publication.idPubli %>', this)"
       data-reposted="<%= publication.dejaReposte ? 'true' : 'false' %>"
       title="<%= publication.dejaReposte ? 'Annuler le repost' : 'Reposter' %>"
       aria-label="<%= publication.dejaReposte ? 'Annuler le repost' : 'Reposter' %>"
@@ -238,7 +180,7 @@
       <button
         type="button"
         class="publication-action"
-        onclick="creerDuo(<%= publication.idPubli %>)"
+        onclick="creerDuo('<%= publication.idPubli %>')"
         title="Créer un Duo"
         aria-label="Créer un Duo"
       >
@@ -255,7 +197,7 @@
       <button
         type="button"
         class="publication-action"
-        onclick="creerCollage(<%= publication.idPubli %>)"
+        onclick="creerCollage('<%= publication.idPubli %>')"
         title="Créer un collage"
         aria-label="Créer un collage"
       >
@@ -274,7 +216,7 @@
     <button
       type="button"
       class="publication-action"
-      onclick="copierLien(<%= publication.idPubli %>)"
+      onclick="copierLien('<%= publication.idPubli %>')"
       title="Copier le lien"
       aria-label="Copier le lien"
     >
