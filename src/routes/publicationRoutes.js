@@ -21,6 +21,27 @@ router.get(
     publicationController.obtenirPublication
 );
 
+
+// Modifier ou supprimer la légende d'une publication
+router.patch(
+    '/:idPubli/legende',
+    authMiddleware,
+    publicationController.modifierLegende
+);
+
+router.delete(
+    '/:idPubli/legende',
+    authMiddleware,
+    publicationController.modifierLegende
+);
+
+// Activer/désactiver les commentaires d'une publication
+router.patch(
+    '/:idPubli/commentaires',
+    authMiddleware,
+    publicationController.modifierCommentaires
+);
+
 // Modifier la visibilité d'une publication
 router.patch(
     '/:idPubli/visibilite',

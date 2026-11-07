@@ -18,6 +18,7 @@ describe('Tests HTTP des publications', () => {
             DROP TABLE IF EXISTS Publication;
             DROP TABLE IF EXISTS Utilisateur;
             DROP TABLE IF EXISTS Abonnement;
+            DROP TABLE IF EXISTS Media;
 
             CREATE TABLE Utilisateur (
                 idUser INTEGER PRIMARY KEY
@@ -28,6 +29,7 @@ describe('Tests HTTP des publications', () => {
                 idUser INTEGER NOT NULL,
                 contenuPub TEXT,
                 visibilite INTEGER NOT NULL,
+                commentairesActifs INTEGER NOT NULL DEFAULT 1,
                 datePubli TEXT,
                 dateModif TEXT
             );
@@ -36,6 +38,13 @@ describe('Tests HTTP des publications', () => {
                 idUserAbonne INTEGER NOT NULL,
                 idUserSuivi INTEGER NOT NULL,
                 PRIMARY KEY (idUserAbonne, idUserSuivi)
+            );
+
+            CREATE TABLE Media (
+                idMedia INTEGER PRIMARY KEY AUTOINCREMENT,
+                idPubli INTEGER,
+                nomMedia TEXT NOT NULL,
+                typeMedia TEXT NOT NULL
             );
 
             INSERT INTO Utilisateur (idUser)
@@ -85,6 +94,77 @@ describe('Tests HTTP des publications', () => {
         expect(response.body.error).toBe(
             'Vous n’avez pas accès à cette publication'
         );
+    });
+
+    test('PATCH /api/publications/:idPubli/legende permet à l auteur de modifier la légende', async () => {
+        const token = tokenPour(1);
+        const response = await request(app)
+            .patch('/api/publications/1/legende')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ contenuPub: 'Nouvelle légende #pixora' });
+
+        expect(response.status).toBe(200);
+        expect(response.body.contenuPub).toBe('Nouvelle légende #pixora');
+        expect(db.prepare('SELECT contenuPub FROM Publication WHERE idPubli = 1').get().contenuPub)
+            .toBe('Nouvelle légende #pixora');
+    });
+
+    test('DELETE /api/publications/:idPubli/legende supprime la légende uniquement pour son auteur', async () => {
+        db.prepare("INSERT INTO Media (idPubli, nomMedia, typeMedia) VALUES (1, 'photo.jpg', 'image')").run();
+        const token = tokenPour(1);
+        const response = await request(app)
+            .delete('/api/publications/1/legende')
+            .set('Authorization', `Bearer ${token}`);
+
+        expect(response.status).toBe(200);
+        expect(db.prepare('SELECT contenuPub FROM Publication WHERE idPubli = 1').get().contenuPub)
+            .toBeNull();
+    });
+
+    test('DELETE /api/publications/:idPubli/legende refuse de vider une publication sans média', async () => {
+        const token = tokenPour(1);
+        const response = await request(app)
+            .delete('/api/publications/1/legende')
+            .set('Authorization', `Bearer ${token}`);
+
+        expect(response.status).toBe(400);
+        expect(db.prepare('SELECT contenuPub FROM Publication WHERE idPubli = 1').get().contenuPub)
+            .toBe('Publication publique');
+    });
+
+    test('PATCH /api/publications/:idPubli/legende renvoie la légende rendue avec des hashtags échappés', async () => {
+        const token = tokenPour(1);
+        const response = await request(app)
+            .patch('/api/publications/1/legende')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ contenuPub: '<img src=x onerror=alert(1)> #pixora' });
+
+        expect(response.status).toBe(200);
+        expect(response.body.contenuHtml).not.toContain('<img');
+        expect(response.body.contenuHtml).toContain('class="hashtag-link"');
+    });
+
+    test('PATCH /api/publications/:idPubli/commentaires désactive les commentaires pour le propriétaire', async () => {
+        const token = tokenPour(1);
+        const response = await request(app)
+            .patch('/api/publications/1/commentaires')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ commentairesActifs: 0 });
+
+        expect(response.status).toBe(200);
+        expect(response.body.commentairesActifs).toBe(0);
+        expect(db.prepare('SELECT commentairesActifs FROM Publication WHERE idPubli = 1').get().commentairesActifs)
+            .toBe(0);
+    });
+
+    test('PATCH /api/publications/:idPubli/commentaires refuse un utilisateur non propriétaire', async () => {
+        const token = tokenPour(2);
+        const response = await request(app)
+            .patch('/api/publications/1/commentaires')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ commentairesActifs: 0 });
+
+        expect(response.status).toBe(403);
     });
 
     test('PATCH /api/publications/:idPubli/visibilite permet à l auteur de modifier la visibilité', async () => {

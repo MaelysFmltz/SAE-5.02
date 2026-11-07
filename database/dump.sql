@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS Publication (
     idUser INTEGER NOT NULL,
     contenuPub TEXT,
     visibilite INTEGER NOT NULL DEFAULT 1,
+    commentairesActifs INTEGER NOT NULL DEFAULT 1 CHECK(commentairesActifs IN (0, 1)),
     idPubliPartagee INTEGER,
     typePublication TEXT NOT NULL DEFAULT 'original'
         CHECK(typePublication IN ('original', 'repost', 'duo', 'collage')),

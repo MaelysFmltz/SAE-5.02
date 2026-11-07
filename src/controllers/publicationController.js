@@ -2,12 +2,12 @@ const db = require('../config/database');
 const postModel = require('../models/postModel');
 const hashtagModel = require('../models/hashtagModel');
 const {
-    extractHashtags
+    extractHashtags,
+    linkifyHashtags
 } = require('../utils/hashtagUtils');
 
-const {
-    modifierVisibilite: modifierVisibiliteService
-} = require('../services/postService');
+const postService = require('../services/postService');
+const { modifierVisibilite: modifierVisibiliteService } = postService;
 
 function creerPublication(req, res) {
     const idUser = req.user.idUser;
@@ -16,6 +16,13 @@ function creerPublication(req, res) {
         contenuPub,
         visibilite = 1
     } = req.body;
+    const commentairesActifs = req.body.commentairesActifs === undefined
+        ? 1
+        : Number(req.body.commentairesActifs);
+
+    if (commentairesActifs !== 0 && commentairesActifs !== 1) {
+        return res.status(400).json({ error: 'État des commentaires invalide' });
+    }
 
     if (!contenuPub || !contenuPub.trim()) {
         return res.status(400).json({
@@ -27,7 +34,10 @@ function creerPublication(req, res) {
         const publication = postModel.createPublication(
             idUser,
             contenuPub.trim(),
-            Number(visibilite)
+            Number(visibilite),
+            null,
+            'original',
+            commentairesActifs
         );
 
         // Détection et enregistrement des hashtags dans PubliHashtag
@@ -64,6 +74,7 @@ function obtenirPublication(req, res) {
             idUser,
             contenuPub,
             visibilite,
+            commentairesActifs,
             datePubli,
             dateModif
         FROM Publication
@@ -77,6 +88,88 @@ function obtenirPublication(req, res) {
     }
 
     return res.status(200).json(publication);
+}
+
+function modifierLegende(req, res) {
+    const idPubli = Number(req.params.idPubli);
+    const idUser = req.user.idUser;
+    const rawCaption = req.body?.contenuPub;
+
+    if (!Number.isInteger(idPubli) || idPubli <= 0) {
+        return res.status(400).json({ error: 'Identifiant de publication invalide' });
+    }
+    if (rawCaption !== null && rawCaption !== undefined && typeof rawCaption !== 'string') {
+        return res.status(400).json({ error: 'La légende doit être une chaîne de caractères' });
+    }
+
+    const contenuPub = typeof rawCaption === 'string' ? rawCaption.trim() : null;
+    if (contenuPub && contenuPub.length > 5000) {
+        return res.status(400).json({ error: 'La légende ne peut pas dépasser 5000 caractères' });
+    }
+
+    try {
+        const publication = postService.modifierLegendePublication(
+            idPubli,
+            idUser,
+            contenuPub || null
+        );
+        const hashtagTablesExist = db.prepare(`
+            SELECT COUNT(*) AS total
+            FROM sqlite_master
+            WHERE type = 'table' AND name IN ('Hashtag', 'PubliHashtag')
+        `).get().total === 2;
+        if (hashtagTablesExist) {
+            hashtagModel.associerHashtagsPubli(
+                db,
+                idPubli,
+                contenuPub ? extractHashtags(contenuPub) : []
+            );
+        }
+        return res.status(200).json({
+            message: contenuPub ? 'Légende mise à jour' : 'Légende supprimée',
+            contenuPub: contenuPub || null,
+            contenuHtml: contenuPub ? linkifyHashtags(contenuPub) : '',
+            dateModif: publication.dateModif
+        });
+    } catch (error) {
+        if (error.estValidation) {
+            return res.status(error.status || 400).json({ error: error.message });
+        }
+        console.error('Erreur modification publication :', error);
+        return res.status(500).json({ error: 'Erreur lors de la modification de la publication' });
+    }
+}
+
+function modifierCommentaires(req, res) {
+    const idPubli = Number(req.params.idPubli);
+    const rawValue = req.body?.commentairesActifs;
+
+    if (!Number.isInteger(idPubli) || idPubli <= 0) {
+        return res.status(400).json({ error: 'Identifiant de publication invalide' });
+    }
+
+    let enabled;
+    if (rawValue === true || rawValue === 1 || rawValue === '1' || rawValue === 'true') enabled = true;
+    else if (rawValue === false || rawValue === 0 || rawValue === '0' || rawValue === 'false') enabled = false;
+    else return res.status(400).json({ error: 'État des commentaires invalide' });
+
+    try {
+        const result = postService.modifierEtatCommentaires(
+            idPubli,
+            req.user.idUser,
+            enabled
+        );
+        return res.status(200).json({
+            message: enabled ? 'Commentaires activés' : 'Commentaires désactivés',
+            ...result
+        });
+    } catch (error) {
+        if (error.estValidation) {
+            return res.status(error.status || 400).json({ error: error.message });
+        }
+        console.error('Erreur modification publication :', error);
+        return res.status(500).json({ error: 'Erreur lors de la modification de la publication' });
+    }
 }
 
 function modifierVisibilite(req, res) {
@@ -129,5 +222,7 @@ function modifierVisibilite(req, res) {
 module.exports = {
     creerPublication,
     obtenirPublication,
-    modifierVisibilite
+    modifierVisibilite,
+    modifierLegende,
+    modifierCommentaires
 };

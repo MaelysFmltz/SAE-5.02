@@ -292,6 +292,56 @@ describe('API commentaires - comportement fonctionnel', () => {
   );
 
   test(
+    'GET /api/comments/:idPubli refuse la lecture quand les commentaires sont désactivés',
+    async () => {
+      commentModel.createComment(2, 1, 'Commentaire existant');
+      db.prepare('UPDATE Publication SET commentairesActifs = 0 WHERE idPubli = 1').run();
+
+      const res = await request(app).get('/api/comments/1');
+
+      expect(res.status).toBe(403);
+      expect(res.body.error).toContain('commentaires sont désactivés');
+    }
+  );
+
+  test(
+    'GET /api/comments/:idPubli ne révèle pas les commentaires d\'une publication privée',
+    async () => {
+      commentModel.createComment(1, 1, 'Commentaire privé');
+      db.prepare('UPDATE Publication SET visibilite = 0 WHERE idPubli = 1').run();
+
+      const anonyme = await request(app).get('/api/comments/1');
+      expect(anonyme.status).toBe(404);
+
+      const inconnu = await request(app)
+        .get('/api/comments/1')
+        .set('Authorization', `Bearer ${tokenPour(2, 'bob')}`);
+      expect(inconnu.status).toBe(404);
+
+      const auteur = await request(app)
+        .get('/api/comments/1')
+        .set('Authorization', `Bearer ${tokenPour(1, 'alice')}`);
+      expect(auteur.status).toBe(200);
+      expect(auteur.body).toHaveLength(1);
+    }
+  );
+
+  test(
+    'POST /api/comments ne permet pas de commenter une publication verrouillée',
+    async () => {
+      db.prepare('UPDATE Publication SET commentairesActifs = 0 WHERE idPubli = 1').run();
+
+      const res = await request(app)
+        .post('/api/comments')
+        .set('Authorization', `Bearer ${tokenPour(2, 'bob')}`)
+        .send({ idPubli: 1, contenuCom: 'Commentaire interdit' });
+
+      expect(res.status).toBe(403);
+      expect(commentModel.getCommentsByPostId(1)).toHaveLength(0);
+    }
+  );
+
+  test(
     'POST /api/comments refuse un commentaire de plus de 500 caractères',
     async () => {
       const res = await request(app)

@@ -205,14 +205,16 @@ function createMediaPost(
     contenuPub,
     visibilite,
     nomMedia,
-    typeMedia
+    typeMedia,
+    commentairesActifs = 1
 ) {
     return postModel.createMediaPost(
         idUser,
         contenuPub,
         visibilite,
         nomMedia,
-        typeMedia
+        typeMedia,
+        commentairesActifs
     );
 }
 
@@ -258,7 +260,8 @@ function createPublication(
     idUser,
     contenuPub,
     visibilite = 1,
-    idPubliPartagee = null
+    idPubliPartagee = null,
+    commentairesActifs = 1
 ) {
     contenuPub = validerContenuPublication(contenuPub);
 
@@ -269,6 +272,9 @@ function createPublication(
 
     if (visibilite !== 0 && visibilite !== 1) {
         throw new Error('Visibilité invalide');
+    }
+    if (commentairesActifs !== 0 && commentairesActifs !== 1) {
+        throw new Error('Paramètre de commentaires invalide');
     }
 
     if (idPubliPartagee !== null) {
@@ -287,7 +293,8 @@ function createPublication(
         contenuPub,
         visibilite,
         idPubliPartagee,
-        idPubliPartagee ? 'repost' : 'original'
+        idPubliPartagee ? 'repost' : 'original',
+        commentairesActifs
     );
 }
 
@@ -372,7 +379,8 @@ function createDuo(
     contenuPub,
     visibilite = 1,
     nomMedia = null,
-    typeMedia = null
+    typeMedia = null,
+    commentairesActifs = 1
 ) {
     const user = userModel.findById(idUser);
     if (!user) {
@@ -411,7 +419,8 @@ function createDuo(
         contenuPub,
         visibilite,
         nomMedia,
-        typeMedia
+        typeMedia,
+        commentairesActifs
     );
 }
 
@@ -421,7 +430,8 @@ function createCollage(
     contenuPub,
     visibilite = 1,
     nomMedia = null,
-    typeMedia = null
+    typeMedia = null,
+    commentairesActifs = 1
 ) {
     const user = userModel.findById(idUser);
     if (!user) {
@@ -462,7 +472,8 @@ function createCollage(
         contenuPub,
         visibilite,
         nomMedia,
-        typeMedia
+        typeMedia,
+        commentairesActifs
     );
 }
 
@@ -507,6 +518,8 @@ function getFeedForUser(idUser) {
             p.idPubliPartagee,
             p.typePublication,
             p.datePubli,
+            p.dateModif,
+            p.commentairesActifs,
 
             u.pseudo AS auteurPseudo,
 
@@ -575,6 +588,63 @@ function getFeedForUser(idUser) {
         });
 }
 
+/** Erreur « métier » dont le message peut être renvoyé tel quel au client. */
+function erreurMetier(message, status = 400) {
+    const err = new Error(message);
+    err.status = status;
+    err.estValidation = true;
+    return err;
+}
+
+function modifierLegendePublication(idPubli, idUser, contenuPub) {
+    if (!Number.isInteger(idPubli) || idPubli <= 0) {
+        throw erreurMetier('Identifiant de publication invalide');
+    }
+    if (contenuPub !== null && typeof contenuPub !== 'string') {
+        throw erreurMetier('La légende doit être une chaîne de caractères');
+    }
+    if (typeof contenuPub === 'string' && contenuPub.length > 5000) {
+        throw erreurMetier('La légende ne peut pas dépasser 5000 caractères');
+    }
+
+    // Supprimer la légende d'une publication texte seule la laisserait vide
+    if (contenuPub === null || contenuPub === '') {
+        const publication = postModel.findById(idPubli);
+        if (publication && Number(publication.idUser) === Number(idUser) && !publication.idPubliPartagee) {
+            const media = db.prepare('SELECT 1 FROM Media WHERE idPubli = ? LIMIT 1').get(idPubli);
+            if (!media) {
+                throw erreurMetier('Une publication sans média doit garder un texte');
+            }
+        }
+    }
+
+    const result = postModel.updateCaption(idPubli, idUser, contenuPub);
+    if (!result.changes) {
+        const exists = postModel.findById(idPubli);
+        if (!exists) throw erreurMetier('Publication introuvable', 404);
+        throw erreurMetier('Vous ne pouvez pas modifier cette publication', 403);
+    }
+    const updated = postModel.findById(idPubli);
+    return { idPubli, contenuPub, dateModif: updated?.dateModif || null };
+}
+
+function modifierEtatCommentaires(idPubli, idUser, enabled) {
+    if (!Number.isInteger(idPubli) || idPubli <= 0) {
+        throw erreurMetier('Identifiant de publication invalide');
+    }
+    if (typeof enabled !== 'boolean') {
+        throw erreurMetier('État des commentaires invalide');
+    }
+
+    const result = postModel.updateCommentsEnabled(idPubli, idUser, enabled);
+    if (!result.changes) {
+        const exists = postModel.findById(idPubli);
+        if (!exists) throw erreurMetier('Publication introuvable', 404);
+        throw erreurMetier('Vous ne pouvez pas modifier cette publication', 403);
+    }
+    return { idPubli, commentairesActifs: enabled ? 1 : 0 };
+}
+
 module.exports = {
     // Modération / Signalement
     obtenirAuteurOriginal,
@@ -601,6 +671,8 @@ module.exports = {
 
     // Photos / vidéos
     createMediaPost,
+    modifierLegendePublication,
+    modifierEtatCommentaires,
     getAllPosts,
     getUserPosts,
     deletePost
