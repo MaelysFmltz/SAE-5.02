@@ -12,7 +12,7 @@
     feedback.classList.toggle('is-error', isError);
   }
 
-  function updateCaptionUI(container, caption) {
+  function updateCaptionUI(container, caption, captionHtml) {
     const display = container.querySelector('[data-caption-display]');
     const text = container.querySelector('[data-caption-text]');
     const input = container.querySelector('[data-caption-input]');
@@ -20,7 +20,11 @@
     const editButton = container.querySelector('[data-publication-action="edit-caption"]');
     const deleteButton = container.querySelector('[data-publication-action="delete-caption"]');
 
-    if (text) text.textContent = caption || '';
+    if (text) {
+      // captionHtml vient du serveur (linkifyHashtags échappe déjà tout le HTML)
+      if (caption && captionHtml) text.innerHTML = captionHtml;
+      else text.textContent = caption || '';
+    }
     if (display) display.hidden = !caption;
     if (input) input.value = caption || '';
     if (editor) editor.hidden = true;
@@ -128,10 +132,10 @@
       }
       button.disabled = true;
       try {
-        await sendPublicationAction(container, 'legende', {
+        const data = await sendPublicationAction(container, 'legende', {
           body: { contenuPub: caption || null }
         });
-        updateCaptionUI(container, caption);
+        updateCaptionUI(container, caption, data.contenuHtml);
         setFeedback(container, caption ? 'Légende enregistrée.' : 'Légende supprimée.');
       } catch (error) {
         setFeedback(container, error.message, true);

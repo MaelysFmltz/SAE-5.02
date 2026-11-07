@@ -2,7 +2,8 @@ const db = require('../config/database');
 const postModel = require('../models/postModel');
 const hashtagModel = require('../models/hashtagModel');
 const {
-    extractHashtags
+    extractHashtags,
+    linkifyHashtags
 } = require('../utils/hashtagUtils');
 
 const postService = require('../services/postService');
@@ -127,12 +128,15 @@ function modifierLegende(req, res) {
         return res.status(200).json({
             message: contenuPub ? 'Légende mise à jour' : 'Légende supprimée',
             contenuPub: contenuPub || null,
+            contenuHtml: contenuPub ? linkifyHashtags(contenuPub) : '',
             dateModif: publication.dateModif
         });
     } catch (error) {
-        return res.status(error.status || (error.message === 'Publication introuvable' ? 404 : 400)).json({
-            error: error.message
-        });
+        if (error.estValidation) {
+            return res.status(error.status || 400).json({ error: error.message });
+        }
+        console.error('Erreur modification publication :', error);
+        return res.status(500).json({ error: 'Erreur lors de la modification de la publication' });
     }
 }
 
@@ -160,9 +164,11 @@ function modifierCommentaires(req, res) {
             ...result
         });
     } catch (error) {
-        return res.status(error.status || (error.message === 'Publication introuvable' ? 404 : 400)).json({
-            error: error.message
-        });
+        if (error.estValidation) {
+            return res.status(error.status || 400).json({ error: error.message });
+        }
+        console.error('Erreur modification publication :', error);
+        return res.status(500).json({ error: 'Erreur lors de la modification de la publication' });
     }
 }
 

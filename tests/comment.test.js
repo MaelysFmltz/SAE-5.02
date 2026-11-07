@@ -305,6 +305,28 @@ describe('API commentaires - comportement fonctionnel', () => {
   );
 
   test(
+    'GET /api/comments/:idPubli ne révèle pas les commentaires d\'une publication privée',
+    async () => {
+      commentModel.createComment(1, 1, 'Commentaire privé');
+      db.prepare('UPDATE Publication SET visibilite = 0 WHERE idPubli = 1').run();
+
+      const anonyme = await request(app).get('/api/comments/1');
+      expect(anonyme.status).toBe(404);
+
+      const inconnu = await request(app)
+        .get('/api/comments/1')
+        .set('Authorization', `Bearer ${tokenPour(2, 'bob')}`);
+      expect(inconnu.status).toBe(404);
+
+      const auteur = await request(app)
+        .get('/api/comments/1')
+        .set('Authorization', `Bearer ${tokenPour(1, 'alice')}`);
+      expect(auteur.status).toBe(200);
+      expect(auteur.body).toHaveLength(1);
+    }
+  );
+
+  test(
     'POST /api/comments ne permet pas de commenter une publication verrouillée',
     async () => {
       db.prepare('UPDATE Publication SET commentairesActifs = 0 WHERE idPubli = 1').run();

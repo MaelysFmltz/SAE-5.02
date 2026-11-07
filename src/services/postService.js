@@ -588,24 +588,41 @@ function getFeedForUser(idUser) {
         });
 }
 
+/** Erreur « métier » dont le message peut être renvoyé tel quel au client. */
+function erreurMetier(message, status = 400) {
+    const err = new Error(message);
+    err.status = status;
+    err.estValidation = true;
+    return err;
+}
+
 function modifierLegendePublication(idPubli, idUser, contenuPub) {
     if (!Number.isInteger(idPubli) || idPubli <= 0) {
-        throw new Error('Identifiant de publication invalide');
+        throw erreurMetier('Identifiant de publication invalide');
     }
     if (contenuPub !== null && typeof contenuPub !== 'string') {
-        throw new Error('La légende doit être une chaîne de caractères');
+        throw erreurMetier('La légende doit être une chaîne de caractères');
     }
     if (typeof contenuPub === 'string' && contenuPub.length > 5000) {
-        throw new Error('La légende ne peut pas dépasser 5000 caractères');
+        throw erreurMetier('La légende ne peut pas dépasser 5000 caractères');
+    }
+
+    // Supprimer la légende d'une publication texte seule la laisserait vide
+    if (contenuPub === null || contenuPub === '') {
+        const publication = postModel.findById(idPubli);
+        if (publication && Number(publication.idUser) === Number(idUser) && !publication.idPubliPartagee) {
+            const media = db.prepare('SELECT 1 FROM Media WHERE idPubli = ? LIMIT 1').get(idPubli);
+            if (!media) {
+                throw erreurMetier('Une publication sans média doit garder un texte');
+            }
+        }
     }
 
     const result = postModel.updateCaption(idPubli, idUser, contenuPub);
     if (!result.changes) {
         const exists = postModel.findById(idPubli);
-        if (!exists) throw new Error('Publication introuvable');
-        const error = new Error('Vous ne pouvez pas modifier cette publication');
-        error.status = 403;
-        throw error;
+        if (!exists) throw erreurMetier('Publication introuvable', 404);
+        throw erreurMetier('Vous ne pouvez pas modifier cette publication', 403);
     }
     const updated = postModel.findById(idPubli);
     return { idPubli, contenuPub, dateModif: updated?.dateModif || null };
@@ -613,19 +630,17 @@ function modifierLegendePublication(idPubli, idUser, contenuPub) {
 
 function modifierEtatCommentaires(idPubli, idUser, enabled) {
     if (!Number.isInteger(idPubli) || idPubli <= 0) {
-        throw new Error('Identifiant de publication invalide');
+        throw erreurMetier('Identifiant de publication invalide');
     }
     if (typeof enabled !== 'boolean') {
-        throw new Error('État des commentaires invalide');
+        throw erreurMetier('État des commentaires invalide');
     }
 
     const result = postModel.updateCommentsEnabled(idPubli, idUser, enabled);
     if (!result.changes) {
         const exists = postModel.findById(idPubli);
-        if (!exists) throw new Error('Publication introuvable');
-        const error = new Error('Vous ne pouvez pas modifier cette publication');
-        error.status = 403;
-        throw error;
+        if (!exists) throw erreurMetier('Publication introuvable', 404);
+        throw erreurMetier('Vous ne pouvez pas modifier cette publication', 403);
     }
     return { idPubli, commentairesActifs: enabled ? 1 : 0 };
 }

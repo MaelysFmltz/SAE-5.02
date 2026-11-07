@@ -75,4 +75,12 @@
 .post-owner-tools { padding: 0 14px; margin: 8px 0 12px; }
 .post-card > .publication-date { padding: 0 14px; }
 .post-card > .publication-caption-editor { margin: 8px 14px 12px; }
-.post-card > .publication-caption-display .post-caption-box { white-space: pre-wrap; }
+.post-card > .publication-caption-display [data-caption-text] { white-space: pre-wrap; }
+
+/* L'attribut hidden doit l'emporter sur les display: flex/block des boutons et sections */
+[data-post-comment-toggle][hidden],
+[data-comments-disabled-notice][hidden],
+[data-caption-display][hidden],
+.publication-owner-tool[hidden],
+#commentsSection[hidden],
+.form-comment[hidden] { display: none !important; }

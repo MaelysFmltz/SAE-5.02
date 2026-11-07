@@ -18,6 +18,7 @@ describe('Tests HTTP des publications', () => {
             DROP TABLE IF EXISTS Publication;
             DROP TABLE IF EXISTS Utilisateur;
             DROP TABLE IF EXISTS Abonnement;
+            DROP TABLE IF EXISTS Media;
 
             CREATE TABLE Utilisateur (
                 idUser INTEGER PRIMARY KEY
@@ -37,6 +38,13 @@ describe('Tests HTTP des publications', () => {
                 idUserAbonne INTEGER NOT NULL,
                 idUserSuivi INTEGER NOT NULL,
                 PRIMARY KEY (idUserAbonne, idUserSuivi)
+            );
+
+            CREATE TABLE Media (
+                idMedia INTEGER PRIMARY KEY AUTOINCREMENT,
+                idPubli INTEGER,
+                nomMedia TEXT NOT NULL,
+                typeMedia TEXT NOT NULL
             );
 
             INSERT INTO Utilisateur (idUser)
@@ -102,6 +110,7 @@ describe('Tests HTTP des publications', () => {
     });
 
     test('DELETE /api/publications/:idPubli/legende supprime la légende uniquement pour son auteur', async () => {
+        db.prepare("INSERT INTO Media (idPubli, nomMedia, typeMedia) VALUES (1, 'photo.jpg', 'image')").run();
         const token = tokenPour(1);
         const response = await request(app)
             .delete('/api/publications/1/legende')
@@ -110,6 +119,29 @@ describe('Tests HTTP des publications', () => {
         expect(response.status).toBe(200);
         expect(db.prepare('SELECT contenuPub FROM Publication WHERE idPubli = 1').get().contenuPub)
             .toBeNull();
+    });
+
+    test('DELETE /api/publications/:idPubli/legende refuse de vider une publication sans média', async () => {
+        const token = tokenPour(1);
+        const response = await request(app)
+            .delete('/api/publications/1/legende')
+            .set('Authorization', `Bearer ${token}`);
+
+        expect(response.status).toBe(400);
+        expect(db.prepare('SELECT contenuPub FROM Publication WHERE idPubli = 1').get().contenuPub)
+            .toBe('Publication publique');
+    });
+
+    test('PATCH /api/publications/:idPubli/legende renvoie la légende rendue avec des hashtags échappés', async () => {
+        const token = tokenPour(1);
+        const response = await request(app)
+            .patch('/api/publications/1/legende')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ contenuPub: '<img src=x onerror=alert(1)> #pixora' });
+
+        expect(response.status).toBe(200);
+        expect(response.body.contenuHtml).not.toContain('<img');
+        expect(response.body.contenuHtml).toContain('class="hashtag-link"');
     });
 
     test('PATCH /api/publications/:idPubli/commentaires désactive les commentaires pour le propriétaire', async () => {

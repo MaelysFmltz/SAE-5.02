@@ -429,13 +429,7 @@
               <a href="/profile/<%= post.auteurPseudo %>" style="text-decoration: none;">
                 <strong>@<%= post.auteurPseudo %></strong>
               </a>
-              <span data-caption-text>
-                <% if (typeof linkifyHashtags === 'function') { %>
-                  <%- linkifyHashtags(post.contenuPub) %>
-                <% } else { %>
-                  <%= post.contenuPub %>
-                <% } %>
-              </span>
+              <span data-caption-text><% if (typeof linkifyHashtags === 'function') { %><%- linkifyHashtags(post.contenuPub) %><% } else { %><%= post.contenuPub %><% } %></span>
             </div>
           <% } else { %>
             <div class="post-caption-box"><span data-caption-text></span></div>

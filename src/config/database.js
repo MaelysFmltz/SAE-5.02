@@ -43,7 +43,6 @@ if (publicationExiste) {
     console.log('Migration Publication : colonne commentairesActifs ajoutée (commentaires activés par défaut).');
   }
 }
-
 const commentTableInfo = db.prepare("PRAGMA table_info(Commentaire)").all();
 const hasIdParent = commentTableInfo.some(column => column.name === 'idParent');
 if (!hasIdParent) {
@@ -74,6 +73,33 @@ if (messageExiste) {
   if (!noms.includes('supprime')) {
     db.exec('ALTER TABLE Message ADD COLUMN supprime INTEGER NOT NULL DEFAULT 0');
     console.log('Migration : colonne supprime ajoutée à Message.');
+  }
+}
+
+// 4 bis. Migrations Notifications (idActeur + marque-page de lecture par membre)
+const notificationExiste = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='Notification'").get();
+if (notificationExiste) {
+  const colonnesNotif = db.prepare('PRAGMA table_info(Notification)').all();
+  if (!colonnesNotif.some(col => col.name === 'idActeur')) {
+    db.exec('ALTER TABLE Notification ADD COLUMN idActeur INTEGER REFERENCES Utilisateur(idUser) ON DELETE CASCADE');
+    console.log('Migration : colonne idActeur ajoutée à Notification.');
+  }
+}
+
+if (conversationMembreExiste) {
+  const colonnesMembre = db.prepare('PRAGMA table_info(ConversationMembre)').all();
+  if (!colonnesMembre.some(col => col.name === 'idDernierMessageLu')) {
+    db.transaction(() => {
+      db.exec('ALTER TABLE ConversationMembre ADD COLUMN idDernierMessageLu INTEGER NOT NULL DEFAULT 0');
+      // Les messages déjà présents avant la migration sont considérés comme lus,
+      // sinon toutes les anciennes conversations apparaîtraient d'un coup comme non lues.
+      db.exec(`
+        UPDATE ConversationMembre
+        SET idDernierMessageLu = COALESCE(
+          (SELECT MAX(m.idMessage) FROM Message m WHERE m.idConversation = ConversationMembre.idConversation), 0)
+      `);
+    })();
+    console.log('Migration : colonne idDernierMessageLu ajoutée à ConversationMembre.');
   }
 }
 
