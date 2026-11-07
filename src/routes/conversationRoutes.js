@@ -19,6 +19,7 @@ router.post('/:idConversation/members', conversationController.addParticipants);
 router.delete('/:idConversation/members/:idUser', conversationController.removeParticipant);
 router.put('/:idConversation', conversationController.renameGroup);
 router.post('/:idConversation/leave', conversationController.leaveGroup);
+router.post('/:idConversation/masquer', conversationController.masquerConversation);
 router.delete('/:idConversation', conversationController.deleteConversation);
 
 module.exports = router;

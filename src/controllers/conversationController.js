@@ -4,6 +4,7 @@
  * conversationService, et renvoie le code de statut approprié.
  */
 
+const { repondreErreur } = require('../utils/httpErrors');
 const conversationService = require('../services/conversationService');
 
 /**
@@ -26,7 +27,7 @@ async function getMyConversations(req, res) {
     const conversations = await conversationService.getMyConversations(req.user.idUser);
     return res.status(200).json(conversations);
   } catch (err) {
-    return res.status(err.status || 400).json({ error: err.message });
+    return repondreErreur(res, err, 'Erreur conversation');
   }
 }
 
@@ -39,7 +40,7 @@ async function createDirect(req, res) {
     );
     return res.status(201).json({ idConversation });
   } catch (err) {
-    return res.status(err.status || 400).json({ error: err.message });
+    return repondreErreur(res, err, 'Erreur conversation');
   }
 }
 
@@ -53,7 +54,7 @@ async function createGroup(req, res) {
     );
     return res.status(201).json({ idConversation });
   } catch (err) {
-    return res.status(err.status || 400).json({ error: err.message });
+    return repondreErreur(res, err, 'Erreur conversation');
   }
 }
 
@@ -63,7 +64,7 @@ async function getMembers(req, res) {
     const membres = await conversationService.getConversationMembers(idConversation, req.user.idUser);
     return res.status(200).json({ membres });
   } catch (err) {
-    return res.status(err.status || 403).json({ error: err.message });
+    return repondreErreur(res, err, 'Erreur conversation');
   }
 }
 
@@ -80,7 +81,7 @@ async function addParticipants(req, res) {
 
     return res.status(200).json({ membres });
   } catch (err) {
-    return res.status(err.status || 400).json({ error: err.message });
+    return repondreErreur(res, err, 'Erreur conversation');
   }
 }
 
@@ -97,7 +98,7 @@ async function removeParticipant(req, res) {
 
     return res.status(200).json({ membres });
   } catch (err) {
-    return res.status(err.status || 400).json({ error: err.message });
+    return repondreErreur(res, err, 'Erreur conversation');
   }
 }
 
@@ -114,17 +115,32 @@ async function renameGroup(req, res) {
 
     return res.status(200).json({ titreGroupe: nouveauTitre });
   } catch (err) {
-    return res.status(err.status || 400).json({ error: err.message });
+    return repondreErreur(res, err, 'Erreur conversation');
   }
 }
 
 async function deleteConversation(req, res) {
   try {
     const idConversation = parseIdConversation(req.params.idConversation);
-    await conversationService.deleteConversation(idConversation, req.user.idUser);
-    return res.status(200).json({ message: 'Conversation supprimée' });
+    const resultat = await conversationService.deleteConversation(idConversation, req.user.idUser);
+    return res.status(200).json({
+      message: resultat === 'masquee'
+        ? 'Conversation supprimée de votre liste'
+        : 'Conversation supprimée',
+      resultat
+    });
   } catch (err) {
-    return res.status(err.status || 400).json({ error: err.message });
+    return repondreErreur(res, err, 'Erreur conversation');
+  }
+}
+
+async function masquerConversation(req, res) {
+  try {
+    const idConversation = parseIdConversation(req.params.idConversation);
+    await conversationService.masquerConversation(idConversation, req.user.idUser);
+    return res.status(200).json({ message: 'Conversation supprimée de votre liste', resultat: 'masquee' });
+  } catch (err) {
+    return repondreErreur(res, err, 'Erreur conversation');
   }
 }
 
@@ -134,11 +150,12 @@ async function leaveGroup(req, res) {
     await conversationService.leaveGroup(idConversation, req.user.idUser);
     return res.status(200).json({ message: 'Vous avez quitté le groupe' });
   } catch (err) {
-    return res.status(err.status || 400).json({ error: err.message });
+    return repondreErreur(res, err, 'Erreur conversation');
   }
 }
 
 module.exports = {
+  masquerConversation,
   getMyConversations,
   createDirect,
   createGroup,

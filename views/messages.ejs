@@ -43,7 +43,7 @@
             <div class="conv-info">
               <span class="conv-title"><%= conv.titreGroupe || conv.autrePseudo %></span>
               <span class="conv-preview <%= conv.nonLu ? 'unread' : '' %>">
-                <%= conv.dernierMessage || 'Aucun message' %>
+                <%= conv.dernierMessageSupprime ? 'Message supprimé' : (conv.dernierMessage || 'Aucun message') %>
               </span>
             </div>
             <% if (conv.nonLu) { %>

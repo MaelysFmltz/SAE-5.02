@@ -21,6 +21,9 @@
 
   const POLL_INTERVAL_MS = 3000;
 
+  // Doit correspondre à EMOJIS_AUTORISES côté serveur (messageService)
+  const EMOJIS_REACTION = ['❤️', '😂', '😮', '😢', '😡', '👍'];
+
   function formatHeure(dateEnvoi) {
     return new Date(dateEnvoi).toLocaleTimeString('fr-FR', {
       hour: '2-digit',
@@ -37,6 +40,7 @@
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="20 6 9 17 4 12"></polyline></svg>',
     cross: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>',
+    smile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>',
     flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>'
   };
 
@@ -57,11 +61,110 @@
     return map;
   }
 
+  /**
+   * Empreinte de ce qui est affiché dans une bulle : le polling ne redessine
+   * une bulle que si elle a réellement changé (contenu, suppression, réactions).
+   */
+  function signatureMessage(message) {
+    return JSON.stringify([
+      message.contenu,
+      !!message.supprime,
+      message.dateModification || null,
+      (message.reactions || []).map(r => [r.emoji, r.total, !!r.parMoi])
+    ]);
+  }
+
+  async function envoyerReaction(message, emoji) {
+    try {
+      const res = await fetch(
+        `/api/conversations/${idConversation}/messages/${message.idMessage}/reaction`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ emoji })
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Impossible de réagir à ce message.');
+        return;
+      }
+
+      const bulle = chatMessages.querySelector(`.bubble[data-id="${message.idMessage}"]`);
+      if (bulle) bulle.replaceWith(creerBulle(data));
+    } catch (err) {
+      console.error('Erreur réaction message :', err);
+      alert('Erreur réseau lors de la réaction.');
+    }
+  }
+
+  function creerLigneReactions(message) {
+    const ligne = document.createElement('div');
+    ligne.className = 'bubble-reactions';
+
+    (message.reactions || []).forEach((reaction) => {
+      const pastille = document.createElement('button');
+      pastille.type = 'button';
+      pastille.className = 'bubble-reaction' + (reaction.parMoi ? ' by-me' : '');
+      pastille.title = (reaction.pseudos || []).map(p => '@' + p).join(', ');
+      pastille.setAttribute(
+        'aria-label',
+        `${reaction.emoji} ${reaction.total} — ${reaction.parMoi ? 'retirer ma réaction' : 'réagir aussi'}`
+      );
+      pastille.textContent = `${reaction.emoji} ${reaction.total}`;
+      pastille.addEventListener('click', () => envoyerReaction(message, reaction.emoji));
+      ligne.appendChild(pastille);
+    });
+
+    return ligne;
+  }
+
+  function ouvrirSelecteurReaction(bulle, message) {
+    const existant = bulle.querySelector('.reaction-picker');
+    if (existant) {
+      existant.remove();
+      bulle.classList.remove('picking');
+      return;
+    }
+
+    // Un seul sélecteur ouvert à la fois
+    chatMessages.querySelectorAll('.reaction-picker').forEach((el) => {
+      el.closest('.bubble')?.classList.remove('picking');
+      el.remove();
+    });
+
+    bulle.classList.add('picking');
+
+    const selecteur = document.createElement('div');
+    selecteur.className = 'reaction-picker';
+    selecteur.setAttribute('role', 'menu');
+
+    const maReaction = (message.reactions || []).find(r => r.parMoi);
+
+    EMOJIS_REACTION.forEach((emoji) => {
+      const choix = document.createElement('button');
+      choix.type = 'button';
+      choix.className = 'reaction-choice' + (maReaction && maReaction.emoji === emoji ? ' selected' : '');
+      choix.textContent = emoji;
+      choix.setAttribute('role', 'menuitem');
+      choix.addEventListener('click', () => {
+        bulle.classList.remove('picking');
+        envoyerReaction(message, emoji);
+      });
+      selecteur.appendChild(choix);
+    });
+
+    bulle.appendChild(selecteur);
+  }
+
   function creerBulle(message) {
     const bulle = document.createElement('div');
     const estAMoi = message.idUser === idUserCourant;
     bulle.className = 'bubble ' + (estAMoi ? 'mine' : 'theirs') + (message.supprime ? ' deleted' : '');
     bulle.dataset.id = String(message.idMessage);
+    bulle.dataset.signature = signatureMessage(message);
 
     if (message.supprime) {
       const texteSupprime = document.createElement('span');
@@ -82,6 +185,10 @@
     texte.textContent = message.contenu;
     bulle.appendChild(texte);
 
+    if (message.reactions && message.reactions.length > 0) {
+      bulle.appendChild(creerLigneReactions(message));
+    }
+
     const meta = document.createElement('div');
     meta.className = 'bubble-meta';
     meta.textContent = formatHeure(message.dateEnvoi) + (message.dateModification ? ' · modifié' : '');
@@ -89,6 +196,10 @@
 
     const actions = document.createElement('div');
     actions.className = 'bubble-actions';
+
+    const btnReagir = creerBoutonIcone('smile', 'Réagir');
+    btnReagir.addEventListener('click', () => ouvrirSelecteurReaction(bulle, message));
+    actions.appendChild(btnReagir);
 
     const peutModifier = estAMoi;
     const peutSupprimer = estAMoi || (estGroupe && estCreateurCourant);
@@ -246,7 +357,8 @@
       const existante = affichees.get(message.idMessage);
 
       if (existante) {
-        if (!existante.classList.contains('editing')) {
+        const occupee = existante.classList.contains('editing') || existante.classList.contains('picking');
+        if (!occupee && existante.dataset.signature !== signatureMessage(message)) {
           existante.replaceWith(creerBulle(message));
         }
         return;
@@ -309,7 +421,7 @@
 
   if (!estGroupe && btnDeleteConversation) {
     btnDeleteConversation.addEventListener('click', async () => {
-      if (!confirm('Supprimer cette conversation ? Elle sera supprimée pour vous et pour l’autre personne.')) {
+      if (!confirm('Supprimer cette conversation de votre liste ? L’historique sera effacé pour vous uniquement : l’autre personne garde la conversation.')) {
         return;
       }
 
@@ -510,6 +622,38 @@
 
       actions.appendChild(btnQuitter);
     }
+
+    const btnMasquer = document.createElement('button');
+    btnMasquer.type = 'button';
+    btnMasquer.className = 'btn-remove-member';
+    btnMasquer.textContent = 'Supprimer de ma liste';
+    btnMasquer.title = 'Retire le groupe de votre liste et efface l’historique pour vous seulement. Il réapparaîtra au prochain message.';
+    btnMasquer.addEventListener('click', async () => {
+      if (!confirm('Supprimer ce groupe de votre liste ? L’historique sera effacé pour vous uniquement, et le groupe réapparaîtra au prochain message.')) {
+        return;
+      }
+
+      btnMasquer.disabled = true;
+
+      try {
+        const res = await fetch(`/api/conversations/${idConversation}/masquer`, { method: 'POST' });
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.error || 'Impossible de supprimer ce groupe de votre liste.');
+          btnMasquer.disabled = false;
+          return;
+        }
+
+        window.location.href = '/messages';
+      } catch (err) {
+        console.error('Erreur masquage groupe :', err);
+        alert('Erreur réseau.');
+        btnMasquer.disabled = false;
+      }
+    });
+
+    actions.appendChild(btnMasquer);
 
     const btnFermer = document.createElement('button');
     btnFermer.type = 'button';

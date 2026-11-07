@@ -38,16 +38,24 @@ function findDirectConversationBetween(idUserA, idUserB) {
 /**
  * Liste les conversations d'un utilisateur, avec un aperçu du dernier message.
  * Pour une conversation à 2 (sans titre de groupe), inclut le pseudo de
- * l'autre membre (autrePseudo) pour l'affichage. Inclut aussi un flag
- * nonLu (message(s) reçus pas encore marqués comme lus).
+ * l'autre membre (autrePseudo) pour l'affichage.
+ *
+ * - nonLu : message(s) reçus après le marque-page de lecture de CE membre
+ *   (idDernierMessageLu), pas le flag global Message.lu partagé par tout le groupe.
+ * - Les messages effacés par ce membre (idMessageMasqueJusqua) sont ignorés.
+ * - Les conversations masquées (« supprimées de sa liste ») sont exclues,
+ *   sauf si options.inclureMasquees est vrai.
  */
-function getConversationsForUser(idUser) {
+function getConversationsForUser(idUser, options = {}) {
+  const inclureMasquees = options.inclureMasquees === true;
   const query = `
     SELECT
       c.idConversation,
       c.titreGroupe,
       c.dateCreation,
+      cm.masquee,
       m.contenu   AS dernierMessage,
+      m.supprime  AS dernierMessageSupprime,
       m.dateEnvoi AS dateDernierMessage,
       (
         SELECT u2.pseudo
@@ -61,17 +69,20 @@ function getConversationsForUser(idUser) {
         SELECT 1 FROM Message m2
         WHERE m2.idConversation = c.idConversation
           AND m2.idUser != ?
-          AND m2.lu = 0
+          AND m2.idMessage > cm.idDernierMessageLu
+          AND m2.idMessage > cm.idMessageMasqueJusqua
       ) AS nonLu
     FROM Conversation c
     JOIN ConversationMembre cm ON cm.idConversation = c.idConversation
     LEFT JOIN Message m ON m.idMessage = (
       SELECT idMessage FROM Message
       WHERE idConversation = c.idConversation
-      ORDER BY dateEnvoi DESC
+        AND idMessage > cm.idMessageMasqueJusqua
+      ORDER BY dateEnvoi DESC, idMessage DESC
       LIMIT 1
     )
     WHERE cm.idUser = ?
+      ${inclureMasquees ? '' : 'AND cm.masquee = 0'}
     ORDER BY dateDernierMessage DESC, c.dateCreation DESC
   `;
   return db.prepare(query).all(idUser, idUser, idUser);

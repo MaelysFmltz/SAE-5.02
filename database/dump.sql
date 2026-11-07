@@ -170,6 +170,8 @@ CREATE TABLE IF NOT EXISTS ConversationMembre (
     dateRejoint DATETIME DEFAULT CURRENT_TIMESTAMP,
     estCreateur INTEGER NOT NULL DEFAULT 0,
     idDernierMessageLu INTEGER NOT NULL DEFAULT 0,
+    masquee INTEGER NOT NULL DEFAULT 0 CHECK(masquee IN (0, 1)),
+    idMessageMasqueJusqua INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (idConversation, idUser),
     FOREIGN KEY (idConversation) REFERENCES Conversation(idConversation) ON DELETE CASCADE,
     FOREIGN KEY (idUser) REFERENCES Utilisateur(idUser) ON DELETE CASCADE
@@ -186,6 +188,16 @@ CREATE TABLE IF NOT EXISTS Message (
     dateModification DATETIME,
     supprime INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (idConversation) REFERENCES Conversation(idConversation) ON DELETE CASCADE,
+    FOREIGN KEY (idUser) REFERENCES Utilisateur(idUser) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS MessageReaction (
+    idMessage INTEGER NOT NULL,
+    idUser INTEGER NOT NULL,
+    emoji TEXT NOT NULL,
+    dateReaction DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (idMessage, idUser),
+    FOREIGN KEY (idMessage) REFERENCES Message(idMessage) ON DELETE CASCADE,
     FOREIGN KEY (idUser) REFERENCES Utilisateur(idUser) ON DELETE CASCADE
 );
 

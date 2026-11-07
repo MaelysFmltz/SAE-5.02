@@ -416,3 +416,88 @@
     background-color: transparent;
     color: var(--text-primary);
   }
+/* ==========================================
+   RÉACTIONS SUR LES MESSAGES
+========================================== */
+
+.bubble {
+  position: relative;
+}
+
+.bubble-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.bubble.mine .bubble-reactions {
+  justify-content: flex-end;
+}
+
+.bubble-reaction {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.bubble-reaction.by-me {
+  border-color: #ffffff;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.bubble.theirs .bubble-reaction {
+  border-color: var(--border-color);
+  background: var(--bg-primary);
+}
+
+.bubble.theirs .bubble-reaction.by-me {
+  border-color: var(--border-focus);
+  background: rgba(194, 64, 149, 0.18);
+}
+
+.reaction-picker {
+  display: flex;
+  gap: 2px;
+  margin-top: 6px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  width: max-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.bubble.mine .reaction-picker {
+  margin-left: auto;
+}
+
+.reaction-choice {
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 4px;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+
+.reaction-choice:hover,
+.reaction-choice:focus-visible {
+  transform: scale(1.2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.reaction-choice.selected {
+  background: rgba(194, 64, 149, 0.3);
+}

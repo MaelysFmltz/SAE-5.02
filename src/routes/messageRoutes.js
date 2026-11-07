@@ -15,5 +15,7 @@ router.post('/:idConversation/messages', messageController.sendMessage);
 router.put('/:idConversation/read', messageController.markAsRead);
 router.put('/:idConversation/messages/:idMessage', messageController.editMessage);
 router.delete('/:idConversation/messages/:idMessage', messageController.deleteMessage);
+router.put('/:idConversation/messages/:idMessage/reaction', messageController.reagirMessage);
+router.delete('/:idConversation/messages/:idMessage/reaction', messageController.retirerReaction);
 
 module.exports = router;

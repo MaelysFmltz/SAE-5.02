@@ -19,6 +19,8 @@ beforeAll(() => {
 });
 
 afterEach(() => {
+  db.exec('DELETE FROM MessageReaction');
+  db.exec('DELETE FROM Blocage');
   db.exec('DELETE FROM Message');
   db.exec('DELETE FROM ConversationMembre');
   db.exec('DELETE FROM Conversation');
@@ -564,7 +566,7 @@ describe('Messagerie - conversations de groupe', () => {
 });
 
 describe('Messagerie - suppression de conversations et de groupes', () => {
-  test('n’importe quel membre peut supprimer une conversation directe pour de bon', async () => {
+  test('supprimer une conversation directe la retire de SA liste seulement', async () => {
     const a = await creerCompteEtConnecter('msguserA', 'msguserA@test.com');
     const b = await creerCompteEtConnecter('msguserB', 'msguserB@test.com');
 
@@ -575,13 +577,18 @@ describe('Messagerie - suppression de conversations et de groupes', () => {
 
     const idConversation = directRes.body.idConversation;
 
+    await request(app)
+      .post(`/api/conversations/${idConversation}/messages`)
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ contenu: 'Message historique' });
+
     const deleteRes = await request(app)
       .delete(`/api/conversations/${idConversation}`)
       .set('Authorization', `Bearer ${b.token}`);
 
     expect(deleteRes.status).toBe(200);
+    expect(deleteRes.body.resultat).toBe('masquee');
 
-    // La conversation n'existe plus, pour aucun des deux membres
     const listeA = await request(app)
       .get('/api/conversations')
       .set('Authorization', `Bearer ${a.token}`);
@@ -589,8 +596,19 @@ describe('Messagerie - suppression de conversations et de groupes', () => {
       .get('/api/conversations')
       .set('Authorization', `Bearer ${b.token}`);
 
-    expect(listeA.body.some((c) => c.idConversation === idConversation)).toBe(false);
+    // A garde la conversation et son historique, B ne la voit plus
+    expect(listeA.body.some((c) => c.idConversation === idConversation)).toBe(true);
     expect(listeB.body.some((c) => c.idConversation === idConversation)).toBe(false);
+
+    const messagesA = await request(app)
+      .get(`/api/conversations/${idConversation}/messages`)
+      .set('Authorization', `Bearer ${a.token}`);
+    const messagesB = await request(app)
+      .get(`/api/conversations/${idConversation}/messages`)
+      .set('Authorization', `Bearer ${b.token}`);
+
+    expect(messagesA.body).toHaveLength(1);
+    expect(messagesB.body).toHaveLength(0);
   });
 
   test('refuse de supprimer une conversation dont on n’est pas membre', async () => {
@@ -878,5 +896,326 @@ describe('Messagerie - modification et suppression de messages', () => {
       .send({ contenu: 'Trop tard' });
 
     expect(editRes.status).toBe(400);
+  });
+});
+
+describe('Messagerie - réactions sur les messages', () => {
+  async function preparerConversation() {
+    const a = await creerCompteEtConnecter('reactA', 'reactA@test.com');
+    const b = await creerCompteEtConnecter('reactB', 'reactB@test.com');
+
+    const directRes = await request(app)
+      .post('/api/conversations/direct')
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ idUserDestinataire: b.idUser });
+
+    const idConversation = directRes.body.idConversation;
+
+    const msgRes = await request(app)
+      .post(`/api/conversations/${idConversation}/messages`)
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ contenu: 'Salut !' });
+
+    return { a, b, idConversation, idMessage: msgRes.body.idMessage };
+  }
+
+  function reagir(token, idConversation, idMessage, emoji) {
+    return request(app)
+      .put(`/api/conversations/${idConversation}/messages/${idMessage}/reaction`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ emoji });
+  }
+
+  test('un membre peut réagir, et l’autre membre voit la réaction', async () => {
+    const { a, b, idConversation, idMessage } = await preparerConversation();
+
+    const res = await reagir(b.token, idConversation, idMessage, '❤️');
+
+    expect(res.status).toBe(200);
+    expect(res.body.reactions).toEqual([
+      { emoji: '❤️', total: 1, parMoi: true, pseudos: ['reactb'] }
+    ]);
+
+    const vueA = await request(app)
+      .get(`/api/conversations/${idConversation}/messages`)
+      .set('Authorization', `Bearer ${a.token}`);
+
+    expect(vueA.body[0].reactions).toEqual([
+      { emoji: '❤️', total: 1, parMoi: false, pseudos: ['reactb'] }
+    ]);
+  });
+
+  test('re-choisir le même emoji retire la réaction, un autre la remplace', async () => {
+    const { b, idConversation, idMessage } = await preparerConversation();
+
+    await reagir(b.token, idConversation, idMessage, '😂');
+    const remplace = await reagir(b.token, idConversation, idMessage, '👍');
+    expect(remplace.body.reactions).toEqual([
+      { emoji: '👍', total: 1, parMoi: true, pseudos: ['reactb'] }
+    ]);
+
+    const retire = await reagir(b.token, idConversation, idMessage, '👍');
+    expect(retire.body.reactions).toEqual([]);
+  });
+
+  test('DELETE retire la réaction', async () => {
+    const { b, idConversation, idMessage } = await preparerConversation();
+    await reagir(b.token, idConversation, idMessage, '😮');
+
+    const res = await request(app)
+      .delete(`/api/conversations/${idConversation}/messages/${idMessage}/reaction`)
+      .set('Authorization', `Bearer ${b.token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.reactions).toEqual([]);
+  });
+
+  test.each([
+    ['un emoji hors liste', '💩'],
+    ['du HTML', '<img src=x onerror=alert(1)>'],
+    ['un tableau', ['❤️']],
+    ['rien', undefined]
+  ])('refuse %s comme réaction', async (_label, emoji) => {
+    const { b, idConversation, idMessage } = await preparerConversation();
+
+    const res = await reagir(b.token, idConversation, idMessage, emoji);
+
+    expect(res.status).toBe(400);
+    expect(db.prepare('SELECT COUNT(*) AS n FROM MessageReaction').get().n).toBe(0);
+  });
+
+  test('refuse la réaction d’un non-membre', async () => {
+    const { idConversation, idMessage } = await preparerConversation();
+    const c = await creerCompteEtConnecter('reactC', 'reactC@test.com');
+
+    const res = await reagir(c.token, idConversation, idMessage, '❤️');
+
+    expect(res.status).toBe(403);
+  });
+
+  test('refuse de réagir à un message d’une autre conversation via sa propre conversation', async () => {
+    const { a, idMessage } = await preparerConversation();
+    const c = await creerCompteEtConnecter('reactC', 'reactC@test.com');
+
+    const autreConv = await request(app)
+      .post('/api/conversations/direct')
+      .set('Authorization', `Bearer ${c.token}`)
+      .send({ idUserDestinataire: a.idUser });
+
+    const res = await reagir(c.token, autreConv.body.idConversation, idMessage, '❤️');
+
+    expect(res.status).toBe(404);
+  });
+
+  test('refuse de réagir à un message supprimé, et la suppression efface les réactions', async () => {
+    const { a, b, idConversation, idMessage } = await preparerConversation();
+    await reagir(b.token, idConversation, idMessage, '❤️');
+
+    await request(app)
+      .delete(`/api/conversations/${idConversation}/messages/${idMessage}`)
+      .set('Authorization', `Bearer ${a.token}`);
+
+    expect(db.prepare('SELECT COUNT(*) AS n FROM MessageReaction').get().n).toBe(0);
+
+    const res = await reagir(b.token, idConversation, idMessage, '😂');
+    expect(res.status).toBe(400);
+  });
+
+  test('refuse de réagir dans une conversation directe en cas de blocage', async () => {
+    const { a, b, idConversation, idMessage } = await preparerConversation();
+    db.prepare('INSERT INTO Blocage (idUserBloqueur, idUserBloque) VALUES (?, ?)').run(a.idUser, b.idUser);
+
+    const res = await reagir(b.token, idConversation, idMessage, '❤️');
+
+    expect(res.status).toBe(403);
+  });
+});
+
+describe('Messagerie - supprimer une conversation de sa propre liste', () => {
+  async function creerGroupe(chef, membres) {
+    const res = await request(app)
+      .post('/api/conversations/group')
+      .set('Authorization', `Bearer ${chef.token}`)
+      .send({ membres: membres.map((m) => m.idUser), titreGroupe: 'Groupe test' });
+    return res.body.idConversation;
+  }
+
+  function envoyer(token, idConversation, contenu) {
+    return request(app)
+      .post(`/api/conversations/${idConversation}/messages`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ contenu });
+  }
+
+  function liste(token) {
+    return request(app).get('/api/conversations').set('Authorization', `Bearer ${token}`);
+  }
+
+  test('un nouveau message fait réapparaître la conversation, sans l’ancien historique', async () => {
+    const a = await creerCompteEtConnecter('hideA', 'hideA@test.com');
+    const b = await creerCompteEtConnecter('hideB', 'hideB@test.com');
+
+    const directRes = await request(app)
+      .post('/api/conversations/direct')
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ idUserDestinataire: b.idUser });
+    const idConversation = directRes.body.idConversation;
+
+    const ancien = await envoyer(b.token, idConversation, 'Ancien message de B');
+
+    await request(app)
+      .delete(`/api/conversations/${idConversation}`)
+      .set('Authorization', `Bearer ${b.token}`);
+
+    await envoyer(a.token, idConversation, 'Nouveau message de A');
+
+    const listeB = await liste(b.token);
+    const convB = listeB.body.find((c) => c.idConversation === idConversation);
+    expect(convB).toBeDefined();
+    expect(convB.dernierMessage).toBe('Nouveau message de A');
+    expect(convB.nonLu).toBeTruthy();
+
+    const messagesB = await request(app)
+      .get(`/api/conversations/${idConversation}/messages`)
+      .set('Authorization', `Bearer ${b.token}`);
+    expect(messagesB.body.map((m) => m.contenu)).toEqual(['Nouveau message de A']);
+
+    // L'ancien message n'est plus atteignable par B, même via l'API
+    const edit = await request(app)
+      .put(`/api/conversations/${idConversation}/messages/${ancien.body.idMessage}`)
+      .set('Authorization', `Bearer ${b.token}`)
+      .send({ contenu: 'modif' });
+    expect(edit.status).toBe(404);
+
+    const reaction = await request(app)
+      .put(`/api/conversations/${idConversation}/messages/${ancien.body.idMessage}/reaction`)
+      .set('Authorization', `Bearer ${b.token}`)
+      .send({ emoji: '❤️' });
+    expect(reaction.status).toBe(404);
+
+    // A, lui, voit toujours les deux messages
+    const messagesA = await request(app)
+      .get(`/api/conversations/${idConversation}/messages`)
+      .set('Authorization', `Bearer ${a.token}`);
+    expect(messagesA.body).toHaveLength(2);
+  });
+
+  test('rouvrir la conversation directe la remet dans la liste, historique toujours effacé', async () => {
+    const a = await creerCompteEtConnecter('hideA', 'hideA@test.com');
+    const b = await creerCompteEtConnecter('hideB', 'hideB@test.com');
+
+    const directRes = await request(app)
+      .post('/api/conversations/direct')
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ idUserDestinataire: b.idUser });
+    const idConversation = directRes.body.idConversation;
+    await envoyer(a.token, idConversation, 'Vieux message');
+
+    await request(app)
+      .delete(`/api/conversations/${idConversation}`)
+      .set('Authorization', `Bearer ${a.token}`);
+
+    const rouverte = await request(app)
+      .post('/api/conversations/direct')
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ idUserDestinataire: b.idUser });
+
+    expect(rouverte.body.idConversation).toBe(idConversation);
+    expect((await liste(a.token)).body.some((c) => c.idConversation === idConversation)).toBe(true);
+
+    const messagesA = await request(app)
+      .get(`/api/conversations/${idConversation}/messages`)
+      .set('Authorization', `Bearer ${a.token}`);
+    expect(messagesA.body).toHaveLength(0);
+  });
+
+  test('un membre simple ne peut pas supprimer le groupe pour tous, mais peut le retirer de sa liste', async () => {
+    const chef = await creerCompteEtConnecter('hideChef', 'hideChef@test.com');
+    const b = await creerCompteEtConnecter('hideB', 'hideB@test.com');
+    const c = await creerCompteEtConnecter('hideC', 'hideC@test.com');
+    const idConversation = await creerGroupe(chef, [b, c]);
+    await envoyer(chef.token, idConversation, 'Bienvenue');
+
+    const suppression = await request(app)
+      .delete(`/api/conversations/${idConversation}`)
+      .set('Authorization', `Bearer ${b.token}`);
+    expect(suppression.status).toBe(403);
+
+    const masquage = await request(app)
+      .post(`/api/conversations/${idConversation}/masquer`)
+      .set('Authorization', `Bearer ${b.token}`);
+    expect(masquage.status).toBe(200);
+
+    expect((await liste(b.token)).body.some((cv) => cv.idConversation === idConversation)).toBe(false);
+    expect((await liste(chef.token)).body.some((cv) => cv.idConversation === idConversation)).toBe(true);
+    expect((await liste(c.token)).body.some((cv) => cv.idConversation === idConversation)).toBe(true);
+
+    // B reste membre du groupe (il n'a pas quitté)
+    const membres = await request(app)
+      .get(`/api/conversations/${idConversation}/members`)
+      .set('Authorization', `Bearer ${chef.token}`);
+    expect(membres.body.membres.some((m) => m.idUser === b.idUser)).toBe(true);
+  });
+
+  test('refuse de retirer de sa liste une conversation dont on n’est pas membre', async () => {
+    const a = await creerCompteEtConnecter('hideA', 'hideA@test.com');
+    const b = await creerCompteEtConnecter('hideB', 'hideB@test.com');
+    const intrus = await creerCompteEtConnecter('hideIntrus', 'hideIntrus@test.com');
+
+    const directRes = await request(app)
+      .post('/api/conversations/direct')
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ idUserDestinataire: b.idUser });
+
+    const res = await request(app)
+      .post(`/api/conversations/${directRes.body.idConversation}/masquer`)
+      .set('Authorization', `Bearer ${intrus.token}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  test('retirer une conversation de sa liste remet sa pastille de messages non lus à zéro', async () => {
+    const a = await creerCompteEtConnecter('hideA', 'hideA@test.com');
+    const b = await creerCompteEtConnecter('hideB', 'hideB@test.com');
+
+    const directRes = await request(app)
+      .post('/api/conversations/direct')
+      .set('Authorization', `Bearer ${a.token}`)
+      .send({ idUserDestinataire: b.idUser });
+    const idConversation = directRes.body.idConversation;
+    await envoyer(a.token, idConversation, 'Coucou');
+
+    const avant = await request(app)
+      .get('/api/notifications/unread-count')
+      .set('Authorization', `Bearer ${b.token}`);
+    expect(avant.body.messages).toBe(1);
+
+    await request(app)
+      .post(`/api/conversations/${idConversation}/masquer`)
+      .set('Authorization', `Bearer ${b.token}`);
+
+    const apres = await request(app)
+      .get('/api/notifications/unread-count')
+      .set('Authorization', `Bearer ${b.token}`);
+    expect(apres.body.messages).toBe(0);
+  });
+
+  test('« non lu » est calculé par membre dans un groupe', async () => {
+    const chef = await creerCompteEtConnecter('hideChef', 'hideChef@test.com');
+    const b = await creerCompteEtConnecter('hideB', 'hideB@test.com');
+    const c = await creerCompteEtConnecter('hideC', 'hideC@test.com');
+    const idConversation = await creerGroupe(chef, [b, c]);
+    await envoyer(chef.token, idConversation, 'Message pour tous');
+
+    // Seul C lit la conversation
+    await request(app)
+      .put(`/api/conversations/${idConversation}/read`)
+      .set('Authorization', `Bearer ${c.token}`);
+
+    const convC = (await liste(c.token)).body.find((cv) => cv.idConversation === idConversation);
+    const convB = (await liste(b.token)).body.find((cv) => cv.idConversation === idConversation);
+
+    expect(convC.nonLu).toBeFalsy();
+    expect(convB.nonLu).toBeTruthy();
   });
 });

@@ -162,8 +162,8 @@ app.get('/messages/:idConversation', authMiddleware, async (req, res) => {
     await messageService.markAsRead(idConversation, req.user.idUser);
 
     const membres = await conversationService.getConversationMembers(idConversation, req.user.idUser);
-    const conversations = await conversationService.getMyConversations(req.user.idUser);
-    const conv = conversations ? conversations.find(c => c.idConversation === idConversation) : null;
+    // Même si l'utilisateur a retiré la conversation de sa liste, on retrouve son titre
+    const conv = await conversationService.getConversationPourMembre(idConversation, req.user.idUser);
 
     const estCreateurCourant = (membres || []).some(
       (m) => m.idUser === req.user.idUser && !!m.estCreateur

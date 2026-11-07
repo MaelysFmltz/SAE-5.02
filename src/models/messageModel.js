@@ -22,15 +22,17 @@ function createMessage(idConversation, idUser, contenu) {
 }
 
 /**
- * Récupère les messages d'une conversation, triés du plus ancien au plus récent
+ * Récupère les messages d'une conversation, triés du plus ancien au plus récent.
+ * apresIdMessage permet d'ignorer l'historique qu'un membre a effacé pour lui-même
+ * (seuls les messages d'identifiant strictement supérieur sont renvoyés).
  */
-function getMessagesByConversation(idConversation) {
+function getMessagesByConversation(idConversation, apresIdMessage = 0) {
   return db.prepare(
     `SELECT idMessage, idConversation, idUser, contenu, dateEnvoi, lu, dateLecture, dateModification, supprime
      FROM Message
-     WHERE idConversation = ?
-     ORDER BY dateEnvoi ASC`
-  ).all(idConversation);
+     WHERE idConversation = ? AND idMessage > ?
+     ORDER BY dateEnvoi ASC, idMessage ASC`
+  ).all(idConversation, apresIdMessage);
 }
 
 /**
@@ -61,9 +63,13 @@ function updateContenu(idMessage, contenu) {
  * affichée côté front, à la place du contenu)
  */
 function softDeleteMessage(idMessage) {
-  db.prepare(
-    `UPDATE Message SET contenu = '', supprime = 1 WHERE idMessage = ?`
-  ).run(idMessage);
+  db.transaction(() => {
+    db.prepare(
+      `UPDATE Message SET contenu = '', supprime = 1 WHERE idMessage = ?`
+    ).run(idMessage);
+    // Un message retiré ne garde pas ses réactions
+    db.prepare('DELETE FROM MessageReaction WHERE idMessage = ?').run(idMessage);
+  })();
   return getMessageById(idMessage);
 }
 

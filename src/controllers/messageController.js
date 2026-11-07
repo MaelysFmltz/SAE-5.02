@@ -4,6 +4,7 @@
  * (lecture, envoi, marquage en lu), délègue à messageService.
  */
 
+const { repondreErreur } = require('../utils/httpErrors');
 const messageService = require('../services/messageService');
 
 /**
@@ -27,7 +28,7 @@ async function getMessages(req, res) {
     const messages = await messageService.getMessages(idConversation, req.user.idUser);
     return res.status(200).json(messages);
   } catch (err) {
-    return res.status(err.status || 403).json({ error: err.message });
+    return repondreErreur(res, err, 'Erreur messagerie');
   }
 }
 
@@ -38,7 +39,7 @@ async function sendMessage(req, res) {
     const message = await messageService.sendMessage(idConversation, req.user.idUser, contenu);
     return res.status(201).json(message);
   } catch (err) {
-    return res.status(err.status || 400).json({ error: err.message });
+    return repondreErreur(res, err, 'Erreur messagerie');
   }
 }
 
@@ -48,7 +49,7 @@ async function markAsRead(req, res) {
     await messageService.markAsRead(idConversation, req.user.idUser);
     return res.status(200).json({ message: 'Conversation marquée comme lue' });
   } catch (err) {
-    return res.status(err.status || 403).json({ error: err.message });
+    return repondreErreur(res, err, 'Erreur messagerie');
   }
 }
 
@@ -76,7 +77,7 @@ async function editMessage(req, res) {
     const message = await messageService.editMessage(idConversation, req.user.idUser, idMessage, contenu);
     return res.status(200).json(message);
   } catch (err) {
-    return res.status(err.status || 400).json({ error: err.message });
+    return repondreErreur(res, err, 'Erreur messagerie');
   }
 }
 
@@ -88,11 +89,38 @@ async function deleteMessage(req, res) {
     const message = await messageService.deleteMessage(idConversation, req.user.idUser, idMessage);
     return res.status(200).json(message);
   } catch (err) {
-    return res.status(err.status || 400).json({ error: err.message });
+    return repondreErreur(res, err, 'Erreur messagerie');
+  }
+}
+
+async function reagirMessage(req, res) {
+  try {
+    const idConversation = parseIdConversation(req.params.idConversation);
+    const idMessage = parseIdMessage(req.params.idMessage);
+    const emoji = req.body ? req.body.emoji : undefined;
+
+    const message = await messageService.reagirMessage(idConversation, req.user.idUser, idMessage, emoji);
+    return res.status(200).json(message);
+  } catch (err) {
+    return repondreErreur(res, err, 'Erreur messagerie');
+  }
+}
+
+async function retirerReaction(req, res) {
+  try {
+    const idConversation = parseIdConversation(req.params.idConversation);
+    const idMessage = parseIdMessage(req.params.idMessage);
+
+    const message = await messageService.retirerReaction(idConversation, req.user.idUser, idMessage);
+    return res.status(200).json(message);
+  } catch (err) {
+    return repondreErreur(res, err, 'Erreur messagerie');
   }
 }
 
 module.exports = {
+  reagirMessage,
+  retirerReaction,
   getMessages,
   sendMessage,
   markAsRead,

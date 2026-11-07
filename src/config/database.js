@@ -74,6 +74,32 @@ if (messageExiste) {
     db.exec('ALTER TABLE Message ADD COLUMN supprime INTEGER NOT NULL DEFAULT 0');
     console.log('Migration : colonne supprime ajoutée à Message.');
   }
+
+  // Réactions (emoji) sur les messages : une réaction par utilisateur et par message
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS MessageReaction (
+      idMessage INTEGER NOT NULL,
+      idUser INTEGER NOT NULL,
+      emoji TEXT NOT NULL,
+      dateReaction DATETIME DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (idMessage, idUser),
+      FOREIGN KEY (idMessage) REFERENCES Message(idMessage) ON DELETE CASCADE,
+      FOREIGN KEY (idUser) REFERENCES Utilisateur(idUser) ON DELETE CASCADE
+    )
+  `);
+}
+
+// Masquage d'une conversation « de sa propre liste » (historique effacé pour soi seul)
+if (conversationMembreExiste) {
+  const colonnesMembre = db.prepare('PRAGMA table_info(ConversationMembre)').all().map(col => col.name);
+  if (!colonnesMembre.includes('masquee')) {
+    db.exec('ALTER TABLE ConversationMembre ADD COLUMN masquee INTEGER NOT NULL DEFAULT 0 CHECK(masquee IN (0, 1))');
+    console.log('Migration : colonne masquee ajoutée à ConversationMembre.');
+  }
+  if (!colonnesMembre.includes('idMessageMasqueJusqua')) {
+    db.exec('ALTER TABLE ConversationMembre ADD COLUMN idMessageMasqueJusqua INTEGER NOT NULL DEFAULT 0');
+    console.log('Migration : colonne idMessageMasqueJusqua ajoutée à ConversationMembre.');
+  }
 }
 
 // 4 bis. Migrations Notifications (idActeur + marque-page de lecture par membre)

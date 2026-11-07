@@ -100,6 +100,8 @@ async function createDirectConversation(idUserCourant, idUserDestinataire) {
   );
 
   if (existante) {
+    // Si l'utilisateur l'avait retirée de sa liste, elle y revient (sans l'ancien historique)
+    conversationMemberModel.afficherPourMembre(existante.idConversation, idUserCourant);
     return existante.idConversation;
   }
 
@@ -148,6 +150,16 @@ async function createGroupConversation(idUserCourant, membres, titreGroupe) {
 
 async function getMyConversations(idUser) {
   return conversationModel.getConversationsForUser(idUser);
+}
+
+/**
+ * Conversation vue par un membre, même s'il l'a retirée de sa liste
+ * (utile pour afficher son titre quand il la rouvre).
+ */
+async function getConversationPourMembre(idConversation, idUser) {
+  ensureIsMember(idConversation, idUser);
+  const conversations = conversationModel.getConversationsForUser(idUser, { inclureMasquees: true });
+  return conversations.find(c => c.idConversation === idConversation) || null;
 }
 
 /**
@@ -261,6 +273,13 @@ async function renameGroup(idConversation, idUserCourant, nouveauTitre) {
   return titreNettoye;
 }
 
+/**
+ * Supprime une conversation.
+ * - Groupe : réservé au chef, supprimé pour TOUT le monde.
+ * - Conversation directe : supprimée de la liste de l'utilisateur seulement
+ *   (l'autre personne garde son historique) — voir masquerConversation.
+ * Retourne 'supprimee' ou 'masquee' selon ce qui a été fait.
+ */
 async function deleteConversation(idConversation, idUserCourant) {
   ensureIsMember(idConversation, idUserCourant);
 
@@ -270,11 +289,29 @@ async function deleteConversation(idConversation, idUserCourant) {
     throw httpError('Conversation introuvable', 404);
   }
 
-  if (conversation.titreGroupe) {
-    ensureEstCreateur(idConversation, idUserCourant);
+  if (!conversation.titreGroupe) {
+    conversationMemberModel.masquerPourMembre(idConversation, idUserCourant);
+    return 'masquee';
   }
 
+  ensureEstCreateur(idConversation, idUserCourant);
   conversationModel.deleteConversation(idConversation);
+  return 'supprimee';
+}
+
+/**
+ * Retire une conversation (directe ou groupe) de SA propre liste et efface son
+ * historique pour soi seul. Les autres membres ne voient aucun changement ;
+ * la conversation réapparaît (vide de l'ancien historique) au prochain message.
+ */
+async function masquerConversation(idConversation, idUserCourant) {
+  ensureIsMember(idConversation, idUserCourant);
+
+  if (!conversationModel.getConversationById(idConversation)) {
+    throw httpError('Conversation introuvable', 404);
+  }
+
+  conversationMemberModel.masquerPourMembre(idConversation, idUserCourant);
 }
 
 async function leaveGroup(idConversation, idUserCourant) {
@@ -292,6 +329,7 @@ module.exports = {
   createDirectConversation,
   createGroupConversation,
   getMyConversations,
+  getConversationPourMembre,
   ensureIsMember,
   isCreateur: conversationModel.isCreateur,
   getConversationMembers,
@@ -299,5 +337,6 @@ module.exports = {
   removeParticipant,
   renameGroup,
   deleteConversation,
+  masquerConversation,
   leaveGroup
 };
