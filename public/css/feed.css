@@ -785,7 +785,8 @@
 .back-to-top {
     position: fixed;
     right: 24px;
-    bottom: 24px;
+    /* Au-dessus de la barre de navigation du bas (.bottom-nav, 60px de haut) */
+    bottom: 84px;
     z-index: 1500;
     width: 48px;
     height: 48px;
@@ -821,7 +822,7 @@
 @media (max-width: 700px) {
     .back-to-top {
         right: 16px;
-        bottom: 16px;
+        bottom: 76px;
         width: 44px;
         height: 44px;
     }
